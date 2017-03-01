@@ -2,7 +2,7 @@ import renpy
 import renpy.ast as ast
 import renpy.sl2.slast as slast
 import renpy.python
-import ntpath
+import os
 import string
 
 def sprnt(str):
@@ -380,8 +380,8 @@ class AWSWModBase:
         stmts = renpy.game.script.all_stmts
         
         for node in stmts:
-            base, nfile = ntpath.split(node.filename)
-            nf = nfile or ntpath.basename(base)
+            base, nfile = os.path.split(node.filename)
+            nf = nfile or os.path.basename(base)
             if node.linenumber == ln and nf == file:
                 return node
         
