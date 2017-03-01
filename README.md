@@ -186,29 +186,44 @@ Should you print to the console in your code, you may run into an error such as 
 ## Roadmap
 
 [*] Complete
+
 [!] Important!
+
 [.] In progress
 
 #### Level 1 (usability: barely*)
 *You are here. Good luck.*
+
 [\*] \# Modify Renpy screens
+
 [\*] \# Hook interpretted opcodes
+
 [\*] \# Virtual file system for resources 
 
 #### Level 2 (usability: better)
 [.] \# Hook Menus
+
 [.] \# Better menu finding algorithm
+
 \# Easy hooking for any instruction type
+
 \# Docs and easy hooking for screen lang objects
 #### Level 3 (usability: easy)
 
 [.] # Complete abstraction of apartment menu
+
 [!] # Debug overlay(menu option jump viewing, code peaking, on the fly decompilation)
+
 [*] \# Post true ending hook
+
 \# Post chracter ending hooks
+
 \# Pre ending hooks
+
 \# Ending determination point hook
+
 \# Fine grain character patching
+
 \# Postponing chapters and key game events without manual label lookup
 
 \* results may vary
