@@ -124,7 +124,7 @@ label anna_post_true_entry:
     
     menu:
         "Remy.":
-            c "I thought about the huge amount of information at his disposal. He could get me acess to potentially all of the knowledge of your species."
+            c "I thought about the huge amount of information at his disposal. He could get me access to potentially all of the knowledge of your species."
             
         "Adine.":
             c "She meets dozens of new people every day so she's an ambassador in her own way. If we worked together I thought we'd be more effective."
