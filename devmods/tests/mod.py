@@ -51,3 +51,4 @@ test_menu_hook.addItem("Test", test_menu_hook.getOptionCode("Accept.")[0])
 ml.call_hook(ml.findlabel("start"), ml.findlabel("tests_6"))
 
 
+ml.findByLineNumber(1, "AWSWMod")
