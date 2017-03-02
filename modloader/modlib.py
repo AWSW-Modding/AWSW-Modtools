@@ -28,12 +28,18 @@ class ASTHook(ast.Node): # Don't instantiate ASTHook directly. Ren'py assigns a 
         self.fromOp.next = self.__oldNext
         
 class AWSWEndingHooks():
-    def hookPostTrueEnding(self, node): 
+    def __init__(self, base):
+        self.base = base
         searchStr = string.translate("Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv'f obql. Fur jnf qrnq.", rot13_dec)
-        endsay = self.base.findSay(searchStr)
+        self.TrueEndingPostIzumi = self.base.findSay(searchStr)
+        
+    def getPostTrueEndingIzumiScene(self):
+        return self.TrueEndingPostIzumi
+
+    def hookPostTrueEnding(self, node): 
         #fincall = self.base.searchPostNode(endsay, ast.Call, 500)
         #print(type(endsay.next.next).__name__.encode('utf-8'))
-        fincall = endsay.next
+        fincall = self.getPostTrueEndingIzumiScene().next
         return self.base.call_hook(fincall, node)
         
     def hookPostEvilEnding(self, node):
@@ -214,8 +220,7 @@ class AWSWModBase:
     
     
     def __init__(self):
-        self.endingHooks = AWSWEndingHooks()
-        self.endingHooks.base = self
+        self.endingHooks = AWSWEndingHooks(self)
         self.nameSerial = 1
         self.homeHook = AWSWHomeHook(self)
     
