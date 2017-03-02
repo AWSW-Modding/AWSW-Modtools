@@ -15,18 +15,18 @@ getsls is a helper function for getting the executable part of the Screen. This 
 Looks for a label (defined as 'label example:') in the Ren'py language. It will return a renpy.ast.Label object associated with it. 
 #### ```Node hooklabel(string label_name, Function func=None)```
 Takes a label name and returns an ASTHook object with utilities for hooking the label. ```func``` is called whenever the hook node is executed. Returning True in ```func``` will result in the hook not advancing to the next node. 
-### ```ASTHook hook_opcode(Node node, Function func=None)```
+#### ```ASTHook hook_opcode(Node node, Function func=None)```
 Hooks a node. An instance of ASTHook will be created, chained to ```node```, and returned by this function. After ```node``` executes, the hook will run, and then control flow will will be passed to the hooked node's original next instruction. Set the ```.next``` member to control what statement is called after the hook executes. If ```func``` is passed to ```hook_opcode```, it will be executed when with the hook and can control execution by returning ```True``` and setting ```hook.next```. The hook class will be passed to ```func```.
 #### ```ASTHook call_hook(Node node, Node dest_node, Function func=None)```
 Hooks a node, then upon execution, jumps to dest_node and pushes the instruction after node to the callstack. Using 'return' in Ren'py code thereafter will return to the node+1 operation. 
-### ```ASTHook jump_ret(Node node, Node dest_node, Node ret_node, func=None```
+#### ```ASTHook jump_ret(Node node, Node dest_node, Node ret_node, func=None```
 This will hook ```node```, redirecting execution to dest_node after node is executed. ret_node will be pushed on to the callstack, so calling return after dest_node will pass program execution to ret_node. ```func``` will be executed with the hook as a parameter when the hooking node executes. The hooking node will be returned from this function.
 #### ```Node searchPostNode(Node node, NodeClass toFind, int searchLength=200)```
 Takes a node (which can be found via findlabel or other functions) and searches for a node proceding it of type toFind. Searches a maximum of searchLength operations, and returns None if the instruction isn't found. 
 #### ```Bool nullPyexpr(SLScreen scr, String comparison)```
 Takes an SLScreen object and searches for any if statements (SLIf objects) that are direct children of it. Any if statements(and their child blocks) that match the comparison string are removed.
 #### ```list findMenu(String comparison)```
-### ```list findMenu(list comparisonList)```
+#### ```list findMenu(list comparisonList)```
 Will search for a Menu with an option that is equal to comparison, or contains all options in comparisonList. Returns a list of menus(ast.Menu) matching the specifications.
 #### ```Node findSay(String comparison)```
 Searches for a say node(ast.Say) matching the string provided. These can be anything a character says. 
@@ -42,28 +42,28 @@ Returns the AWSWMenuHook class instance for that particular menu. This will allo
 Returns the AWSWHomeHook class instance responsible for managing the ambassador apartment.
 #### ```AWSWEndingHooks getEndingHooks()```
 Returns the AWSWEndingHooks class instance responsible for managing ending hooks. 
-### ```Node findPyStatement(String code)```
+#### ```Node findPyStatement(String code)```
 Searches the entire game for a single line python statement in Ren'py code. The spaces on the end of the instruction are trimmed by Ren'py, so to find ```$ testVar = True```, pass "testVar = True" to the function. 
 ## ```class AWSWMenuHook```
 The AWSWMenuHook class is responsible for editing a menu, the point in game where the player has options to modify the dialogue tree. After obtaining a reference to a menu node, pass the node into ```getMenuHook``` to access this class's functions. The useful functions are listed below:
-### ```deleteItem(String label)```
+#### ```deleteItem(String label)```
 Deletes an option from the menu with label title. 
-### ```list getOptionCode(String option)```
+#### ```list getOptionCode(String option)```
 This function will return a list of instructions that would be executed if a user were to pick the option matching ```option```. You really only need to acess the first node in the list. Each node is chained to the next, similar to ASTHook.
-### ```getItems()```
+#### ```getItems()```
 Returns a list of all the options in the menu. Each member of the list is a tuple of (String optionTitle, String conditionalStatement, list opcodes).
-### ```setConditional(String label, String newConditional)```
+#### ```setConditional(String label, String newConditional)```
 Sets the condition for displaying the option to the player of the option with the title of label. 
-### ```addItem(String label, Node hook, condition="True") ```
-### ```ASTHook addItem(String label, Function hook, condition="True")```
+#### ```addItem(String label, Node hook, condition="True") ```
+#### ```ASTHook addItem(String label, Function hook, condition="True")```
 Adds an option to the menu with ```label``` title and ```condition``` condition. If ```hook``` is a node, then when the user selects this option, the game will jump to that node. If hook is a function, an ASTHook instance will be created and returned. The function will be executed when the user selects that option and you will be responsible for redirecting control flow. ```condition``` will be evaluated as a Python expression when the menu is shown. Evaluating as false will mean the menu option doesn't appear to the player. 
 
-### ```ASTHook addItemCall(String label, Node hook, condition="True")```
+#### ```ASTHook addItemCall(String label, Node hook, condition="True")```
 Performs the same function as ```addItem``` does with a node, except ```hook``` will be called, meaning you can have a ```return``` instruction to continue normal game execution.
 ## ```class AWSWHomeHook```
 The AWSWHomeHook class is responsible for editing the menu that appears in the Ambassador apartment, where the player can choose a character route. The exposed functions are listed below. 
 
-### ```addRoute(title, Node destination, condition="True")```
+#### ```addRoute(title, Node destination, condition="True")```
 Adds a route to all chapter menus that displays if condition evaluates to true. When the user selects this option, the game will pass control to the destination Node. Executing a return instruction will redirect control back to the menu and continue the game normally. 
 #### ```hookChapterChange(Node hook_node)```
 #### ```hookChapterChange(Function func)```
@@ -79,10 +79,13 @@ Will add a hook after all variables are declared in chapter 1. This is called ri
 ## ```class AWSWEndingHooks```
 This class is responsible for hooking any ending-related parts of the game. Currently implemented functions of this class are listed below. 
 
-### ```ASTHook hookPostTrueEnding(Node node)```
+#### ```ASTHook hookPostTrueEnding(Node node)```
 This will jump to ```node``` after the true ending final scene. Use ```return``` in the additive code to end your scene, and the game will continue back to the main menu like normal. 
 
-### ```AWSWMenuHooks getEndingPickerMenu()```
+#### ```Node getPostTrueEndingIzumiScene()```
+This function will return the node directly after Izumi's "final tear" scene. 
+ 
+#### ```AWSWMenuHooks getEndingPickerMenu()```
 This function will return an instance of ```AWSWMenuHooks``` which will allow you to edit the entries in the chapter 5 menu where the player chooses who to go to the fireworks with.
 
 ## ```class ASTHook```
@@ -98,7 +101,7 @@ This will increment the character scene counter in the game for the appropriate 
 #### ```_mod_getchapter```
 This will get the current chapter as an integer. Access this stub with ```call _mod_getchapter``` and it will put the integer value of the current chapter in ```_return``` for you to check.
 
-### ```_mod_fixui```
+#### ```_mod_fixui```
 This will need to be called if you're hooking after an ending. The game disables interaction with UI at that point, so as soon as your get control of execution, you must ```call _mod_fixui```. If this is called after a say instruction, or any instruction that waits for user input, the game *will hang*.
 
 ## Magic
