@@ -58,7 +58,7 @@ label anna_post_true_entry:
     An smirk "Same here."
     m "I thought about something that had been bugging me for the last few days."
     
-    c "Seriously. Sneaking on to that farm and eating freshly-killed meat was the best first date I've ever been on. And the night we spent together... that wasn't just a one-off thing, was it? You said this might be our last time to do anything. Were you just looking to do somethng spontaneous or did you really want to?"
+    c "Seriously. Sneaking on to that farm and eating freshly-killed meat was the best first date I've ever been on. And the night we spent together... that wasn't just a one-off thing, was it? You said this might be our last time to do anything. Were you just looking to do something spontaneous or did you really want to?"
     
     # Change Anna's expression back to normal, otherwise the previously set one would persist. 
     An normal "If I'm going to be honest it was a bit of both. There was just so much going on at that point I don't think I was in my right mind. It was spontaneous, but I don't regret it. Do you?"
