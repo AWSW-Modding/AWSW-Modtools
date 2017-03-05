@@ -124,7 +124,7 @@ MyMod
         |-- myBackground.png
 ```
 
-Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```mod.py```. Every mod should start with ```import modlib```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as declaring ```ml = modlib.base``` and accessing the class's functions. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. 
+Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```mod.py```. Every mod should start with ```import modlib```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as declaring ```ml = modlib.base``` and accessing the class's functions. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.
 
 ## Python and the Dangers of Rollback
 Rollback is an integral feature of Ren'py, allowing the user to step back in time and make different choices. Usually rollback will play well with mods, but there are some cases that can introduce non-deterministic behavior. The main issue that rollback has is only Python objects encoded in Ren'Py's AST(and then, only a select few statements) are rolled back. For this reason, Python functions should not be used in hooks if you can avoid them. 
