@@ -1,6 +1,6 @@
-from modclass import Mod, addMod
+from modloader.modclass import Mod, loadable_mod
 
-@addMod
+@loadable_mod
 class Test(Mod):
     def __init__(self):
         print("Init!")
