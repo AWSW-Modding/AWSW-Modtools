@@ -1,6 +1,5 @@
+modlist = {}
 
-def init():
-    global modlist
-    modlist = []
-    
-print('init modinfo')
+def add_mod(mod_name, mod):
+	print("Adding mod {}".format(mod_name))
+	modlist[mod_name] = mod
