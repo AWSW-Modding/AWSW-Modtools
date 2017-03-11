@@ -27,19 +27,19 @@ class Mod():
         """Executes when all mods are loaded"""
         pass
 
-def loadable_mod(clazz):
+def loadable_mod(modclass):
     """Annotation to add a Mod subclass to the mod list
 
     Args:
-        clazz (Mod): The Mod class
+        modclass (Mod): The Mod class
 
     Raises:
         Exception: If the given class is not a subclass of Mod
     """
-    if not issubclass(clazz, Mod):
+    if not issubclass(modclass, Mod):
         raise Exception("Class must be a subclass of Mod")
 
-    mod = clazz() # Create a new instance of the class
+    mod = modclass() # Create a new instance of the class
     mod_name, _, _ = mod.mod_info() # Get just the mod name
     mod.mod_load() # Load the mod
     modinfo.add_mod(mod_name, mod)
