@@ -122,7 +122,7 @@ MyMod
         |-- myBackground.png
 ```
 
-Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```__init__.py```. Every mod should start with ```from modloader.modlib import base as ml```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as calling functions on ```ml```. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.
+Any \*.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```__init__.py```. Every mod should start with ```from modloader.modlib import base as ml```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as calling functions on ```ml```. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.
 
 To get full functionality from the modloader, it is recommended that you inherit from the modclass.Mod class. This will give you access to hooks at various stages during mod loading, and properly inform the user of your mod's status. To do this, include ```from modloader.modclass import Mod, loadable_mod``` at the top of your mod file. Define a class with a decorator as shown below:
 ```python
@@ -149,18 +149,36 @@ The AWSW mod tools do not modify any of the core game files. They will survive a
 This sample code will remove Kevin's encounter and main menu icon. The full mod structure can be found in mods/. 
 
 ```python
-import modlib
 import renpy
 import renpy.ast as ast
-ml = modlib.base
+from modloader import modinfo
+from modloader.modlib import sprnt
+from modloader.modlib import base as ml # ml shortcut 
+from modloader.modclass import Mod, loadable_mod # Import the base class and the decorator
 
-found = ml.searchPostNode(ml.findlabel("c4hatchery"), ast.Scene, 20) # search max of 20 nodes after c4hatchery label, look for the first scene initialization (which happens to be one opcode away, for now) 
-hook = ml.hook_opcode(found, None) # insert a hooking node after scene, but before the narrator's say statement
-hook.chain(ml.searchPostNode(found, ast.Scene)) # normally the hooking node would point back to the dialogue. Skip all the way to the next scene instead. 
+@loadable_mod
+class AWSWMod(Mod):
+    def mod_info(self):
+        return ("byekevin", "v0.1", "")
+        
+    def mod_load(self):
+        found = ml.searchPostNode(ml.findlabel("c4hatchery"), ast.Scene, 20) # search max of 20 nodes after c4hatchery label, look for the first scene initialization (which happens to be one opcode away, for now) 
+        hook = ml.hook_opcode(found, None) # insert a hooking node after scene, but before the narrator's say statement
+        hook.chain(ml.searchPostNode(found, ast.Scene)) # normally the hooking node would point back to the dialogue. Skip all the way to the next scene instead. 
 
-mainscr = ml.getsls('main_menu') # get the main screen (cache is disabled)
-ml.nullPyexpr(mainscr, 'persistent.playedkevin') # remove the if block
-```
+        mainscr = ml.getsls('main_menu') # get the main screen (cache is disabled)
+        ml.nullPyexpr(mainscr, 'persistent.playedkevin') # remove the if block
+
+        eHooks = ml.getEndingHooks()
+        true_search = eHooks.getPostTrueEndingIzumiScene()
+
+        def kevinCB(node):
+            if node.next is not None and isinstance(node.next, renpy.ast.Show) and node.next.imspec[0][0] == 'meetingkevin': # imspec is part of the image ID in show opcodes.
+                return True
+
+        kevin_credits = ml.searchPostNodeCB(true_search, kevinCB, 800) # search for a node using the kevinCB callback. 
+        kevin_credits.chain(ml.searchPostNode(kevin_credits, ast.Scene)) # Show and with are separate instructions.
+        
 
 See the mods/ and devmods/ folders for further sample code. devmods/ contains a few different examples with fully annotated code. 
 
