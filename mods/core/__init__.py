@@ -47,4 +47,4 @@ class AWSWMod(Mod):
     def mod_complete(self):
         # This is called after all mods are loaded, preventing us from getting a partial list of mods (say, if core was loaded before myMod1). 
         # Rpy python globals are stored in renpy.python.store_dicts["store"], so to access our data from the screen later, we need to put it in this dictionary.
-        ml.setRGlobal('modsDesc', ', '.join(modinfo.modlist))
+        ml.setRGlobal('modsDesc', ', '.join([mod_name for mod_name in modinfo.modlist]))

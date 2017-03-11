@@ -27,6 +27,7 @@ for mod in os.listdir(get_mod_path()):
         renpy.config.searchpath.append(resource_dir)
 
     # Try importing the mod. If all goes well, the mod is imported through the Mod class
+    print("Begin mod load: {}".format(mod))
     try:
         importlib.import_module(mod)
     except Exception, e:
