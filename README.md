@@ -5,7 +5,7 @@ Simply extract bootstrap.rpy, modloader, and mods to the game folder in your AWS
 
 ## Api
 
-To access all the helper functions for modifying game behaviour, put ```import modlib``` at the top of your mod file.  ```modlib``` comes preloaded with a class called ```AWSWModBase``` initialized in the ```base``` member of ```modlib```. It is recommended to redeclare ```base``` as something easy to access in your mod file, such as with ```ml = modlib.base```. Useful functions in the class are listed below. 
+To access all the helper functions for modifying game behaviour, put ```from modloader.modlib import base as ml``` at the top of your mod file.  ```modlib``` comes preloaded with a class called ```AWSWModBase``` initialized in the ```base``` member of ```modlib```. The line above will automatically redeclare ```base``` as ```ml```. Useful functions in the class are listed below. 
 
 #### ```Screen getscreen(string screen_name)```
 This gets a Ren'py Screen object(long name: renpy.display.screen.Screen). This is used to get a handle to a screen you might want to edit, such as the status overlay or the main_menu.
@@ -106,8 +106,6 @@ This will need to be called if you're hooking after an ending. The game disables
 
 ## Magic
 
-Defining ```def mod_init():``` in the root of your mod file will cause this function to get called after all mods are loaded. This is useful for interaction with other loaded mods, or accessing the ```modinfo``` module to get information about the mods. 
-
 Anywhere in Ren'py code, you can access the global variable ```mod_currentChapter``` to get an integer value of the current chapter. For example, during chapter one, ```mod_currentChapter``` will equal ```1```. During chapter two, it will be equal to ```2```, and so on. This variable is useful for rate limiting routes or events to one per chapter. If you want to access this variable in python, use ```modlib.base.getRGlobal('mod_currentChapter')```.
 
 ## Writing Mods
@@ -117,14 +115,28 @@ Each mod has two components: the patcher and the additive game code. The patcher
 To construct a mod, see the tree below.
 ```
 MyMod
-|-- mod.py
+|-- __init__.py
 |-- myResource.rpy
 |-- resource
     |-- custbg
         |-- myBackground.png
 ```
 
-Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```mod.py```. Every mod should start with ```import modlib```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as declaring ```ml = modlib.base``` and accessing the class's functions. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.
+Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and **must** be named ```__init__.py```. Every mod should start with ```from modloader.modlib import base as ml```. This will include all the utilities needed to get started. Using ```modlib``` is as simple as calling functions on ```ml```. The ```resource``` folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.
+
+To get full functionality from the modloader, it is recommended that you inherit from the modclass.Mod class. This will give you access to hooks at various stages during mod loading, and properly inform the user of your mod's status. To do this, include ```from modloader.modclass import Mod, loadable_mod``` at the top of your mod file. Define a class with a decorator as shown below:
+```python
+@loadable_mod
+class AWSWMod(Mod):
+    def mod_info(self):
+        return ("MyModName", "v0.1", "AuthorName")
+        
+    def mod_load(self): # called immediately after loading. Most code should go here. 
+        pass
+        
+    def mod_complete(self): # called after all mods are loaded. 
+        pass
+```
 
 ## Python and the Dangers of Rollback
 Rollback is an integral feature of Ren'py, allowing the user to step back in time and make different choices. Usually rollback will play well with mods, but there are some cases that can introduce non-deterministic behavior. The main issue that rollback has is only Python objects encoded in Ren'Py's AST(and then, only a select few statements) are rolled back. For this reason, Python functions should not be used in hooks if you can avoid them. 
