@@ -30,7 +30,7 @@ for mod in os.listdir(get_mod_path()):
     try:
         importlib.import_module(mod)
     except Exception, e:
-        print("Oh no in {}".format(mod))
+        print("Exception while loading: {}".format(mod))
         print(e)
         raise e # Raise it again even though the stacktrace provides nothing useful
 

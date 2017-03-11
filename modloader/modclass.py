@@ -18,7 +18,7 @@ class Mod():
     def mod_load(self):
         """Executes when a mod is loaded
 
-        This is where you put special renpy code
+        This is where you put patcher code
         Other mods may not be fully loaded yet. If you want this functionality, see mod_complete
         """
         pass
