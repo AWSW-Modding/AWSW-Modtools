@@ -1,10 +1,8 @@
+import renpy
 import os
 import sys
-import importlib
-
-import renpy
-
 import modinfo
+import importlib
 
 def get_mod_path():
     """Get the mod path
@@ -21,7 +19,7 @@ def get_mod_path():
 sys.path.append(get_mod_path())
 
 for mod in os.listdir(get_mod_path()):
-    # Some mods require resources to be recognized by renpy. If a folder exist, force renpy to load it
+    # Some mods require resources to be recognized by renpy. If a folder exists, force renpy to load it
     resource_dir = get_mod_path() + mod + "/resource"
     if os.path.isdir(resource_dir):
         renpy.config.searchpath.append(resource_dir)
@@ -38,3 +36,6 @@ for mod in os.listdir(get_mod_path()):
 for mod_name, mod in modinfo.get_mods().iteritems():
     print("Completing mod {}".format(mod_name))
     mod.mod_complete()
+
+# force renpy to reindex all game files
+renpy.loader.old_config_archives = None
