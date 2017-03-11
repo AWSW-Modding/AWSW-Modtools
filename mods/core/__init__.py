@@ -1,10 +1,10 @@
-from modloader import modlib
 import renpy
 import renpy.parser as parser
 import renpy.ast as ast
+
 from modloader import modinfo
-from modlib import sprnt
-from modlib import base as ml
+from modloader.modlib import sprnt
+from modloader.modlib import base as ml
 from modloader.modclass import Mod, loadable_mod
 
 @loadable_mod
