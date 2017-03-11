@@ -1,17 +1,14 @@
 # This example allows for rapid development. It will populate the main menu with a button called 'dev test', which will jump directly to to 'jump_mainmenu_test' in Ren'py code.
 # See the Start(...) block in the string below. 
 
-
-import modlib
-from modlib import sprnt
-import renpy.sl2.slast as slast
-import renpy.parser as parser
 import renpy
 import renpy.ast as ast
-import modinfo
+import renpy.sl2.slast as slast
+import renpy.parser as parser
 import sys
+from modloader.modlib import base as ml
+from modloader.modlib import sprnt
 
-ml = modlib.base
 
 renpy.config.developer = True
           
