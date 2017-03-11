@@ -4,6 +4,7 @@ import sys
 import modinfo
 import importlib
 import modinfo
+import modclass
 
 print('AWSW Mod Loader Init')
 
@@ -32,14 +33,15 @@ for mod in os.listdir(get_mod_path()):
 
     mod_object = importlib.import_module(mod)
     
-    # Run through the module's attributes to determine whether we should load it as a legacy mod. 
-    if not 'loadable_mod' in dir(mod_object):
-        modinfo.add_mod(mod, mod_object)
+    # Run through registry to see if the mod implements loadable_mod in some way. 
+    if not any(modinfo.get_mods()[key][4] == mod_object for key in modinfo.get_mods()):
+        modinfo.add_mod(mod_object.__name__, (None, "", "", "", mod_object))
 
 # After all mods are loaded, call their respective mod_complete functions
-for mod_name, mod in modinfo.get_mods().iteritems():
-    print("Completing mod {}".format(mod_name))
-    mod.mod_complete()
+for mod_name, mod_data in modinfo.get_mods().iteritems():
+    if mod_data[0]:
+        print("Completing mod {}".format(mod_name))
+        mod_data[0].mod_complete()
 
 # force renpy to reindex all game files
 renpy.loader.old_config_archives = None
