@@ -179,7 +179,7 @@ class AWSWMod(Mod):
         kevin_credits = ml.searchPostNodeCB(true_search, kevinCB, 800) # search for a node using the kevinCB callback. 
         kevin_credits.chain(ml.searchPostNode(kevin_credits, ast.Scene)) # Show and with are separate instructions.
         
-
+```
 See the mods/ and devmods/ folders for further sample code. devmods/ contains a few different examples with fully annotated code. 
 
 ## Getting what you want in spite of everyone else. 
