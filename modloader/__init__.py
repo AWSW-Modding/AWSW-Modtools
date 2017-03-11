@@ -28,12 +28,8 @@ for mod in os.listdir(get_mod_path()):
 
     # Try importing the mod. If all goes well, the mod is imported through the Mod class
     print("Begin mod load: {}".format(mod))
-    try:
-        importlib.import_module(mod)
-    except Exception, e:
-        print("Exception while loading: {}".format(mod))
-        print(e)
-        raise e # Raise it again even though the stacktrace provides nothing useful
+    #try:
+    importlib.import_module(mod)
 
 # After all mods are loaded, call their respective mod_complete functions
 for mod_name, mod in modinfo.get_mods().iteritems():
