@@ -1,4 +1,5 @@
 import modinfo
+import sys
 
 class Mod():
     """The Mod class
@@ -40,6 +41,6 @@ def loadable_mod(modclass):
         raise Exception("Class must be a subclass of Mod")
 
     mod = modclass() # Create a new instance of the class
-    mod_name, _, _ = mod.mod_info() # Get just the mod name
+    mod_name, version, author = mod.mod_info() 
     mod.mod_load() # Load the mod
-    modinfo.add_mod(mod_name, mod)
+    modinfo.add_mod(modclass.__module__, (mod, mod_name, version, author, sys.modules[modclass.__module__]))
