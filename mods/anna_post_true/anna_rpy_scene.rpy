@@ -58,7 +58,7 @@ label anna_post_true_entry:
     An smirk "Same here."
     m "I thought about something that had been bugging me for the last few days."
     
-    c "Seriously. Sneaking on to that farm and eating freshly-killed meat was the best first date I've ever been on. And the night we spent together... that wasn't just a one-off thing, was it? You said this might be our last time to do anything. Were you just looking to do something spontaneous or did you really want to?"
+    c "Seriously. Sneaking on to that farm and eating freshly-killed meat was the best first date I've ever been on. But the night we spent together... that wasn't just a one-off thing, was it? Were you just looking to do something spontaneous or did you really want to?"
     
     # Change Anna's expression back to normal, otherwise the previously set one would persist. 
     An normal "If I'm going to be honest it was a bit of both. There was just so much going on at that point I don't think I was in my right mind. It was spontaneous, but I don't regret it. Do you?"
@@ -77,7 +77,7 @@ label anna_post_true_entry:
         "But I represent humanity as a whole.":
             c "But I represent humanity as a whole. I have to put on a good impression for my side as well."  
             An "What do you mean? Do humans not like us?"
-            c "It's not that they don't like you. On Earth, dragons are sometimes revered. Most people like them. It's just the thought of being romantically involved with one is so strange or distasteful. Remember, where I come from, humans are the only sentient animals. Dating another species would be seen as disgusting."
+            c "It's not that they don't like you. On Earth, dragons are revered. It's just the thought of 	being romantically involved with one is just weird. Remember, where I come from, humans are 	the only sentient animals. Dating another species would be seen as disgusting."
             An disgust "And you don't want to be associated with a dumb animal. Right, I get it."
             m "She started to turn off to the side and leave. I held on to her hand, gently but firmly."
             c "But I don't agree with them. You may not be human, but you're still a person, just as much as I am."
@@ -88,7 +88,7 @@ label anna_post_true_entry:
             An "I didn't know you cared so much about public opinion. I thought you were above that."
             c "It's not just my opinion. I'm serving as humanity's ambassador. I can't put my desires above the success of my mission."
             An disgust "And I thought you were different. I was wrong about you. You're just like Emera. Were you lying about curing cancer, too?"
-            c "Of course not, Anna, I would never lie about something like that. I'm on an important mission, so I can't just do whatever I want, or be with the people I want."
+            c "Of course not, Anna, I would never lie about something like that. I'm on an important mission, so I can't just do whatever I want, or be with the people I like."
     
     # The game skips to here after running all the choice-specific instructions. 
     An face "I'm not a fan of politics, if you haven't noticed. It's just a group of people trying to guess what everyone else wants, and at the same time, lying about what they themselves want. When you first came here I thought you'd be like one of {i}them{/i}. A selfish, corrupt bureaucrat. But..."
