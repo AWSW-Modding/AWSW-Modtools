@@ -64,15 +64,15 @@ label anna_post_true_entry:
     An normal "If I'm going to be honest it was a bit of both. There was just so much going on at that point I don't think I was in my right mind. It was spontaneous, but I don't regret it. Do you?"
     
     # 'c' is the MC. 
-    c "No. The idea would have been unthinkable when I arrived here a week ago. But now, getting to know you... I don't know. But I'm just wodnering... isn't that sort of thing frowned upon here? What would people think?"
+    c "No. The idea would have been unthinkable when I arrived here a week ago. But now, getting to know you... I don't know. But I'm just wondering, isn't that sort of thing frowned upon here? What would people think?"
     An "Humans have never been here before, so how could people have an opinion on something that's never happened before? A relationship between two different dragon species is unusual, but not unheard of. It's not illegal, if that's what you're thinking. But really, even if they did care, would you?"
     
     # A menu. Each option is indented, followed by a colon. Anything indented after the choice will be executed if the choice is picked. After all choice-specific instructions are ran, the game will skip down below the menu.
     menu:
         "I guess you're right.": 
             c "I guess you're right. It doesn't matter."
-            An "If anything, they'd be jealous. Remember, humans are worshipped in our society. A week ago, humans were mythical creatures, and now, a few doezen people have met you."
-            c "And now, one person gets to date you."
+            An "If anything, they'd be jealous. Remember, humans are worshipped in our society. A week ago, humans were mythical creatures, and now, a few dozen people have met you."
+            c "And now, one person even gets to date me."
             An smirk "And that person is very lucky, indeed."
         "But I represent humanity as a whole.":
             c "But I represent humanity as a whole. I have to put on a good impression for my side as well."  
@@ -84,26 +84,25 @@ label anna_post_true_entry:
         "But I'm a public figure here.":
             c "But I'm a public figure here. People might not care what a stranger does, but everyone here recognizes me. I have to hold a higher standard."
             An "So what, you're afraid of what other people think?"
-            c "That's not what I meant. I just have to guage public opinion on this, and I have to do it subtly."
+            c "That's not what I meant. I just have to gauge public opinion on this, and I have to do it subtly."
             An "I didn't know you cared so much about public opinion. I thought you were above that."
             c "It's not just my opinion. I'm serving as humanity's ambassador. I can't put my desires above the success of my mission."
             An disgust "And I thought you were different. I was wrong about you. You're just like Emera. Were you lying about curing cancer, too?"
             c "Of course not, Anna, I would never lie about something like that. I'm on an important mission, so I can't just do whatever I want, or be with the people I want."
     
     # The game skips to here after running all the choice-specific instructions. 
-    An face "I'm not a fan of poltics, if you haven't noticed. It's just a group of people trying to guess what everyone else wants, and at the same time, lying about what they themseves want. When you first came here I thought you'd be like one of {i}them{/i}. A selfish, corrupt beurocrat. But..."
+    An face "I'm not a fan of politics, if you haven't noticed. It's just a group of people trying to guess what everyone else wants, and at the same time, lying about what they themselves want. When you first came here I thought you'd be like one of {i}them{/i}. A selfish, corrupt bureaucrat. But..."
     An smirk "...you're different."
     m "She made a warm, honest smile that was infectious. It was an expression I had seen on her face all too rarely."
     c "I guess I was just able to see something that others didn't."
     An normal "Sorry. I know I'm not the easiest person to deal with sometimes. Nobody else has given me a chance, and you've given me plenty. I know I don't deserve it."
     c "You do. You just don't know it yet, and I want to show you."
-    m "The dragon smiled again."
     An smirk "You always know what to say."
     
     menu:
         "I guess that's why I was chosen to be humanity's ambassador.":
             An normal "How do you do it? How do you get along with people so well?"
-            c "I don't know. I think it's because I try to look a the good things in life and I'm just honest with people, and along the way, I just try to be nice. You'd be surprised how far that gets you."
+            c "I don't know. I think it's because I try to look at the good things in life and I'm just honest with people, and along the way, I just try to be nice. You'd be surprised how far that gets you."
             An "I guess I should try, now that I know I'm going to be sticking around for a bit longer. Before, I didn't really care how people saw me. I figured I'd either die or I'd invent a cure for cancer, then people would have to respect me, even if they didn't like me."
             
         "That's my job.":
@@ -133,7 +132,7 @@ label anna_post_true_entry:
             c "As the chief of police, he's in a position of authority. With him, I could get access to people and places I might not otherwise have, and it would be a political step up from a simple ambassador. I'd have authority of my own."
             
         "Lorem.":
-            c "I can only meet so many people myself. Everyone else's experince with humans would have been through media. Lorem was crafting a story based on humans, and I thought if I could work with him, I could influence dragonkind's perception of humans however I wanted."
+            c "I can only meet so many people myself. Everyone else's experience with humans would have been through media. Lorem was crafting a story based on humans, and I thought if I could work with him, I could influence dragonkind's perception of humans however I wanted."
             
     c "But in the end, it wasn't a political decision. It was an emotional one. I chose to be with you because I like you. I saw something in you, something that I don't think others do. Something that I don't think even you saw."
     An normal "What did you see?"
@@ -143,7 +142,7 @@ label anna_post_true_entry:
 
     scene np4 with dissolve
     $ renpy.pause(1.0)
-    m "Anna was quiet for a bit and the only sounds were our foorsteps. My shoes thunked against the path and her scaly claws clinked as they struck pebbles in the path."
+    m "Anna was quiet for a bit and the only sounds were our footsteps. My shoes thunked against the path and her scaly claws clinked as they struck pebbles in the path."
     show anna normal with dissolve
     An "I think we can be more."
     An "We'll see what we become."
@@ -160,7 +159,6 @@ label anna_post_true_entry:
         "They give you lots of drugs.":
             c "They give you a lot of drugs, and if they find tumours there's radiation and surgery involved. From what I've heard, the process is unpleasant, but it's better than dying. I don't know how easy it will be with your different biology, but you still have a chance."
             
-    m "Anna smiled."
     stop music fadeout 4.0
     play sound "fx/door/handle.wav"
     $ renpy.pause(1.0)
