@@ -91,7 +91,7 @@ label anna_post_true_entry:
             c "Of course not, Anna, I would never lie about something like that. I'm on an important mission, so I can't just do whatever I want, or be with the people I like."
     
     # The game skips to here after running all the choice-specific instructions. 
-    An face "If you haven't noticed, I'm not a fan of politics. It's just a group of people trying to guess what everyone else wants, and at the same time, lying about what they themselves want. When you first came here I thought you'd be like one of {i}them{/i}. A selfish, corrupt bureaucrat. But..."
+    An face "I'm not a fan of politics if you haven't noticed. It's just a group of people trying to guess what everyone else wants, and at the same time, lying about what they themselves want. When you first came here I thought you'd be like one of {i}them{/i}. A selfish, corrupt bureaucrat. But..."
     An smirk "...you're different."
     m "She made a warm, honest smile that was infectious. It was an expression I had seen on her face all too rarely."
     c "I guess I was just able to see something that others didn't."
