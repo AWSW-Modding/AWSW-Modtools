@@ -23,7 +23,7 @@ class AWSWMod(Mod):
         if NoFunAllowed:       
             tocompile = """
             screen dummy:
-                imagebutton auto "ui/dev_%s.png" action [Start('anna_post_true_bootstrap'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.88
+                imagebutton auto "ui/dev_%s.png" action [Show('post_true_sceneselect'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.88
             """ # This is ren'py code we want to compile. The parser can accomplish this for us. 
             rv = parser.parse("FNDummy", tocompile) # Assembles an AST for the above code. 
             targetDisp = None
