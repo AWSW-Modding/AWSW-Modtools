@@ -207,11 +207,11 @@ While in the root directory of the game, run the command for your appropriate op
 ```
 ### Linux x86 (32 bit)
 ```
-./lib/linux-i686/python.exe -EO "Angels with Scaly Wings.py"
+./lib/linux-i686/python -EO "Angels with Scaly Wings.py"
 ```
 ### Linux x86_64 (64 bit)
 ```
-./lib/linux-x86_64/python.exe -EO "Angels with Scaly Wings.py"
+./lib/linux-x86_64/python -EO "Angels with Scaly Wings.py"
 ```
 
 Should you print to the console in your code, you may run into an error such as ``` LookupError: unknown encoding: cp437```. This occurs because you're executing a local version of python, which only has utf-8 string encodings loaded in. You can fix this by using ```sprnt``` from ```modlib``` or encoding your string with ```myStr.encode('utf-8')``` before printing. 
