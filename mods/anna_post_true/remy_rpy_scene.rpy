@@ -15,6 +15,7 @@ label remy_post_true_entry:
     scene black with fade
     $ renpy.pause (1.0)
     scene np3 with fade
+    # TODO: Init music
     $ renpy.pause (1.0)
     
     m "The last few hours felt like a dream, or a memory of a dream I had many times before. Izumi was dead, Reza was captured, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Remy and I walked back to town from the portal, together."
@@ -27,7 +28,10 @@ label remy_post_true_entry:
     Ry "I don't know if it's just me, but it feels better somehow. It feels right."
     c "That's good. How are you and Amely doing?"
     Ry smile "She finally started talking. It took a few days but once she started she didn't stop. I think she had been silent for so long all her thoughts were bubbling up inside her and they finally burst out. It's funny, sometimes she narrates what I'm doing: \"Remy is opening the cupboard, he's looking inside, now he's getting plates out.\" In an odd way, her voice voice reminds me of..."
+    scene np4 with dissolve
+    $ renpy.pause(1.0)
     m "Remy trailed off and looked away. The only sound was our footsteps, the even and steady patter of his paws against the gravel. It sounded like someone tapping against a desk while they're waiting for something. When Remy looked back his voice was steady but eyes were bright and glassy."
+    show remy normal with dissolve
     Ry normal "When you go back in time, how far back can you go?"
     c "Only as far back as when the Portal was built. And I would need to know the spacetime coordinates of that location."
     Ry "What do you mean, coordinates? Does the Portal move?"
@@ -117,7 +121,7 @@ label remy_post_menu1:
             
         "That is the real reason." if joke_response:
             Ry "Well, I can't sing, and I've never learned an instrument."
-            c "You can't come then." # wtf
+            c "You can't come then."
             Ry "Be serious. This is important."
             c "I am serious."
             $ remy_post_mood -= 2
@@ -163,12 +167,18 @@ label remy_post_menu1:
             c "He's creating a story based on humans. I thought if we worked together, he could make it all the more accurate and interesting."
     
     c "But none of those people would be as good as you."
+    scene np5e with dissolve
+    $ renpy.pause(1.0)
     m "I hadn't realized it, but we had arrived at my doorstep. I wondered if I should invite him in. I wanted to, but so far he hadn't given me any indication he felt the same way. Luckily he broke the tension."
+    show remy normal with dissolve
+    Ry "Well, I guess I'll head home now."
     
     menu:
         "Okay, bye.":
             $ remy_post_mood -= 1
-            # TODO: easeout anim here
+            show remy normal flip
+            $ renpy.pause(0.2)
+            hide remy with easeoutright
             
         "Would you like to come inside?":
             Ry smile "Of course."
