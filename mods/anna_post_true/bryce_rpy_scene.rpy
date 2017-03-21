@@ -186,7 +186,7 @@ label bryce_post_true_entry:
     
     $ post_choice_dict = {}
     
-post_bryce_menu:
+label post_bryce_menu:
     menu:
         "Do you think Anna was justified in what she did?" if 0 not in post_choice_dict:
             Br "I'm not sure of the extent of what she did, so I can't make judgments."

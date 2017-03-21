@@ -106,7 +106,7 @@ label remy_post_true_entry:
     Ry "Why would you choose me?"
     $ joke_response = False
     
-remy_post_menu1:
+label remy_post_menu1:
     menu:
         "I want to start a band with you called Remy and me." if not joke_response:
             c "I'm a pretty good guitarist, how are you at singing?"

@@ -31,7 +31,7 @@ label anna_post_true_entry:
     $ renpy.pause (1.0)
     
     # 'm' is the narrator character. This makes a text box with no name appear on the screen. 
-    m "The last few hours felt like a dream or a memory of a dream I had many times before. Reza was dead, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Anna and I walked back to town from the portal, together. "
+    m "The last few hours felt like a dream or a memory of a dream I had many times before. Reza was dead, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Anna and I walked back to town from the portal, together."
     show anna normal with dissolve # The show instruction, well, shows a character. See images.rpy in the AWSW code for the whole list (you'll need these).
     $ renpy.pause(0.5)
     An "What are you going to do now?" # An is the identifier for anna's character object. Once again, defined in images.rpy. This is a Say instruction.
@@ -77,7 +77,7 @@ label anna_post_true_entry:
         "But I represent humanity as a whole.":
             c "But I represent humanity as a whole. I have to put on a good impression for my side as well."  
             An "What do you mean? Do humans not like us?"
-            c "It's not that they don't like you. On Earth, dragons are revered. It's just the thought of 	being romantically involved with one is just weird. Remember, where I come from, humans are 	the only sentient animals. Dating another species would be seen as disgusting."
+            c "It's not that they don't like you. On Earth, dragons are revered. It's just the thought of being romantically involved with one is just weird. Remember, where I come from, humans are the only sentient animals. Dating another species would be seen as disgusting."
             An disgust "And you don't want to be associated with a dumb animal. Right, I get it."
             m "She started to turn off to the side and leave. I held on to her hand, gently but firmly."
             c "But I don't agree with them. You may not be human, but you're still a person, just as much as I am."
