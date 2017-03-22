@@ -28,9 +28,10 @@ label remy_post_true_entry:
     Ry "I don't know if it's just me, but it feels better somehow. It feels right."
     c "That's good. How are you and Amely doing?"
     Ry smile "She finally started talking. It took a few days but once she started she didn't stop. I think she had been silent for so long all her thoughts were bubbling up inside her and they finally burst out. It's funny, sometimes she narrates what I'm doing: \"Remy is opening the cupboard, he's looking inside, now he's getting plates out.\" In an odd way, her voice voice reminds me of..."
+    m "Remy trailed off and looked away. The only sound was our footsteps, the even and steady patter of his paws against the gravel. It sounded like someone tapping against a desk while they're waiting for something. When Remy looked back his voice was steady but eyes were bright and glassy."
+    $ renpy.pause(1.0)
     scene np4 with dissolve
     $ renpy.pause(1.0)
-    m "Remy trailed off and looked away. The only sound was our footsteps, the even and steady patter of his paws against the gravel. It sounded like someone tapping against a desk while they're waiting for something. When Remy looked back his voice was steady but eyes were bright and glassy."
     show remy normal with dissolve
     Ry normal "When you go back in time, how far back can you go?"
     c "Only as far back as when the Portal was built. And I would need to know the spacetime coordinates of that location."
@@ -59,14 +60,18 @@ label remy_post_true_entry:
     c "When I did it, it's worth the risk."
     Ry "Worth the risk to who?"
     c "To humanity, and to dragonkind. Not just one person."
-    Ry "Do you know how many times I've thought about saving her? I dreamed about being able to go back. I dreamed about how I could have saved her had I just {i}been by her side{/i} instead of abandoning her when she needed me most. Do you have any idea how many sleepless nights I've spent looking at that picture of her, just weeping and wishing I could go into the picture? One time I broke the glass frame and cut myself because I was holding it so hard. Eventually I had enough. I thought if I couldn't be with her in this life, I could in another.  A week ago, I bought a rope. I tied it in a noose and hung it from my ceiling. I only stopped because-" with Shake((0, 0, 0, 0), 2, dist=10)
+    Ry "Do you know how many times I've thought about saving her? I dreamed about being able to go back. I dreamed about how I could have saved her had I just {i}been by her side{/i} instead of abandoning her when she needed me most." with Shake((0, 0, 0, 0), 2, dist=10)
+    Ry "Do you have any idea how many sleepless nights I've spent looking at that picture of her, just weeping and wishing I could go into the picture? One time I broke the glass frame and cut myself because I was holding it so hard."
+    Ry "Eventually I had enough. I thought if I couldn't be with her in this life, I could in another.  A week ago, I bought a rope. I tied it in a noose and hung it from my ceiling. I only stopped because-"
     c "Adine phoned you and asked if you wanted to adopt Vara."
     Ry sad "W-what? Did she tell you?"
-    c "No, I told her you were looking to adopt. I know she called you because in another timeline, I didn't tell you about Adine's work at the orphanage. In that timeline, you killed yourself. I was going to take a PDA to you at work. You weren't there, so I went to your house to drop it off and I saw you hanging from the ceiling. I must have remembered that timeline because in this one, there was a voice telling me to tell you about the adoption in the back of my mind. Now I know why."
+    c "No, I told her you were looking to adopt. I know she called you because in another timeline, I didn't tell you about Adine's work at the orphanage. In that timeline, you killed yourself."
+    c "I was going to take a PDA to you at work. You weren't there, so I went to your house to drop it off and I saw you hanging from the ceiling. I must have remembered that timeline because in this one, there was a voice telling me to tell you about the adoption in the back of my mind. Now I know why."
     Ry "..."
     c "You can't change the past, Remy. I wish I could help you bring her back, but you can't. If we went back that far, it would completely destabilize this timeline and all the work I've done here, all the hundreds of deaths I've died, would be for nothing. I'm sorry, but she's gone and you'll never get her back."
     Ry normal "I could at least try."
-    c "In one timeline, Vara died. She snuck out and followed us to the Portal and was shot by Reza. I don't even know what I did to prevent that this time. If we went back to save your fiancee, you might not have been there to greet me when I came out of the Portal. Then I'd never met you and I never would have had a reason to help you go back and save her. Major changes like that can cause paradoxes we don't even understand."
+    c "In one timeline, Vara died. She snuck out and followed us to the Portal and was shot by Reza. I don't even know what I did to prevent that this time. "
+    c "If we went back to save your fiancee, you might not have been there to greet me when I came out of the Portal. Then I'd never met you and I never would have had a reason to help you go back and save her. Major changes like that can cause paradoxes we don't even understand."
     Ry "I suppose you're right, of course."
     c "She must have really been something for you to care so much."
     Ry "She was. I can't describe her in words. Even trying would be an injustice to her. I could quote a song or recite a poem but it wouldn't describe what I felt when I saw her. But I don't want to bore you with that."
@@ -88,9 +93,12 @@ label remy_post_true_entry:
             $ remy_post_mood += 1
             
     
-    Ry sad "Ever since I lost her, I've always wanted to escape, to just stop being who I was. The only time I wasn't depressed was when I was asleep. When I went to bed, I looked forward to getting away from the world, even if it was just for eight hours at a time, and I dreaded waking up. Other times, I immersed myself in novels. Some of the best one are the ones I left in your apartment. Being able to lose myself in a book was the closest thing I had to being someone else. Then I found videogames. The one you played in my office, I liked it because I could lose myself in that world. Because there, I wasn't Remy the librarian. I was a hero. The characters liked me. But as soon as I turned it off I saw my own reflection looking back at me and I remembered it was nothing more than a fantasy."
+    Ry sad "Ever since I lost her, I've always wanted to escape, to just stop being who I was. The only time I wasn't depressed was when I was asleep. When I went to bed, I looked forward to getting away from the world, even if it was just for eight hours at a time, and I dreaded waking up."
+    Ry "Other times, I immersed myself in novels. Some of the best one are the ones I left in your apartment. Being able to lose myself in a book was the closest thing I had to being someone else. Then I found videogames. The one you played in my office, I liked it because I could lose myself in that world."
+    Ry "Because there, I wasn't Remy the librarian. I was a hero. The characters liked me. But as soon as I turned it off I saw my own reflection looking back at me and I remembered it was nothing more than a fantasy."
     c "I'm sorry. I didn't realize it was that important to you."
-    Ry normal "Don't be sorry, it shouldn't have been that important. It's just a stupid videogame. But when I played it, I could actually make accomplishments. Even if they were as insipid and useless as watching a number increase on a screen. It felt like I had achieved something, even if I knew it was insipid and artificial as the in-game sprites. And the harder it was, the more accomplished I felt. That's why I was so angry when you ruined my progress. I felt I had lost hundreds of hours of my life, and realizing that made me realize what a useless waste of time it was."
+    Ry normal "Don't be sorry, it shouldn't have been that important. It's just a stupid videogame. But when I played it, I could actually make accomplishments. Even if they were as insipid and useless as watching a number increase on a screen."
+    Ry "It felt like I had achieved something, even if I knew it was insipid and artificial as the in-game sprites. And the harder it was, the more accomplished I felt. That's why I was so angry when you ruined my progress. I felt I had lost hundreds of hours of my life, and realizing that made me realize what a useless waste of time it was."
     c "If it entertains you, it's not a waste of time."
     Ry "But it didn't even entertain me. It was just endless grinding, simple combos and memorizing where to click on a screen. I just played it to lose myself and to pretend I was accomplishing something even though I knew it was artificial. Even though I knew it was just a story."
     c "Sometimes stories can have truths in them, even if they're just a metaphor. They can be more true than the reality that we live in."
@@ -176,8 +184,9 @@ label remy_post_menu1:
     menu:
         "Okay, bye.":
             $ remy_post_mood -= 1
+            $ renpy.pause(0.5)
             show remy normal flip
-            $ renpy.pause(0.2)
+            $ renpy.pause(0.3)
             hide remy with easeoutright
             
         "Would you like to come inside?":
