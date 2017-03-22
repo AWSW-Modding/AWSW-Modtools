@@ -115,7 +115,7 @@ label remy_post_menu1:
         "I want to start a band with you called Remy and me." if not joke_response:
             c "I'm a pretty good guitarist, how are you at singing?"
             m "Remy looked at me as if he didn't know whether to laugh or not."
-            Ry "Okay. I appreciate you trying to lighten the tension, but what's the real reason?
+            Ry "Okay. I appreciate you trying to lighten the tension, but what's the real reason?"
             $ joke_response = True
             jump remy_post_menu1
             

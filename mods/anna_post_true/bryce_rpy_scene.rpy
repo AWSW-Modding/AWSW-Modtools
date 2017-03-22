@@ -148,7 +148,7 @@ label bryce_post_true_entry:
             c "I think he forfeited his diplomatic immunity when he shot Maverick and murdered three people."
             Br "Still, he's in our custody now."
             
-        "I think we should just leave him here to die."
+        "I think we should just leave him here to die.":
             Br stern "And he'd deserve it. But you never know what kind of mischief he'd get up to alone here. It's not worth it the risk."
             $ bryce_post_mood -= 1
             
@@ -171,11 +171,11 @@ label bryce_post_true_entry:
     
     menu:
         "Yes you can.":
-            Br normal "I managed to convince you.":
+            Br normal "I managed to convince you."
             c "The wine helped."
             $ bryce_post_mood += 1
        
-       "Are the two of you seeing each other?":
+        "Are the two of you seeing each other?":
             Br "Only at work. I didn't know if I should make a move in case, you know. There might be someone else I'm interested in."
             c "Do I know this person?"
             Br "Pretty well, I'd say."
