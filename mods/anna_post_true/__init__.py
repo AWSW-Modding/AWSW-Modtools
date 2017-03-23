@@ -19,7 +19,7 @@ class AWSWMod(Mod):
         golab = ml.findlabel("post_true_main") # Getting the label from our additive code. 
         posttruehook = ml.endingHooks.hookPostTrueEnding(golab) # If we wanted, we could have a scene play post true ending, after credits, but before the return to main_menu. 
 
-        NoFunAllowed = False # Set this to true if you don't feel like playing through the true ending to watch the scene.
+        NoFunAllowed = True # Set this to true if you don't feel like playing through the true ending to watch the scene.
         if NoFunAllowed:       
             tocompile = """
             screen dummy:

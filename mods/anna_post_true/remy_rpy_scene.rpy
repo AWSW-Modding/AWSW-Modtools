@@ -30,11 +30,11 @@ label remy_post_true_entry:
     $ renpy.pause(1.0)
     show remy normal with dissolve
     Ry normal "When you go back in time, how far back can you go?"
-    c "Only as far back as when the Portal was built. And I would need to know the spacetime coordinates of that location."
-    Ry "What do you mean, coordinates? Does the Portal move?"
+    c "Only as far back as when the portal was built. And I would need to know the spacetime coordinates of that location."
+    Ry "What do you mean, coordinates? Does the portal move?"
     c "Yes, in spacetime. The Earth itself is moving, so if you went back or forward in time to this location, you'd end up floating in space."
     Ry "I see. Is there anyway of finding out the coordinates of a given date?"
-    c "Probably, that's how they sent me back here in the first place. But I don't know how. The first time, the coordinates were loaded into the Portal's computer before I arrived, and every time after that, Izumi loaded it."
+    c "Probably, that's how they sent me back here in the first place. But I don't know how. The first time, the coordinates were loaded into the portal's computer before I arrived, and every time after that, Izumi loaded it."
     Ry "The dragon nodded. He looked like he was deep in thought. His front claw wandered to his tie and gently touched it."
     
     menu:
@@ -46,7 +46,7 @@ label remy_post_true_entry:
             
         "You'll just have to deal with the present now.":
             c "If you can go back as many times as you 	want, what's the value in the present moment? Why bother doing anything if you can just go 	back and redo it?"
-            Ry "I supposed that's true, in a way."
+            Ry "I suppose that's true, in a way."
             c "It's what I've learned. I don't know how many times I've met you for the first time. After a while the experience is diminished."
             
     c "I know what you're thinking but it's just not worth it."
@@ -66,8 +66,8 @@ label remy_post_true_entry:
     Ry "..."
     c "You can't change the past, Remy. I wish I could help you bring her back, but you can't. If we went back that far, it would completely destabilize this timeline and all the work I've done here, all the hundreds of deaths I've died, would be for nothing. I'm sorry, but she's gone and you'll never get her back."
     Ry normal "I could at least try."
-    c "In one timeline, Vara died. She snuck out and followed us to the Portal and was shot by Reza. I don't even know what I did to prevent that this time. "
-    c "If we went back to save your fiancee, you might not have been there to greet me when I came out of the Portal. Then I'd never met you and I never would have had a reason to help you go back and save her. Major changes like that can cause paradoxes we don't even understand."
+    c "In one timeline, Vara died. She snuck out and followed us to the portal and was shot by Reza. I don't even know what I did to prevent that this time. "
+    c "If we went back to save your fiancee, you might not have been there to greet me when I came out of the portal. Then I'd never met you and I never would have had a reason to help you go back and save her. Major changes like that can cause paradoxes we don't even understand."
     Ry "I suppose you're right, of course."
     c "She must have really been something for you to care so much."
     Ry "She was. I can't describe her in words. Even trying would be an injustice to her. I could quote a song or recite a poem but it wouldn't describe what I felt when I saw her. But I don't want to bore you with that."

@@ -176,3 +176,9 @@ label adine_post_true_entry:
             
     
     m "She stepped back and glanced down at the key in my hand, then at my front door."
+    
+    stop music fadeout 4.0
+    play sound "fx/door/handle.wav"
+    $ renpy.pause(1.0)
+    scene black with fade
+    $ renpy.pause(4.0)

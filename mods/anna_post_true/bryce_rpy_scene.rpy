@@ -45,7 +45,8 @@ label bryce_post_true_entry:
             c "I think we drank the last bottle the other night. "
             $ bryce_post_mood += 1
             
-    Br "Although, maybe not. Hell, I can go without drinking for one night. We both know I drink too much. I know you know too, even if you're too polite to say anything. You were right earlier, when you asked if people at my job noticed. Once you said that, I started paying attention. Whenever someone mentioned alcohol, they'd look in my direction. I just never paid attention before."
+    Br "Although, maybe not. Hell, I can go without drinking for one night. We both know I drink too much. I know you know too, even if you're too polite to say anything."
+    Br "You were right earlier, when you asked if people at my job noticed. Once you said that, I started paying attention. Whenever someone mentioned alcohol, they'd look in my direction. I just never paid attention before."
     c "I can't tell you what to do."
     m "The dragon looked at me and for a second it looked like he was going to ask me something but was too ashamed. So I asked him what I thought he was thinking."
     c "Are there any programs or groups that help people deal with this here?"
@@ -67,16 +68,19 @@ label bryce_post_true_entry:
             Br "Building that model ship helped. At first I found it frustrating that I couldn't keep my claws steady or see the tiny stupid parts. But if I was sober, I could just barely do it, so it's a good excuse not to drink."
     
     m "He was silent for a while and I could tell he was deep in thought. For the first time, I wondered how old he was. If he had hair it would surely be graying."
-    Br "But it's the only thing that helps. Sometimes it's the only way to keep the dreams away. You don't know what it's like, dealing with what I had to deal with every day. I deal with the worst that "
+    Br "But it's the only thing that helps. Sometimes it's the only way to keep the dreams away. You don't know what it's like, dealing with what I had to deal with every day."
+    Br "I deal with the worst that dragonkind has to offer. I see murderers, thieves and rapists. Drug overdoses and suicides. Nearly every day."
     
     menu:
         "You're right.":
             c "I've only been here a week and I've seen only a few crimes."
             
         "Actually, I do know what it's like.":
-            c "My world isn't like this. We don't have pretty little towns where everyone knows each other and gets along. We have one city and it's walled off, and if it wasn't, people would come in, steal everything we have, and kill everyone they met. I've seen people murdered in the streets for their shoes. I've seen families kill one of their children and eat it so the others could survive."
+            c "My world isn't like this. We don't have pretty little towns where everyone knows each other and gets along. We have one city and it's walled off, and if it wasn't, people would come in, steal everything we have, and kill everyone they met."
+            c "I've seen people murdered in the streets for their shoes. I've seen families kill one of their children and eat it so the others could survive."
             Br "Damn, [player_name], I'm sorry. I didn't know. I mean I knew it was bad, but not that bad."
-            c "Nobody does. If we really told everyone how bad it was, your people could take advantage of us. That's why we need those generators. Something as simple as electricity makes a world of difference in a world where we have useful, lifesaving technology lying around but nothing to power it with."
+            c "Nobody does. If we really told everyone how bad it was, your people could take advantage of us."
+            c "That's why we need those generators. Something as simple as electricity makes a world of difference in a world where we have useful, lifesaving technology lying around but nothing to power it with."
             
     Br "I guess your people really do need our help, then."
     c "We do. An experienced police chief would be an extremely valuable asset to us. Even without your experience, a dragon like yourself is strong enough to help with manual labour."
@@ -95,7 +99,9 @@ label bryce_post_true_entry:
         "Lorem.":
             c "I know Lorem was working on a story about humans, and he wanted my input. I thought I could use him to influence dragonkind's perception of humans however I wanted."
             
-        "Nobody but you."
+        "Nobody but you.":
+            pass
+            
         
     c "I'll make sure you'll be allowed through the portal. You're useful enough. The only limitation is mass, so you won't be able to bring much with you"
     Br flirty "Can I bring my Fun Basket?"
