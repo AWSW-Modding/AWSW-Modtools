@@ -121,8 +121,10 @@ label bryce_post_true_entry:
             
         "I'm sure it'll be there in the morning.":
             c "If it contains what I think it contains, nobody will touch it."
-    
+    scene np4 with dissolve
+    $ renpy.pause(1.0)
     m "We were both silent for a while and the only sound was our footsteps. Each of his footfalls was a dull thud like the beat of a drum. He stopped and looked up at the night sky."
+    show bryce normal with dissolve
     Br normal "So it's really going to hit, isn't it? And it's going to kill all of us?"
     
     menu:
@@ -233,7 +235,10 @@ label post_bryce_menu:
             if len(post_choice_dict) == 0:
                 Br "Uh, okay."
                 
+    scene np5e with dissolve
+    $ renpy.pause(1.0)
     m "I hadn't realized it, but we had arrived at my doorstep. I wondered if I should invite him in. I wanted to, but so far he hadn't given me any indication he felt the same way. Luckily he broke the tension."
+    show bryce normal with dissolve
     Br "Are you going to invite me in or what?"
     
     menu:

@@ -115,6 +115,9 @@ label adine_post_true_entry:
     m "When I looked at her we were close enough I could see the stars reflected in her eyes. Suddenly she pulled away."
     Ad normal "I guess we should get going."
     m "We got up and continued along our path."
+    scene np4 with dissolve
+    $ renpy.pause(1.0)
+    show adine normal with dissolve
     Ad "What else would I do in your world?"
     
     menu:
@@ -141,7 +144,10 @@ label adine_post_true_entry:
     c "They'll probably say, \"Oh! It's a dragon!\" every time, and you'll know what I felt when I first arrived here."
     Ad "Ha! I guess that would get annoying after a while."
     c "It wasn't when {i}you{/i} said it."
+    scene np5e with dissolve
+    $ renpy.pause(1.0)
     m "I hadn't realized it, but we had arrived at my doorstep. I wondered if I should invite her in. I wanted to, but so far she hadn't given me any indication she felt the same way. Luckily she broke the tension."
+    show adine normal with dissolve
     Ad "What are the beaches like in your home?"
     c "Not as nice as here, but it's basically the same deal. Why do you ask?"
     Ad "One of theses days you'll have to teach me how to build a sandcastle. And we can enter a competition together!"
