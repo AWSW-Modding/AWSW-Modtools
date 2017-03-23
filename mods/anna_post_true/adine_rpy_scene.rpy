@@ -20,7 +20,7 @@ label adine_post_true_entry:
     scene black with fade
     $ renpy.pause (1.0) 
     scene np3 with fade
-    play music "mx/adine4.ogg" fadein 1.0
+    play music "mx/adine3.ogg" fadein 1.0
     $ renpy.pause (1.0)
     
     m "The last few hours felt like a dream, or a memory of a dream I had many times before. Izumi was dead, Reza was captured, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Adine and I walked back to town from the portal, together. "
@@ -116,7 +116,7 @@ label adine_post_true_entry:
 
     Ad giggle "I bet you didn't expect that!"
     c "No, I didn't."
-    m "When I looked at her we were close enough I could see the stars reflected in her eyes. Suddenly she pulled away.)"
+    m "When I looked at her we were close enough I could see the stars reflected in her eyes. Suddenly she pulled away."
     Ad normal "I guess we should get going."
     m "We got up and continued along our path."
     Ad "What else would I do in your world?"
