@@ -1,13 +1,9 @@
 label bryce_post_true_bootstrap:
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
     $ player_name = persistent.player_name
-    $ brycescenesfinished = 4 # Set this to bypass the check for testing.
     jump bryce_post_true_entry
 
 label bryce_post_true_entry:
-    if brycescenesfinished != 4:
-        return
-    
     $ bryce_post_mood = 0
     call _mod_fixui
     stop music fadeout 1.0

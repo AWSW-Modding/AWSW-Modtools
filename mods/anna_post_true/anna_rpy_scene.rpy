@@ -8,16 +8,12 @@ label anna_post_true_bootstrap:
     # The one that matters most is setting up the MC's player object. We need to do that here. 
     # This wouldn't be required if you were jumping to the scene from somewhere after the game started.
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
-    $ annascenesfinished = 4 # Set this to bypass the check for testing.
     jump anna_post_true_entry
 
 # Our entry point from the patcher. In mod.py we tell ren'py to jump to this label after the true end.
 # We could have easily added this on to any point in the game: after a label, as a route, etc. 
 label anna_post_true_entry:                
     # Post true ending, the game locks all player interaction. We need to re-enable the UI controls to allow the play to play the scene.
-    
-    if annascenesfinished != 4:
-        return
     
     $ can_cont = True
     $ restore_ui()
