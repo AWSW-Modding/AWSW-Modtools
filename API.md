@@ -87,25 +87,19 @@ This function will return an instance of ```AWSWMenuHooks``` which will allow yo
 ## ```class ASTHook```
 The ASTHook class is returned by any of the hooking functions. Its purpose is to all you to modify execution of the game. There are several useful properties on the AST class. First, the ```.next``` member points to the next node that should be executed. This can be set by assigning a node to ```next``` or calling ```chain``` on the class. When the ASTHook node is executed, it checks for a member function called ```hook_func```. If it exists, ```hook_func``` will be executed with the ASTHook class as the first parameter. If ```hook_func``` returns True, the ASTHook will not set the next node. Instead, you must call ```renpy.ast.next_node(Node node)``` manually. This can be used to redirect execution based on circumstances beyond the capabilities of the node alone. 
 
-## How to compile like a pro. 
-Instead of manually creating AST Nodes to insert code into the game, or even clunkily creating entries in the rpy language and then jumping to the snippets with the patcher, you can assemble small(or big!) bits of code *in-line* by abusing the Ren'py AST Parser. This means you can get a list of objects and insert them wherever with very little effort. We use this method internally to create the mod information menu on the main screen. See the core mod or the dev_test mod for further details. 
+## Stubs
+This is code you'll probably need to jump to at some point in your additive game code. They are standard Ren'py labels, and can be accessed with ```call stub_label``` or ```jump stub_label```.
+#### ```_mod_fixjmp```
+Use ```jump _mod_fixjmp``` to access this stub. It will return to the proper chapter menu in the game when you jump to it. You don't need to use this is you're using ```return``` and ```AWSWHomeHook.addRoute```. ```addRoute``` pushes this stub to the callstack automatically. 
+#### ```_mod_incc```
+This will increment the character scene counter in the game for the appropriate chapter. This needs to be called at the start of every additional route. Use ```call _mod_incc``` to access this stub. 
 
-## Debugging
-There are several obstacles to developing mods for Ren'py. The first(and biggest) is the fact that the developer has no console to watch for output while running the game! We can fix that by starting AWSW via command line with some switches set. The commands are below.
+#### ```_mod_getchapter```
+This will get the current chapter as an integer. Access this stub with ```call _mod_getchapter``` and it will put the integer value of the current chapter in ```_return``` for you to check.
 
-While in the root directory of the game, run the command for your appropriate operating system:
-#### Windows:
-```
-"lib/windows-i686/python.exe" -EO "Angels with Scaly Wings.py"
-```
-### Linux x86 (32 bit)
-```
-./lib/linux-i686/python.exe -EO "Angels with Scaly Wings.py"
-```
-### Linux x86_64 (64 bit)
-```
-./lib/linux-x86_64/python.exe -EO "Angels with Scaly Wings.py"
-```
+#### ```_mod_fixui```
+This will need to be called if you're hooking after an ending. The game disables interaction with UI at that point, so as soon as your get control of execution, you must ```call _mod_fixui```. If this is called after a say instruction, or any instruction that waits for user input, the game *will hang*.
 
-Should you print to the console in your code, you may run into an error such as ``` LookupError: unknown encoding: cp437```. This occurs because you're executing a local version of python, which only has utf-8 string encodings loaded in. You can fix this by using ```sprnt``` from ```modlib``` or encoding your string with ```myStr.encode('utf-8')``` before printing. 
+## Magic
 
+Anywhere in Ren'py code, you can access the global variable ```mod_currentChapter``` to get an integer value of the current chapter. For example, during chapter one, ```mod_currentChapter``` will equal ```1```. During chapter two, it will be equal to ```2```, and so on. This variable is useful for rate limiting routes or events to one per chapter. If you want to access this variable in python, use ```modlib.base.getRGlobal('mod_currentChapter')```.
