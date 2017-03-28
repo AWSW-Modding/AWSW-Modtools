@@ -26,6 +26,7 @@ If you get an output that starts with `Python 2`, you have installed the correct
 After the command is executed, a whole plethora of files and folders are made in the new folder. For now, ignore all files with the .rpyc file extension.
 
 Some notable folders include:
+
 |     Location    |                             Purpose                             |
 | --------------- | --------------------------------------------------------------- |
 | achievements    | Contains all the achievement icons                              |
