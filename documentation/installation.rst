@@ -1,39 +1,31 @@
-# AWSW Mod Tools
-This project attempts to address issues regarding the extensibility of AWSW code. It allows prospective mod developers to to make dialogue tree changes, to add additional routes, and to modify game behaviour. 
-This project also functions as a *mod loader*, allowing mods to be easily created and distributed.
+Installation
+============
 
-## Installation
-Download the mod tools [here](https://github.com/AWSWCommunity/AWSW-Modtools/archive/develop.zip).
+Download the mod tools here_.
 Extract the zip and copy-paste bootstrap.rpy, mods, and modloader folders to the game directory in your AWSW installation.
 The DRM-free installation directory is wherever you extracted the game. The Steam installation directory can be found by right-clicking the entry in your Steam library, hitting 'Properties', clicking the 'Local Files' tab, and then clicking 'Browse Local Files'.
 
+.. _here: https://github.com/AWSWCommunity/AWSW-Modtools/archive/develop.zip
+
 The resulting directory structure should look like the following:
-```
-Installation Directory
-|-- game
-    |-- mods
+
+::
+
+    Installation Directory
+    |-- game
+        |-- mods
+            |-- ...
+        |-- modloader
+            |-- ...
+        |-- bootstrap.rpy
+        |-- archive.rpa
+    |-- lib
         |-- ...
-    |-- modloader
+    |-- renpy
         |-- ...
-    |-- bootstrap.rpy
-    |-- archive.rpa
-|-- lib
-    |-- ...
-|-- renpy
-    |-- ...
-|-- Angels with Scaly Wings.exe
-|-- Angels with Scaly Wings.py
-|-- Angels with Scaly Wings.sh
-```
-
-## Other documentation
-
-To decompile the game to obtain images and the source code of the game, see [the decompilation guide](decompiling.md).
-
-To make mods for the game, see [the mod documentation](writing_mods.md).
-
-For the API documentation, see [the api docs](API.md).
-
+    |-- Angels with Scaly Wings.exe
+    |-- Angels with Scaly Wings.py
+    |-- Angels with Scaly Wings.sh
 
 ## Contributing
 
