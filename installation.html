@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &#8212; AWSW-Modtools  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Decompiling the game" href="decompiling.html" />
+    <link rel="prev" title="AwSW Modding Tools" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>Download the mod tools <a class="reference external" href="https://github.com/AWSWCommunity/AWSW-Modtools/archive/develop.zip">here</a>.
+Extract the zip and copy-paste bootstrap.rpy, mods, and modloader folders to the game directory in your AWSW installation.
+The DRM-free installation directory is wherever you extracted the game. The Steam installation directory can be found by right-clicking the entry in your Steam library, hitting &#8216;Properties&#8217;, clicking the &#8216;Local Files&#8217; tab, and then clicking &#8216;Browse Local Files&#8217;.</p>
+<p>The resulting directory structure should look like the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Installation</span> <span class="n">Directory</span>
+<span class="o">|--</span> <span class="n">game</span>
+    <span class="o">|--</span> <span class="n">mods</span>
+        <span class="o">|--</span> <span class="o">...</span>
+    <span class="o">|--</span> <span class="n">modloader</span>
+        <span class="o">|--</span> <span class="o">...</span>
+    <span class="o">|--</span> <span class="n">bootstrap</span><span class="o">.</span><span class="n">rpy</span>
+    <span class="o">|--</span> <span class="n">archive</span><span class="o">.</span><span class="n">rpa</span>
+<span class="o">|--</span> <span class="n">lib</span>
+    <span class="o">|--</span> <span class="o">...</span>
+<span class="o">|--</span> <span class="n">renpy</span>
+    <span class="o">|--</span> <span class="o">...</span>
+<span class="o">|--</span> <span class="n">Angels</span> <span class="k">with</span> <span class="n">Scaly</span> <span class="n">Wings</span><span class="o">.</span><span class="n">exe</span>
+<span class="o">|--</span> <span class="n">Angels</span> <span class="k">with</span> <span class="n">Scaly</span> <span class="n">Wings</span><span class="o">.</span><span class="n">py</span>
+<span class="o">|--</span> <span class="n">Angels</span> <span class="k">with</span> <span class="n">Scaly</span> <span class="n">Wings</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>## Contributing</p>
+<p>You can contribute! Writers and drawers are needed to produce high-quality mods. Programmers are needed to ensure a stable and easy-to-use modding framework.</p>
+<p>If you need assistance, please make a Github account and [create an issue](<a class="reference external" href="https://help.github.com/articles/creating-an-issue/">https://help.github.com/articles/creating-an-issue/</a>).</p>
+<p>## Roadmap</p>
+<p>[*] Complete</p>
+<p>[!] Important!</p>
+<p>[.] In progress</p>
+<p>#### Level 1 (usability: barely*)
+<em>You are here. Good luck.</em></p>
+<p>[*] # Modify Renpy screens</p>
+<p>[*] # Hook interpretted opcodes</p>
+<p>[*] # Virtual file system for resources</p>
+<p>#### Level 2 (usability: better)
+[.] # Hook Menus</p>
+<p>[.] # Better menu finding algorithm</p>
+<p># Easy hooking for any instruction type</p>
+<p># Docs and easy hooking for screen lang objects
+#### Level 3 (usability: easy)</p>
+<p>[.] # Complete abstraction of apartment menu</p>
+<p>[!] # Debug overlay(menu option jump viewing, code peaking, on the fly decompilation)</p>
+<p>[*] # Post true ending hook</p>
+<p># Post chracter ending hooks</p>
+<p># Pre ending hooks</p>
+<p># Ending determination point hook</p>
+<p># Fine grain character patching</p>
+<p># Postponing chapters and key game events without manual label lookup</p>
+<p>* results may vary</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">AwSW Modding Tools</a></li>
+      <li>Next: <a href="decompiling.html" title="next chapter">Decompiling the game</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, AWSWCommunity.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
