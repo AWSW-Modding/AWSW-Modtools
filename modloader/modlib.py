@@ -1,12 +1,28 @@
 import renpy
 import renpy.ast as ast
-import renpy.sl2.slast as slast
 import renpy.python
 import os
 import string
 
-def sprnt(str):
-    print(str.encode('utf-8'))
+import modloader
+
+def imports():
+    # Unfortunately importing renpy.sl2.slast is impractical because
+    # it eventually tries to import a Cython-compiled file.
+    import renpy.sl2.slast as slast
+
+if not modloader.building_documentation:
+    imports()
+
+def sprnt(string):
+    """Print an encoded string to stdout
+
+    This function is not like your standard print function. Rather, it encodes the string in UTF-8 to avoid Unicode errors
+
+    Args:
+        string (str): The string to be printed
+    """
+    print(string.encode('utf-8'))
 
 rot13_dec = string.maketrans( 
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
@@ -424,4 +440,5 @@ class AWSWModBase:
             if isinstance(node, ast.Python) and node.code.source == code:
                 return node
 
-base = AWSWModBase()
+if not modloader.building_documentation:
+    base = AWSWModBase()
