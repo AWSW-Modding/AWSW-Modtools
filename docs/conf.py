@@ -23,12 +23,6 @@ sys.path.insert(0, os.path.abspath('..'))
 # Change this line to where ever your renpy folder is in the installation directory.
 sys.path.insert(0, os.path.abspath('../..'))
 
-#import modloader as doc
-#import renpy.text
-#import renpy.text.textsupport
-#import renpy.object
-#import renpy.exports
-#import renpy.config
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
