@@ -1,5 +1,5 @@
 modlib
 ------
 
-.. automodule:: modloader
+.. automodule:: modloader.modlib
     :members:

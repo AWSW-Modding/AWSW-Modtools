@@ -1,0 +1,806 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>modloader.modlib &#8212; AWSW-Modtools  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for modloader.modlib</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The modding library.</span>
+
+<span class="sd">This file contains all the functions needed to modify and extend AwSW.</span>
+
+<span class="sd">This file is free software under the GPLv3 license.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">renpy</span>
+<span class="kn">import</span> <span class="nn">renpy.ast</span> <span class="k">as</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">renpy.python</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">string</span>
+
+<span class="kn">import</span> <span class="nn">modloader</span>
+
+<span class="k">def</span> <span class="nf">imports</span><span class="p">():</span>
+    <span class="c1"># Unfortunately importing renpy.sl2.slast is impractical because</span>
+    <span class="c1"># it eventually tries to import a Cython-compiled file.</span>
+    <span class="kn">import</span> <span class="nn">renpy.sl2.slast</span> <span class="k">as</span> <span class="nn">slast</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">modloader</span><span class="o">.</span><span class="n">building_documentation</span><span class="p">:</span>
+    <span class="n">imports</span><span class="p">()</span>
+
+<div class="viewcode-block" id="sprnt"><a class="viewcode-back" href="../../API.html#modloader.modlib.sprnt">[docs]</a><span class="k">def</span> <span class="nf">sprnt</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Print an encoded string to stdout</span>
+
+<span class="sd">    This function is not like your standard print function. Rather, it encodes the string in UTF-8 to avoid Unicode errors</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        string (str): The string to be printed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span></div>
+
+<span class="n">rot13_dec</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span> 
+    <span class="s2">&quot;NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ASTHook"><a class="viewcode-back" href="../../API.html#modloader.modlib.ASTHook">[docs]</a><span class="k">class</span> <span class="nc">ASTHook</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span> <span class="c1"># Don&#39;t instantiate ASTHook directly. Ren&#39;py assigns a serial number to each node which is used internally for the call stack and other things. We emulate that functionality in the base class. </span>
+    <span class="sd">&quot;&quot;&quot;A custom :class:`renpy.ast.Node` that acts as a hook between other node objects.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Don&#39;t instantiate this class directly. Ren&#39;Py uses an internal serial for the call stack and other uses. This class emulates that at the base class.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        hook_func: A function that&#39;s called when the node is executed. If the function returns a non-None value, the next node will be skipped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ast</span><span class="o">.</span><span class="n">statement_name</span><span class="p">(</span><span class="s2">&quot;hook&quot;</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hook_func</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hook_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exec_continue</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">exec_continue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ast</span><span class="o">.</span><span class="n">next_node</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">next</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">unhook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fromOp</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__oldNext</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWEndingHooks">[docs]</a><span class="k">class</span> <span class="nc">AWSWEndingHooks</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The ending hooks for the game.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new ending hook class</span>
+
+<span class="sd">        This function is also responsible for finding the true-ending post-Izumi node</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base (AWSWModBase): An instance of the AWSWModBase class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
+        <span class="n">searchStr</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="s2">&quot;Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv&#39;f obql. Fur jnf qrnq.&quot;</span><span class="p">,</span> <span class="n">rot13_dec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TrueEndingPostIzumi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">findSay</span><span class="p">(</span><span class="n">searchStr</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWSWEndingHooks.getPostTrueEndingIzumiScene"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWEndingHooks.getPostTrueEndingIzumiScene">[docs]</a>    <span class="k">def</span> <span class="nf">getPostTrueEndingIzumiScene</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the post-true Izumi&#39;s tear scene</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Say` node object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">TrueEndingPostIzumi</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.hookPostTrueEnding"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWEndingHooks.hookPostTrueEnding">[docs]</a>    <span class="k">def</span> <span class="nf">hookPostTrueEnding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``node`` to the post-true ending node</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fincall</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getPostTrueEndingIzumiScene</span><span class="p">()</span><span class="o">.</span><span class="n">next</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">fincall</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.hookPostEvilEnding"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWEndingHooks.hookPostEvilEnding">[docs]</a>    <span class="k">def</span> <span class="nf">hookPostEvilEnding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``node`` to the post-evil ending node</span>
+
+<span class="sd">        Todo:</span>
+<span class="sd">            Program this.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">hookRouteEnding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">route</span><span class="p">):</span>
+        <span class="c1"># What is this function?</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="AWSWEndingHooks.getEndingPickerMenu"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWEndingHooks.getEndingPickerMenu">[docs]</a>    <span class="k">def</span> <span class="nf">getEndingPickerMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get Chapter 5&#39;s menu on who to go to the fireworks.</span>
+
+<span class="sd">        Get an instance of :class:`AWSWMenuHooks` for use of making new choices on who to go to the festival with.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An instance of :class:`AWSWMenuHooks`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ch5</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="s2">&quot;chapter5&quot;</span><span class="p">)</span>
+        <span class="n">menu_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">searchPostNode</span><span class="p">(</span><span class="n">ch5</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Menu</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+        <span class="n">menu_hooks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">getMenuHook</span><span class="p">(</span><span class="n">menu_node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">menu_hooks</span></div></div>
+
+
+<div class="viewcode-block" id="AWSWMenuHook"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWMenuHook">[docs]</a><span class="k">class</span> <span class="nc">AWSWMenuHook</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;A hook class for editing a specific menu</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">menu</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a hook class for the specific ``menu`` object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            menu (renpy.ast.Menu): The Menu node to be hooked</span>
+<span class="sd">            base (AWSWModBase): An instance of the mod base class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">menu</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Menu</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;MenuHook not instantiated with a Menu node!&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">menu</span> <span class="o">=</span> <span class="n">menu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oldItems</span> <span class="o">=</span> <span class="n">menu</span><span class="o">.</span><span class="n">items</span><span class="p">[:]</span>
+
+    <span class="k">def</span> <span class="nf">deleteItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="c1"># TODO: Describe what the hell is happening here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">()[:]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">lab</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">lab</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">())</span> <span class="k">if</span> <span class="n">lab</span> <span class="o">!=</span> <span class="n">item</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">getItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">item</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">getOptionCode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getItem</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">getItems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">items</span>
+
+    <span class="k">def</span> <span class="nf">setConditional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">newCond</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">lab</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">lab</span> <span class="o">==</span> <span class="n">item</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lab</span><span class="p">,</span> <span class="n">newCond</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">addItem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">hook</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="p">[</span><span class="n">hook</span><span class="p">]))</span> <span class="c1"># Adding a dialogue option.</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">ASTHook</span><span class="p">((</span><span class="s2">&quot;AWSWMod&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">fromOp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">hook</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;AWSWModOp_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">nameSerial</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">nameSerial</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">getItems</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="p">[</span><span class="n">node</span><span class="p">]))</span>
+            <span class="k">return</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="nf">addItemCall</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">usr_hook</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">):</span>
+        <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">call_func</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+            <span class="n">rv</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">usr_hook</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">return_site</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">menu</span><span class="o">.</span><span class="n">next</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">rv</span><span class="p">)</span>
+
+        <span class="n">hook</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">call_func</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook">[docs]</a><span class="k">class</span> <span class="nc">AWSWHomeHook</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Hook the menu found in the player&#39;s apartment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook the hooks in the appropriate places.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base (AWSWModBase): An instance of the mod base class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hooks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">altMenuLabs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chap2altmenua1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap2altmenub1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap3altmenua1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap3altmenub1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap4altmenua1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap4altmenub1&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">altMenus</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># I&#39;m not sure what I want to do about this yet.</span>
+        <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">altMenuLabs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">altMenus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">)</span>
+
+        <span class="n">chmenus</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">findMenu</span><span class="p">([</span><span class="s2">&quot;Meet with Bryce.&quot;</span><span class="p">])</span> <span class="c1"># Choice was 100% unbiased thanks</span>
+        <span class="n">chmenus</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">chmenus</span> <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">altMenus</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ChapterMenus</span> <span class="o">=</span> <span class="n">chmenus</span>
+
+
+
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Python</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;brycebar = False&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">CH1Hook</span> <span class="o">=</span> <span class="n">node</span>
+
+        <span class="n">answToHook</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chapter2chars&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter3chars&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter4chars&quot;</span><span class="p">]</span>
+        <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">nodeCB</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Python</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">closure_val</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">answToHook</span><span class="p">:</span>
+            <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;playmessage = False&quot;</span>
+            <span class="n">labNode</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+            <span class="n">hkPt</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">searchPostNodeCB</span><span class="p">(</span><span class="n">labNode</span><span class="p">,</span> <span class="n">nodeCB</span><span class="p">)</span>
+            <span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="s1">&#39;_mod_fixansw&#39;</span><span class="p">))</span> <span class="c1"># New mods will be inserted BEFORE this node, so we&#39;ll be alright. </span>
+            <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;remyavailable = True&quot;</span>
+            <span class="n">hkPt2</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">searchPostNodeCB</span><span class="p">(</span><span class="n">labNode</span><span class="p">,</span> <span class="n">nodeCB</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">))</span>
+
+<div class="viewcode-block" id="AWSWHomeHook.addAnswerMachineCheckHook"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook.addAnswerMachineCheckHook">[docs]</a>    <span class="k">def</span> <span class="nf">addAnswerMachineCheckHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Change the answering machine&#39;s output.</span>
+
+<span class="sd">        Return true if the dialog should pop up and return false if it shouldn&#39;t.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dest_node: Can be either a :class:`renpy.ast.Node` or a function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dest_node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+               <span class="k">def</span> <span class="nf">det_func</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">if</span> <span class="n">dest_node</span><span class="p">:</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="n">dest_node</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">setRGlobal</span><span class="p">(</span><span class="s1">&#39;playmessage&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+               <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook.addAnswerMachineScene"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook.addAnswerMachineScene">[docs]</a>    <span class="k">def</span> <span class="nf">addAnswerMachineScene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a hook before the answering machine plays</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dest_node: Can be either a :class:`renpy.ast.Node` or a function. Called after the machine check returns true</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dest_node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt2</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="n">hkPt2</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook.addRoute"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook.addRoute">[docs]</a>    <span class="k">def</span> <span class="nf">addRoute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">routeHook</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a route to the chapter menu</span>
+
+<span class="sd">        The route will only appear if the condition evaluate to true.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            title (str): The human-readable menu option</span>
+<span class="sd">            routeHook (Node): The :class:`renpy.ast.Node` object to change to</span>
+<span class="sd">            condition (str): The Python string to evaluate if the option should appear</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">menu</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ChapterMenus</span><span class="p">:</span>
+            <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">getMenuHook</span><span class="p">(</span><span class="n">menu</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hooks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
+            <span class="n">hook2</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">call_func</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+                <span class="n">rv</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">routeHook</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">return_site</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="s1">&#39;_mod_fixjmp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">rv</span><span class="p">)</span>
+            <span class="n">hook2</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">call_func</span></div>
+
+
+<div class="viewcode-block" id="AWSWHomeHook.hookChapterChange"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook.hookChapterChange">[docs]</a>    <span class="k">def</span> <span class="nf">hookChapterChange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook a change of the chapters</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hook: A :class:`renpy.ast.Node` object or function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">chapterLabs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chapter2&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter3&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter4&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">chapterLabs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">lab</span><span class="p">),</span> <span class="n">hook</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CH1Hook</span><span class="p">,</span> <span class="n">hook</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">chapterLabs</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">ch_id</span><span class="p">(</span><span class="n">hook2</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+                        <span class="n">hook</span><span class="p">(</span><span class="n">hook2</span><span class="p">,</span> <span class="n">lab</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">hooklabel</span><span class="p">(</span><span class="n">lab</span><span class="p">,</span> <span class="n">ch_id</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">ch_id</span><span class="p">(</span><span class="n">hook2</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+                    <span class="n">hook</span><span class="p">(</span><span class="n">hook2</span><span class="p">,</span> <span class="n">lab</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CH1Hook</span><span class="p">,</span> <span class="n">ch_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook.hookChapter1"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWHomeHook.hookChapter1">[docs]</a>    <span class="k">def</span> <span class="nf">hookChapter1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook a node to the start of Chapter 1</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hook (Node): The node to hook</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CH1Hook</span><span class="p">,</span> <span class="n">hook</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AWSWModBase"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase">[docs]</a><span class="k">class</span> <span class="nc">AWSWModBase</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;The modding framework base.</span>
+
+<span class="sd">    This class contains all the base functions needed to edit the AST, screens, and screen language.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        endingHooks (AWSWEndingHooks): An instance of the :class:`AWSWEndingHooks`.</span>
+<span class="sd">        homeHook (AWSWHomeHook): An instance of the :class:`AWSWHOmeHook`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">endingHooks</span> <span class="o">=</span> <span class="n">AWSWEndingHooks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nameSerial</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">homeHook</span> <span class="o">=</span> <span class="n">AWSWHomeHook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWSWModBase.getscreen"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.getscreen">[docs]</a>    <span class="k">def</span> <span class="nf">getscreen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a screen based off of its name</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scr (str): The screen&#39;s name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.display.screen.Screen` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">renpy</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">screen</span><span class="o">.</span><span class="n">get_screen_variant</span><span class="p">(</span><span class="n">scr</span><span class="p">)</span> <span class="c1"># Returns renpy.display.screen.Screen object</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.getsls"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.getsls">[docs]</a>    <span class="k">def</span> <span class="nf">getsls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the SLScreen based off of its name</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scr (str): The screen&#39;s name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.sl2.slast.SLScreen` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getscreen</span><span class="p">(</span><span class="n">scr</span><span class="p">)</span><span class="o">.</span><span class="n">ast</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.findlabel"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.findlabel">[docs]</a>    <span class="k">def</span> <span class="nf">findlabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lab</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find a label based off of its name</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lab (str): The label&#39;s name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Label` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.hook_opcode"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.hook_opcode">[docs]</a>    <span class="k">def</span> <span class="nf">hook_opcode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``func`` to ``node``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The node object for the function to hook</span>
+<span class="sd">            func (function): The function to be executed when the node is executed</span>
+
+<span class="sd">        Todo:</span>
+<span class="sd">            Check if a hook already exists and make the code more cohesive</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">next_statement</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span>
+
+        <span class="n">hook</span> <span class="o">=</span> <span class="n">ASTHook</span><span class="p">((</span><span class="s2">&quot;AWSWMod&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="c1"># hooking hooks breaks</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">fromOp</span> <span class="o">=</span> <span class="n">node</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">hook</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">next_statement</span><span class="p">)</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">__oldNext</span> <span class="o">=</span> <span class="n">next_statement</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;AWSWModOp_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nameSerial</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nameSerial</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">namemap</span><span class="p">[</span><span class="n">hook</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">hook</span>
+
+        <span class="k">return</span> <span class="n">hook</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.jump_ret"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.jump_ret">[docs]</a>    <span class="k">def</span> <span class="nf">jump_ret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">ret_node</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``func`` to ``node`` and once executed, redirect execution to</span>
+<span class="sd">            ``dest_node`` and allow ``ret_node`` to be executed after</span>
+<span class="sd">            ``dest_node`` returns.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The node to hook</span>
+<span class="sd">            dest_node (Node): The node to go after ``node`` is executed</span>
+<span class="sd">            ret_node (Node): The node that is executed after ``dest_node`` returns</span>
+<span class="sd">            func (function): The function hook</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+        <span class="n">hook</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">ret_node</span>
+        <span class="k">return</span> <span class="n">hook</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.call_hook"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.call_hook">[docs]</a>    <span class="k">def</span> <span class="nf">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``func`` to ``node`` and once executed, redirect execution to</span>
+<span class="sd">            ``dest_node``</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The node to hook</span>
+<span class="sd">            dest_node (Node): The node to go after ``node`` is executed</span>
+<span class="sd">            func (function): The function hook</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">call_func</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">func</span><span class="p">:</span>
+                <span class="n">func</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
+            <span class="n">rv</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">dest_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">return_site</span><span class="o">=</span><span class="n">hook</span><span class="o">.</span><span class="n">__oldNext</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">rv</span><span class="p">)</span>
+
+
+        <span class="n">hook</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">call_func</span>
+        <span class="k">return</span> <span class="n">hook</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.hooklabel"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.hooklabel">[docs]</a>    <span class="k">def</span> <span class="nf">hooklabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lab</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook a function to a label</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lab (renpy.ast.Label): The label</span>
+<span class="sd">            func (function): The function to be hooked</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ASTLabel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="n">ASTLabel</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.unhooklabel"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.unhooklabel">[docs]</a>    <span class="k">def</span> <span class="nf">unhooklabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lab</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Unhook hooks from a label</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            lab (str): The label&#39;s name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">found_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">found_node</span><span class="p">,</span> <span class="n">ASTHook</span><span class="p">):</span>
+            <span class="n">found_node</span><span class="o">.</span><span class="n">fromOp</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">found_node</span><span class="o">.</span><span class="n">next</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.searchPostNode"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.searchPostNode">[docs]</a>    <span class="k">def</span> <span class="nf">searchPostNode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">maxBeforeFailure</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search for a specific type of node.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The node to start the search</span>
+<span class="sd">            type (Node): The node *class*, not an instance of a class, to search for</span>
+<span class="sd">            maxBeforeFailure (int): The number of nodes to search before giving up</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">maxBeforeFailure</span><span class="p">):</span> <span class="c1"># Search 200 opcodes by default now. we don&#39;t want to exhaust resources by searching the entire tree.</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span>
+            <span class="k">if</span> <span class="n">node</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">node</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">searchPostNodeCB</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">maxBeforeFailure</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="c1"># TODO: What does CB stand for?</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">maxBeforeFailure</span><span class="p">):</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span>
+            <span class="k">if</span> <span class="n">node</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">node</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="AWSWModBase.DisableSCache"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.DisableSCache">[docs]</a>    <span class="k">def</span> <span class="nf">DisableSCache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Disable SLAst&#39;s load cache</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Rename function</span>
+        <span class="k">def</span> <span class="nf">remove_s_cache</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="n">renpy</span><span class="o">.</span><span class="n">sl2</span><span class="o">.</span><span class="n">slast</span><span class="o">.</span><span class="n">load_cache</span> <span class="o">=</span> <span class="n">remove_s_cache</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.DisableBCache"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.DisableBCache">[docs]</a>    <span class="k">def</span> <span class="nf">DisableBCache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Disable bytecode cache</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Rename function</span>
+        <span class="k">def</span> <span class="nf">remove_b_cache</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">init_bytecode</span> <span class="o">=</span> <span class="n">remove_b_cache</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.nullPyexpr"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.nullPyexpr">[docs]</a>    <span class="k">def</span> <span class="nf">nullPyexpr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scr</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove an if statement and its branches</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scr (Screen): The screen object to iterate over</span>
+<span class="sd">            comp (str): String comparison for</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">scr</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">slast</span><span class="o">.</span><span class="n">SLIf</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">cond</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">i</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">cond</span> <span class="o">==</span> <span class="n">comp</span><span class="p">:</span>
+                        <span class="n">block</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+    <span class="k">def</span> <span class="nf">hookScreen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scr</span><span class="p">):</span>
+        <span class="c1">#TODO: Determine usage</span>
+        <span class="n">scrObj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getscreen</span><span class="p">(</span><span class="n">scr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="AWSWModBase.findMenu"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.findMenu">[docs]</a>    <span class="k">def</span> <span class="nf">findMenu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">needle</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find a menu based off of a menu choice</span>
+
+<span class="sd">        This searches the entire AST tree to find the menu choice. If it still cannot find it, it returns None</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            needle (str): The menu choice to look for</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of menus.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+        <span class="n">multiSearch</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">needle</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">multiSearch</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">needle2</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">retlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Menu</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">multiSearch</span><span class="p">:</span>
+                    <span class="n">needle2</span> <span class="o">=</span> <span class="n">needle</span><span class="p">[:]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">items</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">multiSearch</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">stri</span> <span class="ow">in</span> <span class="n">needle2</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">stri</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
+                                <span class="n">needle2</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">stri</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">needle2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">retlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">label</span> <span class="o">==</span> <span class="n">needle</span><span class="p">:</span>
+                        <span class="n">retlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">retlist</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.findSay"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.findSay">[docs]</a>    <span class="k">def</span> <span class="nf">findSay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">needle</span><span class="p">):</span> <span class="c1"># Searches the entire AST for a say statement.</span>
+        <span class="sd">&quot;&quot;&quot;Find a :class:`renpy.ast.Say` node based on what is said</span>
+
+<span class="sd">        This searches the entire AST tree for the specified statement.</span>
+<span class="sd">        If none is found the function returns None.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            needle (str): The said statement</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Node` node.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Say</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">what</span> <span class="o">==</span> <span class="n">needle</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.addMenuOption"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.addMenuOption">[docs]</a>    <span class="k">def</span> <span class="nf">addMenuOption</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">menu</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a dialog option to a given menu</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            menu (Menu): A menu to append the option</span>
+<span class="sd">            option (str): The option name to add to the menu</span>
+<span class="sd">            node (Node): The node to execute after</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">menu</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">option</span><span class="p">,</span> <span class="s2">&quot;True&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">node</span><span class="p">]))</span> <span class="c1"># Adding a dialogue option.</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">getMenuHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">menu</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">AWSWMenuHook</span><span class="p">(</span><span class="n">menu</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">getHomeHook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">homeHook</span>
+
+<div class="viewcode-block" id="AWSWModBase.stepOp"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.stepOp">[docs]</a>    <span class="k">def</span> <span class="nf">stepOp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the ``num`` nodes after ``node``</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This skips :class:`ASTHook` nodes</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The node to start searching from</span>
+<span class="sd">            num (int): The number of nodes to skip</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Node` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span>
+            <span class="k">while</span><span class="p">(</span><span class="n">node</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ASTHook</span><span class="p">)):</span>
+                <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span>
+        <span class="k">return</span> <span class="n">node</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.setRGlobal"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.setRGlobal">[docs]</a>    <span class="k">def</span> <span class="nf">setRGlobal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set a Ren&#39;Py global</span>
+
+<span class="sd">        Ren&#39;Py globals can be used during execution of rpy.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): The dictionary key</span>
+<span class="sd">            val: The value of the dictionary object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Rename this function</span>
+        <span class="n">renpy</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">store_dicts</span><span class="p">[</span><span class="s2">&quot;store&quot;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.getRGlobal"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.getRGlobal">[docs]</a>    <span class="k">def</span> <span class="nf">getRGlobal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a Ren&#39;Py global</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): The dictionary key</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The value put into the key or None if it doesn&#39;t exist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Rename this function</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">store_dicts</span><span class="p">[</span><span class="s2">&quot;store&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">store</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">store</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.findByLineNumber"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.findByLineNumber">[docs]</a>    <span class="k">def</span> <span class="nf">findByLineNumber</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ln</span><span class="p">,</span> <span class="n">file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find a node by line number and file</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            Due to the fact that line numbers can change between versions, this only should be used as a last resort.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ln (int): The line number</span>
+<span class="sd">            file (str): The file name</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The node or None if it doesn&#39;t meet the criteria provided</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="n">base</span><span class="p">,</span> <span class="n">nfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+            <span class="n">nf</span> <span class="o">=</span> <span class="n">nfile</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">linenumber</span> <span class="o">==</span> <span class="n">ln</span> <span class="ow">and</span> <span class="n">nf</span> <span class="o">==</span> <span class="n">file</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">getEndingHooks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">endingHooks</span>
+
+<div class="viewcode-block" id="AWSWModBase.searchPeakIf"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.searchPeakIf">[docs]</a>    <span class="k">def</span> <span class="nf">searchPeakIf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">maxBeforeFailure</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search recursively for a node type.</span>
+
+<span class="sd">        This enters if statement blocks in order to find your specified node type</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The starting node</span>
+<span class="sd">            type (Node): A *subclass*, not an instance, of a :class:`renpy.ast.Node` object</span>
+<span class="sd">            maxBeforeFailure (int): How many nodes to iterate through before giving up</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Node` object or None if not found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">maxBeforeFailure</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">node</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">If</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">condition</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span> <span class="ow">and</span> <span class="n">skip</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">skip</span> <span class="o">-=</span> <span class="mi">1</span>
+                            <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">searchPeakIf</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">type</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">cand</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">cand</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">skip</span> <span class="o">-=</span> <span class="mi">1</span>
+
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">node</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.findPyStatement"><a class="viewcode-back" href="../../API.html#modloader.modlib.AWSWModBase.findPyStatement">[docs]</a>    <span class="k">def</span> <span class="nf">findPyStatement</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find a specific Python node in the entire AST</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            code (str): The Python code to search for</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The Python node</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Python</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">code</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span></div></div>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">modloader</span><span class="o">.</span><span class="n">building_documentation</span><span class="p">:</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">AWSWModBase</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../modloader.html">modloader</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, AWSWCommunity.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
