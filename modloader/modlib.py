@@ -15,6 +15,7 @@ import modloader
 def imports():
     # Unfortunately importing renpy.sl2.slast is impractical because
     # it eventually tries to import a Cython-compiled file.
+    global slast
     import renpy.sl2.slast as slast
 
 if not modloader.building_documentation:

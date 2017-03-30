@@ -7,7 +7,6 @@ import modinfo
 import modclass
 
 print('AWSW Mod Loader Init')
-print(__name__)
 
 def get_mod_path():
     """Get the mod path
