@@ -53,6 +53,7 @@ def main():
 
 try:
     renpy.config.gamedir
+    building_documentation = False
     main()
 except:
-    pass
+    building_documentation = True
