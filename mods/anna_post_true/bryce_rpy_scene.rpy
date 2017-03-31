@@ -154,7 +154,7 @@ label bryce_post_true_entry:
             Br "Still, he's in our custody now."
             
         "I think we should just leave him here to die.":
-            Br stern "And he'd deserve it. But you never know what kind of mischief he'd get up to alone here. It's not worth it the risk."
+            Br brow "And he'd deserve it. But you never know what kind of mischief he'd get up to alone here. It's not worth it the risk."
             $ bryce_post_mood -= 1
             
     c "What do you think will happen to Anna?"

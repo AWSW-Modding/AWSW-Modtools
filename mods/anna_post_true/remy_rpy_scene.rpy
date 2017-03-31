@@ -66,10 +66,10 @@ label remy_post_true_entry:
     c "I was going to take a PDA to you at work. You weren't there, so I went to your house to drop it off and I saw you hanging from the ceiling. I must have remembered that timeline because in this one, there was a voice telling me to tell you about the adoption in the back of my mind. Now I know why."
     Ry "..."
     c "You can't change the past, Remy. I wish I could help you bring her back, but you can't. If we went back that far, it would completely destabilize this timeline and all the work I've done here, all the hundreds of deaths I've died, would be for nothing. I'm sorry, but she's gone and you'll never get her back."
-    Ry normal "I could at least try."
+    Ry "I could at least try."
     c "In one timeline, Vara died. She snuck out and followed us to the portal and was shot by Reza. I don't even know what I did to prevent that this time. "
     c "If we went back to save your fiancee, you might not have been there to greet me when I came out of the portal. Then I'd never met you and I never would have had a reason to help you go back and save her. Major changes like that can cause paradoxes we don't even understand."
-    Ry "I suppose you're right, of course."
+    Ry normal "I suppose you're right, of course."
     c "She must have really been something for you to care so much."
     Ry "She was. I can't describe her in words. Even trying would be an injustice to her. I could quote a song or recite a poem but it wouldn't describe what I felt when I saw her. But I don't want to bore you with that."
     
