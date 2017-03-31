@@ -87,7 +87,7 @@ label adine_post_true_entry:
             c "You'd be doing me a favour just by working with me. I could use 	your help."
             Ad "I hope I can do a good job, then. "
         "I accept cash or credit.":
-            c "You're so silly, [player_name]!"
+            Ad "You're so silly, [player_name]!"
             $ adine_post_mood += 1
     
     Ad "But really, you don't know how much that means to me. I never really made anything of myself besides earning enough to survive. I always wanted to make a difference, but I never imagined I'd be doing something as important as this. You even talked me out of doing that flying competition. I could have seriously hurt myself."

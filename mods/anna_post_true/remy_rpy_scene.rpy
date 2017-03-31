@@ -11,7 +11,7 @@ label remy_post_true_entry:
     scene black with fade
     $ renpy.pause (1.0)
     scene np3 with fade
-    # TODO: Init music
+    #play music "mx/_.ogg" fadein 1.0
     $ renpy.pause (1.0)
     
     m "The last few hours felt like a dream, or a memory of a dream I had many times before. Izumi was dead, Reza was captured, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Remy and I walked back to town from the portal, together."
@@ -24,6 +24,7 @@ label remy_post_true_entry:
     Ry "I don't know if it's just me, but it feels better somehow. It feels right."
     c "That's good. How are you and Amely doing?"
     Ry smile "She finally started talking. It took a few days but once she started she didn't stop. I think she had been silent for so long all her thoughts were bubbling up inside her and they finally burst out. It's funny, sometimes she narrates what I'm doing: \"Remy is opening the cupboard, he's looking inside, now he's getting plates out.\" In an odd way, her voice voice reminds me of..."
+    show remy sad with dissolve
     m "Remy trailed off and looked away. The only sound was our footsteps, the even and steady patter of his paws against the gravel. It sounded like someone tapping against a desk while they're waiting for something. When Remy looked back his voice was steady but eyes were bright and glassy."
     $ renpy.pause(1.0)
     scene np4 with dissolve
@@ -52,9 +53,9 @@ label remy_post_true_entry:
     c "I know what you're thinking but it's just not worth it."
     Ry "You've never done anything you regret? Something you want to go back and try again?"
     c "Sure. But I don't want to risk it unless I have to."
-    Ry angry "You've gone back how many dozens or hundreds of times?"
+    Ry normal "You've gone back how many dozens or hundreds of times?"
     c "When I did it, it's worth the risk."
-    Ry "Worth the risk to who?"
+    Ry angry "Worth the risk to who?"
     c "To humanity, and to dragonkind. Not just one person."
     Ry "Do you know how many times I've thought about saving her? I dreamed about being able to go back. I dreamed about how I could have saved her had I just {i}been by her side{/i} instead of abandoning her when she needed me most." with Shake((0, 0, 0, 0), 2, dist=10)
     Ry "Do you have any idea how many sleepless nights I've spent looking at that picture of her, just weeping and wishing I could go into the picture? One time I broke the glass frame and cut myself because I was holding it so hard."
@@ -79,7 +80,7 @@ label remy_post_true_entry:
             
         "It's okay. I like listening to you.":
             Ry "Amelia was the one I could always talk to. She was the only constant in the constantly changing world. No matter how badly I was treated at work, I could always come home and see her, and instantly feel better. I think it's fair to say she was the only person in the world I liked."
-            Ry sad "When she died it was like I had been hollowed out and left to dry. I've never gotten over it and I don't think I ever will. I tried to forget her and I couldn't."
+            Ry sad "When she died it was like I had been hollowed out and left to dry. I've never got over it and I don't think I ever will. I tried to forget her and I couldn't."
             c "What did you do?"
             
         "It's good to get it off your chest.":
@@ -94,7 +95,7 @@ label remy_post_true_entry:
     Ry "Because there, I wasn't Remy the librarian. I was a hero. The characters liked me. But as soon as I turned it off I saw my own reflection looking back at me and I remembered it was nothing more than a fantasy."
     c "I'm sorry. I didn't realize it was that important to you."
     Ry normal "Don't be sorry, it shouldn't have been that important. It's just a stupid videogame. But when I played it, I could actually make accomplishments. Even if they were as insipid and useless as watching a number increase on a screen."
-    Ry "It felt like I had achieved something, even if I knew it was insipid and artificial as the in-game sprites. And the harder it was, the more accomplished I felt. That's why I was so angry when you ruined my progress. I felt I had lost hundreds of hours of my life, and realizing that made me realize what a useless waste of time it was."
+    Ry "It felt like I had achieved something, even if I knew it as artificial as the in-game sprites. And the harder it was, the more accomplished I felt. That's why I was so angry when you ruined my progress. I felt I had lost hundreds of hours of my life, and realizing that made me realize what a useless waste of time it was."
     c "If it entertains you, it's not a waste of time."
     Ry "But it didn't even entertain me. It was just endless grinding, simple combos and memorizing where to click on a screen. I just played it to lose myself and to pretend I was accomplishing something even though I knew it was artificial. Even though I knew it was just a story."
     c "Sometimes stories can have truths in them, even if they're just a metaphor. They can be more true than the reality that we live in."
@@ -107,9 +108,9 @@ label remy_post_true_entry:
     m "Remy stopped and looked up at the night sky. Somewhere among the thousands of bright points was the comet that would kill every dragon on Earth unless we did something to prevent it."
     Ry "It's really going to hit, isn't it?"
     c "Yes. And it will-"
-    Ry "No, don't tell me. I don't even want to know what's going to happen."
+    Ry sad "No, don't tell me. I don't even want to know what's going to happen."
     c "You'll get through the portal."
-    Ry "You say that as if you know if for sure."
+    Ry normal "You say that as if you know if for sure."
     c "I'm humanity's ambassador, I can bring whoever I want. I'll try to bring as many people through as I can, but I'll make sure you come with me first."
     Ry "Why would you choose me?"
     $ joke_response = False

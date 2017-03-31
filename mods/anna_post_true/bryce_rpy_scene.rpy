@@ -12,6 +12,7 @@ label bryce_post_true_entry:
     scene black with fade
     $ renpy.pause(1.0)
     scene np3 with fade
+    #play music "mx/_.ogg" fadein 1.0
     $ renpy.pause(1.0)
     
     m "The last few hours felt like a dream, or a memory of a dream I had many times before. Izumi was dead, Reza was captured, and both worlds were safe - for now. No doubt it would all make sense in the morning but now I just wanted to get home and get some rest. Bryce and I walked back to town from the portal, together."
@@ -157,7 +158,7 @@ label bryce_post_true_entry:
             $ bryce_post_mood -= 1
             
     c "What do you think will happen to Anna?"
-    Br "I'll keep my word. Tomorrow I'll write up an official pardon outlining the fact that she admitted to her transgression against the law, but due to her valued contribution to society, her crimes are forgiven."
+    Br normal "I'll keep my word. Tomorrow I'll write up an official pardon outlining the fact that she admitted to her transgression against the law, but due to her valued contribution to society, her crimes are forgiven."
     c "That sounded very official."
     Br "I'm only quoting the forms."
     c "Do you write a lot of pardons?"
@@ -180,7 +181,7 @@ label bryce_post_true_entry:
             $ bryce_post_mood += 1
        
         "Are the two of you seeing each other?":
-            Br "Only at work. I didn't know if I should make a move in case, you know. There might be someone else I'm interested in."
+            Br normal "Only at work. I didn't know if I should make a move in case, you know. There might be someone else I'm interested in."
             c "Do I know this person?"
             Br "Pretty well, I'd say."
             c "Well, whoever it is, I'm sure they'd be happy to be with you."
@@ -244,7 +245,7 @@ label post_bryce_menu:
     menu:
         "Of course.":
             c "You didn't think I'd make you walk home alone, did you?"
-            Br "Who needs a fun basket when you have your own fun package?"
+            Br flirty "Who needs a fun basket when you have your own fun package?"
             $ bryce_post_mood += 1
             
         "I don't think so.":
