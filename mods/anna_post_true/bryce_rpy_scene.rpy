@@ -74,7 +74,11 @@ label bryce_post_true_entry:
     
     menu:
         "You're right.":
-            c "I've only been here a week and I've seen only a few crimes."
+            c "I've only been here a week and from what I've heard, this much crime is unusual for your community. I wish I could say the same for my own."
+            Br "What do you mean?"
+            c "It's not exactly peaceful where I come from. The lack of resources has caused a lot of struggles for basic things people need."
+            
+            
             
         "Actually, I do know what it's like.":
             c "My world isn't like this. We don't have pretty little towns where everyone knows each other and gets along. We have one city and it's walled off, and if it wasn't, people would come in, steal everything we have, and kill everyone they met."
