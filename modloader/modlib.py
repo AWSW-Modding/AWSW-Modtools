@@ -88,7 +88,7 @@ class AWSWEndingHooks(object):
         This function is also responsible for finding the true-ending post-Izumi node
 
         Args:
-            base (AWSWModBase): An instance of the AWSWModBase class
+            base_ (AWSWModBase): An instance of the AWSWModBase class
         """
         self.base = base_
         # pylint: disable=line-too-long
@@ -135,7 +135,7 @@ class AWSWEndingHooks(object):
         Returns:
             An instance of :class:`AWSWMenuHooks`
         """
-        ch5 = base.findlabel("chapter5")
+        ch5 = self.base.findlabel("chapter5")
         menu_node = self.base.searchPostNode(ch5, ast.Menu, 500)
         menu_hooks = self.base.get_menu_hook(menu_node)
 
@@ -249,9 +249,9 @@ class AWSWHomeHook(object):
                            "chap3altmenub1", "chap4altmenua1", "chap4altmenub1"]
         self.alt_menus = [] # I'm not sure what I want to do about this yet.
         for lab in alt_menu_labels:
-            self.alt_menus.append(base.findlabel(lab).next)
+            self.alt_menus.append(self.base.findlabel(lab).next)
 
-        chapter_menus_ = base.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
+        chapter_menus_ = self.base.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
         chapter_menus_[:] = [node for node in chapter_menus_ if node not in self.alt_menus]
         self.chapter_menus = chapter_menus_
 
@@ -275,12 +275,12 @@ class AWSWHomeHook(object):
         self.InitAnswPoints = []
         for lab in answToHook:
             closure_val = "playmessage = False"
-            labNode = base.findlabel(lab)
-            hkPt = base.search_post_node_callback(labNode, nodeCB)
+            labNode = self.base.findlabel(lab)
+            hkPt = self.base.search_post_node_callback(labNode, nodeCB)
             # New mods will be inserted BEFORE this node, so we'll be alright.
-            base.call_hook(hkPt, base.findlabel('_mod_fixansw'))
+            self.base.call_hook(hkPt, self.base.findlabel('_mod_fixansw'))
             closure_val = "remyavailable = True"
-            hkPt2 = base.search_post_node_callback(labNode, nodeCB)
+            hkPt2 = self.base.search_post_node_callback(labNode, nodeCB)
 
             self.InitAnswPoints.append((hkPt, hkPt2))
 
@@ -362,7 +362,7 @@ class AWSWHomeHook(object):
 
         if isinstance(hook, ast.Node):
             for lab in chapter_labels:
-                self.base.call_hook(base.findlabel(lab), hook, None)
+                self.base.call_hook(self.base.findlabel(lab), hook, None)
 
             self.base.call_hook(self.chapter_1_hook, hook, None)
         else:
