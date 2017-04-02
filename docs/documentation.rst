@@ -6,10 +6,24 @@ Documenting the code, especially the API, is critical to ensure that the modding
 Style Guide
 -----------
 
-All the Python code must follow `PEP 8`_. The docstrings must follow `Google's style guide`_.
+All the Python code must follow `PEP 8`_. The docstrings must follow Napoleon, Google's docstring style. You can find more information in `Google's style guide`_ and `Sphinx documentation`_
+Before merging into any major branch, ensure that pylint returns no problems.
+
+To execute pylint under a Unix environment:
+
+* Install normally through Python 2's pip
+* Enter the game/ folder in the installation directory
+* Run ``PYTHONPATH=.. pylint modloader``
+
+The ``PYTHONPATH=..`` is necessary so renpy is imported.
+
+To run pylint for mods, run ``PYTHONPATH="..:." pylint mods/modname`` where modname is the mod's name.
+
+The ``PYTHONPATH="..:."`` is necessary so renpy and modloader is imported. The colon acts as a directory separator
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _Google's style guide: https://google.github.io/styleguide/pyguide.html#Comments
+.. _Sphinx documentation: http://www.sphinx-doc.org/en/stable/ext/napoleon.html
 
 Building Documentation
 ----------------------

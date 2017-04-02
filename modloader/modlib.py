@@ -4,48 +4,66 @@ This file contains all the functions needed to modify and extend AwSW.
 
 This file is free software under the GPLv3 license.
 """
-import renpy
-import renpy.ast as ast
-import renpy.python
 import os
 import string
 
+import renpy
+import renpy.ast as ast
+import renpy.python
+
 import modloader
 
-def imports():
+def _imports():
     # Unfortunately importing renpy.sl2.slast is impractical because
     # it eventually tries to import a Cython-compiled file.
+    # pylint: disable=invalid-name
     global slast
     import renpy.sl2.slast as slast
 
-if not modloader.building_documentation:
-    imports()
+if not modloader.BUILDING_DOCUMENTATION:
+    _imports()
 
-def sprnt(string):
+def sprnt(str_):
     """Print an encoded string to stdout
 
-    This function is not like your standard print function. Rather, it encodes the string in UTF-8 to avoid Unicode errors
+    Encode the string in UTF-8 before printing it out to stdout
+    This helps avoid Unicode errors
 
     Args:
         string (str): The string to be printed
     """
-    print(string.encode('utf-8'))
+    print str_.encode('utf-8')
 
-rot13_dec = string.maketrans( 
+ROT13 = string.maketrans(
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
     "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
 
-class ASTHook(ast.Node): # Don't instantiate ASTHook directly. Ren'py assigns a serial number to each node which is used internally for the call stack and other things. We emulate that functionality in the base class. 
-    """A custom :class:`renpy.ast.Node` that acts as a hook between other node objects.
+class ASTHook(ast.Node):
+    """A custom :class:`renpy.ast.Node` that acts as a hook between
+        other node objects.
 
     Note:
-        Don't instantiate this class directly. Ren'Py uses an internal serial for the call stack and other uses. This class emulates that at the base class.
+        Don't instantiate this class directly. Ren'Py uses an
+        internal serial for the call stack and other uses. This
+        class emulates that at the base class.
 
     Attributes:
-        hook_func: A function that's called when the node is executed. If the function returns a non-None value, the next node will be skipped.
+        hook_func: A function that's called when the node is executed.
+                If the function returns a non-None value, the next
+                node will be skipped.
+        fromOp: Unknown
+        __oldNext: The original next node before hooking was done
     """
+    def __init__(self, loc, hook_func=None, from_op=None):
+        #TODO: Understand fromOp and __oldNext
+        super(ASTHook, self).__init__(loc)
+
+        self.hook_func = hook_func
+        self.from_op = from_op
+        self.old_next = None
 
     def execute(self):
+        """Execute hook after node is called"""
         ast.statement_name("hook")
         ret = None
         if self.hook_func:
@@ -54,16 +72,17 @@ class ASTHook(ast.Node): # Don't instantiate ASTHook directly. Ren'py assigns a 
             self.exec_continue()
 
     def exec_continue(self):
+        """Continue"""
         ast.next_node(self.next)
 
     def unhook(self):
-        self.fromOp.next = self.__oldNext
+        """Remove the hook"""
+        self.from_op.next = self.old_next
 
-class AWSWEndingHooks():
-    """The ending hooks for the game.
-    """
+class AWSWEndingHooks(object):
+    """The ending hooks for the game"""
 
-    def __init__(self, base):
+    def __init__(self, base_):
         """Initialize a new ending hook class
 
         This function is also responsible for finding the true-ending post-Izumi node
@@ -71,111 +90,142 @@ class AWSWEndingHooks():
         Args:
             base (AWSWModBase): An instance of the AWSWModBase class
         """
-        self.base = base
-        searchStr = string.translate("Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv'f obql. Fur jnf qrnq.", rot13_dec)
-        self.TrueEndingPostIzumi = self.base.findSay(searchStr)
+        self.base = base_
+        # pylint: disable=line-too-long
+        search_str = string.translate("Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv'f obql. Fur jnf qrnq.", ROT13)
+        self.post_izumi_node = self.base.find_say(search_str)
 
-    def getPostTrueEndingIzumiScene(self):
+    def get_post_izumi_node(self):
         """Get the post-true Izumi's tear scene
 
         Returns:
             A :class:`renpy.ast.Say` node object.
         """
-        return self.TrueEndingPostIzumi
+        return self.post_izumi_node
 
-    def hookPostTrueEnding(self, node):
+    def hook_post_true_ending(self, node):
         """Hook ``node`` to the post-true ending node
 
         Returns:
             An :class:`ASTHook` instance
         """
-        fincall = self.getPostTrueEndingIzumiScene().next
+        fincall = self.get_post_izumi_node().next
         return self.base.call_hook(fincall, node)
 
-    def hookPostEvilEnding(self, node):
+    def hook_post_evil_ending(self, node):
         """Hook ``node`` to the post-evil ending node
 
         Todo:
             Program this.
         """
+        # pylint: disable=unused-argument, no-self-use
         return None
 
-    def hookRouteEnding(self, route):
+    def hook_route_ending(self, route):
         # What is this function?
+        # pylint: disable=missing-docstring, no-self-use, unused-argument
         return None
 
-    def getEndingPickerMenu(self):
+    def get_ending_picker_menu(self):
         """Get Chapter 5's menu on who to go to the fireworks.
 
-        Get an instance of :class:`AWSWMenuHooks` for use of making new choices on who to go to the festival with.
+        Get an instance of :class:`AWSWMenuHooks` for use of making
+        new choices on who to go to the festival with.
 
         Returns:
             An instance of :class:`AWSWMenuHooks`
         """
-        ch5 = ml.findlabel("chapter5")
+        ch5 = base.findlabel("chapter5")
         menu_node = self.base.searchPostNode(ch5, ast.Menu, 500)
-        menu_hooks = self.base.getMenuHook(menu_node)
+        menu_hooks = self.base.get_menu_hook(menu_node)
 
         return menu_hooks
 
 
-class AWSWMenuHook():
-    """A hook class for editing a specific menu
-    """
+class AWSWMenuHook(object):
+    """A hook class for editing a specific menu"""
 
-    def __init__(self, menu, base):
-        """Make a hook class for the specific ``menu`` object
+    def __init__(self, menu_, base_):
+        """Make a hook class for the specific ``menu_`` object
 
         Args:
-            menu (renpy.ast.Menu): The Menu node to be hooked
-            base (AWSWModBase): An instance of the mod base class
+            menu_ (renpy.ast.Menu): The Menu node to be hooked
+            base_ (AWSWModBase): An instance of the mod base class
         """
-        if not isinstance(menu, ast.Menu):
+        if not isinstance(menu_, ast.Menu):
             raise AssertionError("MenuHook not instantiated with a Menu node!")
 
-        self.menu = menu
-        self.base = base
-        self.oldItems = menu.items[:]
+        self.menu = menu_
+        self.base = base_
+        # Copy the menu.items list, not a reference to it
+        self.old_items = menu_.items[:]
 
-    def deleteItem(self, item):
+    def delete_item(self, item):
+        """Delete an item from the menu"""
         # TODO: Describe what the hell is happening here.
-        self.getItems()[:] = [(lab, cond, block) for i, (lab, cond, block) in enumerate(self.getItems()) if lab != item]
+        self.get_items()[:] = [(lab, cond, block) for _, (lab, cond, block)
+                               in enumerate(self.get_items()) if lab != item]
         return None
 
-    def getItem(self, item):
-        for obj in self.getItems():
+    def get_item(self, item):
+        """Get an item from the menu"""
+        for obj in self.get_items():
             if obj[0] == item:
                 return obj
 
-    def getOptionCode(self, item):
-        obj = self.getItem(item)
+    def get_option_code(self, item):
+        # pylint: disable=missing-docstring
+        obj = self.get_item(item)
         return obj[2]
 
-    def getItems(self):
+    def get_items(self):
+        """Get all the items in the menu"""
         return self.menu.items
 
-    def setConditional(self, item, newCond):
-        for i, (lab, cond, block) in enumerate(self.getItems()):
+    def set_conditional(self, item, new_cond):
+        """Change the conditional statement for ``item``
+
+        Returns:
+            True if successful and False if not
+        """
+        for i, (lab, _, block) in enumerate(self.get_items()):
             if lab == item:
-                self.menu.items[i] = (lab, newCond, block)
+                self.menu.items[i] = (lab, new_cond, block)
                 return True
         return False
 
-    def addItem(self, label, hook, condition="True"):
+    def add_item(self, label, hook, condition="True"):
+        """Add a new item to the menu
+
+        Args:
+            label (str): The option's label
+
+            hook: Either a :class:`renpy.ast.Node` or a function to be
+                    executed after the menu choice has been selected
+
+            condition (str): A Python string to evaluate to determine
+                    whether or not the choice should be shown
+
+        Returns:
+            None if ``hook`` is a :class:`renpy.ast.Node` or a
+            :class:`ASTHook` if ``hook`` is a function
+        """
         if isinstance(hook, ast.Node):
-            self.getItems().append((label, condition, [hook])) # Adding a dialogue option.
+            self.get_items().append((label, condition, [hook])) # Adding a dialogue option.
             return None
         else:
             node = ASTHook(("AWSWMod", 1))
-            node.fromOp = self.menu
+            node.from_op = self.menu
             node.hook_func = hook
-            node.name = "AWSWModOp_" + str(self.base.nameSerial)
-            self.base.nameSerial += 1
-            self.getItems().append((label, condition, [node]))
+            node.name = "AWSWModOp_" + str(self.base.name_serial)
+            self.base.name_serial += 1
+            self.get_items().append((label, condition, [node]))
             return node
 
-    def addItemCall(self, label, usr_hook, condition="True"):
-        hook = self.addItem(label, None, condition)
+    def add_item_call(self, label, usr_hook, condition="True"):
+        #TODO: Determine what this does
+        # pylint: disable=missing-docstring, invalid-name
+        hook = self.add_item(label, None, condition)
 
         def call_func(hook):
             rv = renpy.game.context().call(usr_hook.name, return_site=self.menu.next.name)
@@ -183,81 +233,94 @@ class AWSWMenuHook():
 
         hook.hook_func = call_func
 
-class AWSWHomeHook():
-    """Hook the menu found in the player's apartment.
-    """
+class AWSWHomeHook(object):
+    """Hook the menu found in the player's apartment."""
 
-    def __init__(self, base):
+    def __init__(self, base_):
         """Hook the hooks in the appropriate places.
 
         Args:
-            base (AWSWModBase): An instance of the mod base class
+            base_ (AWSWModBase): An instance of the mod base class
         """
-        self.base = base
+        self.base = base_
         self.hooks = []
 
-        altMenuLabs = ["chap2altmenua1", "chap2altmenub1", "chap3altmenua1", "chap3altmenub1", "chap4altmenua1", "chap4altmenub1"]
-        self.altMenus = [] # I'm not sure what I want to do about this yet.
-        for lab in altMenuLabs:
-            self.altMenus.append(base.findlabel(lab).next)
+        alt_menu_labels = ["chap2altmenua1", "chap2altmenub1", "chap3altmenua1",
+                           "chap3altmenub1", "chap4altmenua1", "chap4altmenub1"]
+        self.alt_menus = [] # I'm not sure what I want to do about this yet.
+        for lab in alt_menu_labels:
+            self.alt_menus.append(base.findlabel(lab).next)
 
-        chmenus = base.findMenu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
-        chmenus[:] = [node for node in chmenus if node not in self.altMenus]
-        self.ChapterMenus = chmenus
-
-
+        chapter_menus_ = base.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
+        chapter_menus_[:] = [node for node in chapter_menus_ if node not in self.alt_menus]
+        self.chapter_menus = chapter_menus_
 
         stmts = renpy.game.script.all_stmts
 
         for node in stmts:
             if isinstance(node, ast.Python) and node.code.source == "brycebar = False":
-                self.CH1Hook = node
+                self.chapter_1_hook = node
 
+        #TODO: Understand what this variable name is
+        # pylint: disable=invalid-name
         answToHook = ["chapter2chars", "chapter3chars", "chapter4chars"]
         closure_val = ""
+
+        # pylint: disable=missing-docstring
         def nodeCB(node):
             if isinstance(node, ast.Python) and node.code.source == closure_val:
                 return True
 
+        #TODO: Understand what this variable name is
         self.InitAnswPoints = []
         for lab in answToHook:
             closure_val = "playmessage = False"
             labNode = base.findlabel(lab)
-            hkPt = base.searchPostNodeCB(labNode, nodeCB)
-            base.call_hook(hkPt, base.findlabel('_mod_fixansw')) # New mods will be inserted BEFORE this node, so we'll be alright. 
+            hkPt = base.search_post_node_callback(labNode, nodeCB)
+            # New mods will be inserted BEFORE this node, so we'll be alright.
+            base.call_hook(hkPt, base.findlabel('_mod_fixansw'))
             closure_val = "remyavailable = True"
-            hkPt2 = base.searchPostNodeCB(labNode, nodeCB)
+            hkPt2 = base.search_post_node_callback(labNode, nodeCB)
 
             self.InitAnswPoints.append((hkPt, hkPt2))
 
     def addAnswerMachineCheckHook(self, dest_node):
-        """Change the answering machine's output.
+        """Check if the answering machine's output.
 
         Return true if the dialog should pop up and return false if it shouldn't.
 
         Args:
             dest_node: Can be either a :class:`renpy.ast.Node` or a function.
         """
+        #TODO: Figure out what the variable names mean
+        # pylint: disable=invalid-name
         if isinstance(dest_node, ast.Node):
-            for (hkPt, hkPt2) in self.InitAnswPoints:
+            for (hkPt, _) in self.InitAnswPoints:
                 self.base.call_hook(hkPt, dest_node)
-        else:
-            for (hkPt, hkPt2) in self.InitAnswPoints:
-               def det_func(hook):
-                    ret = False
-                    if dest_node:
-                        ret = dest_node(hook)
-                    if ret:
-                        self.base.setRGlobal('playmessage', True)
-
-               hook = self.hook_opcode(hkPt, dest_node)
+#        else:
+#            for (hkPt, hkPt2) in self.InitAnswPoints:
+#                #TODO: Figure out what this closure does
+#                # It's not called on anywhere
+#                # pylint: disable=missing-docstring, unused-variable
+#                def det_func(hook):
+#                    ret = False
+#                    if dest_node:
+#                        ret = dest_node(hook)
+#                    if ret:
+#                        self.base.setRGlobal('playmessage', True)
+#
+#                # Why is this even here? We don't use ``hook`` after this
+#                #hook = self.hook_opcode(hkPt, dest_node)
 
     def addAnswerMachineScene(self, dest_node):
         """Add a hook before the answering machine plays
 
         Args:
-            dest_node: Can be either a :class:`renpy.ast.Node` or a function. Called after the machine check returns true
+            dest_node: Can be either a :class:`renpy.ast.Node` or a
+                function. Called after the machine check returns true
         """
+        #TODO: Change the variable names
+        # pylint: disable=invalid-name
         if isinstance(dest_node, ast.Node):
             for (hkPt, hkPt2) in self.InitAnswPoints:
                 self.base.call_hook(hkPt2, dest_node)
@@ -265,76 +328,85 @@ class AWSWHomeHook():
             for (hkPt, hkPt2) in self.InitAnswPoints:
                 self.base.hook_opcode(hkPt2, dest_node)
 
-    def addRoute(self, title, routeHook, condition="True"):
+    def add_route(self, title, route_hook, condition="True"):
         """Add a route to the chapter menu
 
         The route will only appear if the condition evaluate to true.
 
         Args:
             title (str): The human-readable menu option
-            routeHook (Node): The :class:`renpy.ast.Node` object to change to
+            route_hook (Node): The :class:`renpy.ast.Node` object to change to
             condition (str): The Python string to evaluate if the option should appear
         """
-        for menu in self.ChapterMenus:
-            hook = self.base.getMenuHook(menu)
+        for menu in self.chapter_menus:
+            hook = self.base.get_menu_hook(menu)
             self.hooks.append(hook)
             hook2 = hook.addItem(title, None, condition)
 
             def call_func(hook):
-                rv = renpy.game.context().call(routeHook.name, return_site=self.base.findlabel('_mod_fixjmp').name)
+                #TODO: What does rv stand for?
+                # pylint: disable=invalid-name
+                rv = renpy.game.context().call(route_hook.name,
+                                               return_site=self.base.findlabel('_mod_fixjmp').name)
                 hook.chain(rv)
             hook2.hook_func = call_func
 
 
-    def hookChapterChange(self, hook):
+    def hook_chapter_change(self, hook):
         """Hook a change of the chapters
 
         Args:
             hook: A :class:`renpy.ast.Node` object or function
         """
-        chapterLabs = ["chapter2", "chapter3", "chapter4"]
+        chapter_labels = ["chapter2", "chapter3", "chapter4"]
 
         if isinstance(hook, ast.Node):
-            for lab in chapterLabs:
+            for lab in chapter_labels:
                 self.base.call_hook(base.findlabel(lab), hook, None)
 
-            self.base.call_hook(self.CH1Hook, hook, None)
+            self.base.call_hook(self.chapter_1_hook, hook, None)
         else:
-            for lab in chapterLabs:
+            #TODO: Determine which ch_id is actually being used
+            # pylint: disable=function-redefined
+            for lab in chapter_labels:
                 def ch_id(hook2):
                     if hook:
                         hook(hook2, lab)
                 self.base.hooklabel(lab, ch_id)
 
+            #TODO: What does lab mean here?
+            # pylint: disable=undefined-loop-variable, function-redefined
             def ch_id(hook2):
                 if hook:
                     hook(hook2, lab)
 
-            self.base.hook_opcode(self.CH1Hook, ch_id)
+            self.base.hook_opcode(self.chapter_1_hook, ch_id)
 
-    def hookChapter1(self, hook):
+    def hook_chapter_1(self, hook):
         """Hook a node to the start of Chapter 1
 
         Args:
             hook (Node): The node to hook
         """
-        self.base.call_hook(self.CH1Hook, hook)
+        self.base.call_hook(self.chapter_1_hook, hook)
 
 
-class AWSWModBase:
+#TODO: Reduce the amount of public methods
+# pylint: disable=too-many-public-methods
+class AWSWModBase(object):
     """The modding framework base.
 
     This class contains all the base functions needed to edit the AST, screens, and screen language.
 
     Attributes:
-        endingHooks (AWSWEndingHooks): An instance of the :class:`AWSWEndingHooks`.
-        homeHook (AWSWHomeHook): An instance of the :class:`AWSWHOmeHook`
+        ending_hooks (AWSWEndingHooks): An instance of the :class:`AWSWEndingHooks`.
+        home_hook (AWSWHomeHook): An instance of the :class:`AWSWHOmeHook`
     """
 
     def __init__(self):
-        self.endingHooks = AWSWEndingHooks(self)
-        self.nameSerial = 1
-        self.homeHook = AWSWHomeHook(self)
+        self.ending_hooks = AWSWEndingHooks(self)
+        self.name_serial = 1
+        self.home_hook = AWSWHomeHook(self)
 
     def getscreen(self, scr):
         """Get a screen based off of its name
@@ -345,7 +417,9 @@ class AWSWModBase:
         Returns:
             A :class:`renpy.display.screen.Screen` object
         """
-        return renpy.display.screen.get_screen_variant(scr) # Returns renpy.display.screen.Screen object
+        #TODO: Determine if this method can be a static function
+        # pylint: disable=no-self-use
+        return renpy.display.screen.get_screen_variant(scr)
 
     def getsls(self, scr):
         """Get the SLScreen based off of its name
@@ -356,6 +430,8 @@ class AWSWModBase:
         Returns:
             A :class:`renpy.sl2.slast.SLScreen` object
         """
+        #TODO: Determine if this method can be a static function
+        # pylint: disable=no-self-use
         return self.getscreen(scr).ast
 
     def findlabel(self, lab):
@@ -367,6 +443,8 @@ class AWSWModBase:
         Returns:
             A :class:`renpy.ast.Label` object
         """
+        #TODO: Determine if this method can be a static function
+        # pylint: disable=no-self-use
         return renpy.game.script.lookup(lab)
 
     def hook_opcode(self, node, func):
@@ -385,13 +463,13 @@ class AWSWModBase:
         next_statement = node.next
 
         hook = ASTHook(("AWSWMod", 1)) # hooking hooks breaks
-        hook.fromOp = node
+        hook.from_op = node
         node.next = hook
         hook.chain(next_statement)
-        hook.__oldNext = next_statement
+        hook.old_next = next_statement
         hook.hook_func = func
-        hook.name = "AWSWModOp_" + str(self.nameSerial)
-        self.nameSerial += 1
+        hook.name = "AWSWModOp_" + str(self.name_serial)
+        self.name_serial += 1
         renpy.game.script.namemap[hook.name] = hook
 
         return hook
@@ -427,60 +505,83 @@ class AWSWModBase:
             An :class:`ASTHook` object
         """
         hook = self.hook_opcode(node, None)
+        #TODO: Determine what this function does
+        # pylint: disable=missing-docstring
         def call_func(hook):
+            # pylint: disable=invalid-name
             if func:
                 func(hook)
-            rv = renpy.game.context().call(dest_node.name, return_site=hook.__oldNext.name)
+            rv = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
             hook.chain(rv)
 
 
         hook.hook_func = call_func
         return hook
 
-    def hooklabel(self, lab, func):
+    def hooklabel(self, label, func):
         """Hook a function to a label
 
         Args:
-            lab (renpy.ast.Label): The label
+            label (renpy.ast.Label): The label
             func (function): The function to be hooked
 
         Returns:
             An :class:`ASTHook` object
         """
-        ASTLabel = self.findlabel(lab)
-        return self.hook_opcode(ASTLabel, func)
+        node_label = self.findlabel(label)
+        return self.hook_opcode(node_label, func)
 
-    def unhooklabel(self, lab):
+    def unhooklabel(self, label):
         """Unhook hooks from a label
 
         Args:
-            lab (str): The label's name
+            label (str): The label's name
         """
-        found_node = self.findlabel(lab)
+        found_node = self.findlabel(label)
         if isinstance(found_node, ASTHook):
-            found_node.fromOp.next = found_node.next
+            found_node.from_op.next = found_node.next
 
-    def searchPostNode(self, node, type, maxBeforeFailure=200):
+    def search_post_node(self, node, type_, max_depth=200):
         """Search for a specific type of node.
 
         Args:
             node (Node): The node to start the search
-            type (Node): The node *class*, not an instance of a class, to search for
-            maxBeforeFailure (int): The number of nodes to search before giving up
+            type_ (Node): The node *class*, not an instance of a class, to search for
+            max_depth (int): The number of nodes to search before giving up.
+                Defaults to 200. The higher the number, the slower the process
         """
+        #TODO: Determine if this should be a method or a static function
+        # pylint: disable=no-self-use
 
-        for i in range(1,maxBeforeFailure): # Search 200 opcodes by default now. we don't want to exhaust resources by searching the entire tree.
+        for _ in range(1, max_depth):
             node = node.next
             if node:
-                if isinstance(node, type):
+                if isinstance(node, type_):
                     return node
 
             else:
                 return None
 
-    def searchPostNodeCB(self, node, func, maxBeforeFailure=200):
-        # TODO: What does CB stand for?
-        for i in range(1,maxBeforeFailure):
+    def search_post_node_callback(self, node, func, max_depth=200):
+        """Search for a node and check with ``func``
+
+        If ``func`` returns a truthy value, return the node. Else, skip it.
+
+        Args:
+            node (Node): Starting node
+
+            func (function): Function to check for node. Given one argument,
+                node, which is the node that is at the current depth
+
+            max_depth (int): The maximum number of nodes to go through before giving up
+
+        Returns:
+            A :class:`renpy.ast.Node` or None if no node is found
+        """
+        #TODO: Rename this function to something better
+        #TODO: Determine if this method should be a static function
+        # pylint: disable=no-self-use
+        for _ in range(1, max_depth):
             node = node.next
             if node:
                 ret = func(node)
@@ -489,29 +590,31 @@ class AWSWModBase:
             else:
                 return None
 
-    def DisableSCache(self):
-        """Disable SLAst's load cache
-        """
-        #TODO: Rename function
-        def remove_s_cache():
-            return
-        renpy.sl2.slast.load_cache = remove_s_cache
+    def disable_slast_cache(self):
+        """Disable SLAst's load cache"""
+        #TODO: Determine if method should be a static function
+        # pylint: disable=no-self-use
+        renpy.sl2.slast.load_cache = lambda *_: None
 
-    def DisableBCache(self):
-        """Disable bytecode cache
-        """
-        #TODO: Rename function
-        def remove_b_cache():
-            return
-        renpy.game.script.init_bytecode = remove_b_cache
+    def disable_bytecode_cache(self):
+        """Disable bytecode cache"""
+        #TODO: Determine if method should be a static function
+        # pylint: disable=no-self-use
+        renpy.game.script.init_bytecode = lambda *_: None
 
-    def nullPyexpr(self, scr, comp):
-        """Remove an if statement and its branches
+    def remove_slif(self, scr, comp):
+        """Remove an :class:`renpy.sl2.slast.SLIf` statement and its branches
 
         Args:
-            scr (Screen): The screen object to iterate over
+            scr (SLScreen): The screen object to iterate over
             comp (str): String comparison for
+
+        Returns:
+            True if removed, False if not
         """
+        # slast exists, but is not imported. See the top of the file for why
+        # TODO: Determine if method should be a static function
+        # pylint: disable=undefined-variable, no-self-use
         for i in scr.children:
             if isinstance(i, slast.SLIf):
                 for cond, block in i.entries:
@@ -520,15 +623,11 @@ class AWSWModBase:
                         return True
         return False
 
-    def hookScreen(self, scr):
-        #TODO: Determine usage
-        scrObj = self.getscreen(scr)
-        return None
-
-    def findMenu(self, needle):
+    def find_menu(self, needle):
         """Find a menu based off of a menu choice
 
-        This searches the entire AST tree to find the menu choice. If it still cannot find it, it returns None
+        This searches the entire AST tree to find the menu choice.
+        If it still cannot find it, it returns None
 
         Args:
             needle (str): The menu choice to look for
@@ -536,19 +635,25 @@ class AWSWModBase:
         Returns:
             A list of menus.
         """
+        #TODO: Determine if method should be static function
+        # pylint: disable=no-self-use
         stmts = renpy.game.script.all_stmts
-        multiSearch = False
+        #TODO: Figure out what multi_search does
+        multi_search = False
         if isinstance(needle, list):
-            multiSearch = True
+            multi_search = True
 
         needle2 = None
         retlist = []
+
+        #TODO: Attempt to simplify this pyramid
+        # pylint: disable=too-many-nested-blocks
         for node in stmts:
             if isinstance(node, ast.Menu):
-                if multiSearch:
+                if multi_search:
                     needle2 = needle[:]
-                for i, (label, condition, block) in enumerate(node.items):
-                    if multiSearch:
+                for _, (label, _, _) in enumerate(node.items):
+                    if multi_search:
                         for stri in needle2:
                             if stri == label:
                                 needle2.remove(stri)
@@ -558,7 +663,7 @@ class AWSWModBase:
                         retlist.append(node)
         return list(set(retlist))
 
-    def findSay(self, needle): # Searches the entire AST for a say statement.
+    def find_say(self, needle): # Searches the entire AST for a say statement.
         """Find a :class:`renpy.ast.Say` node based on what is said
 
         This searches the entire AST tree for the specified statement.
@@ -570,6 +675,8 @@ class AWSWModBase:
         Returns:
             A :class:`renpy.ast.Node` node.
         """
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
         stmts = renpy.game.script.all_stmts
 
         for node in stmts:
@@ -578,7 +685,7 @@ class AWSWModBase:
 
         return None
 
-    def addMenuOption(self, menu, option, node):
+    def add_menu_option(self, menu, option, node):
         """Add a dialog option to a given menu
 
         Args:
@@ -586,17 +693,30 @@ class AWSWModBase:
             option (str): The option name to add to the menu
             node (Node): The node to execute after
         """
-        menu.items.append((option, "True", [node])) # Adding a dialogue option.
-        return None
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
+        menu.items.append((option, "True", [node]))
 
-    def getMenuHook(self, menu):
+    def get_menu_hook(self, menu):
+        """Get the equivalent :class:`AWSWMenuHook` object
+
+        Returns:
+            The equivalent :class:`AWSWMenuHook` object
+        """
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
         return AWSWMenuHook(menu, base)
 
-    def getHomeHook(self):
-        return self.homeHook
+    def get_home_hook(self):
+        """Get the home hook class
 
-    def stepOp(self, node, num):
-        """Get the ``num`` nodes after ``node``
+        Returns:
+            The :class:`AWSWHomeHook` object
+        """
+        return self.home_hook
+
+    def step_op(self, node, num):
+        """Get the ``num``th node after ``node``
 
         Note:
             This skips :class:`ASTHook` nodes
@@ -608,13 +728,16 @@ class AWSWModBase:
         Returns:
             A :class:`renpy.ast.Node` object
         """
-        for i in range(0, num):
+        #TODO: Determine a better method name
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
+        for _ in range(0, num):
             node = node.next
-            while(node and isinstance(node, ASTHook)):
+            while node and isinstance(node, ASTHook):
                 node = node.next
         return node
 
-    def setRGlobal(self, key, val):
+    def set_renpy_global(self, key, val):
         """Set a Ren'Py global
 
         Ren'Py globals can be used during execution of rpy.
@@ -623,10 +746,11 @@ class AWSWModBase:
             key (str): The dictionary key
             val: The value of the dictionary object
         """
-        #TODO: Rename this function
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
         renpy.python.store_dicts["store"][key] = val
 
-    def getRGlobal(self, key):
+    def get_renpy_global(self, key):
         """Get a Ren'Py global
 
         Args:
@@ -635,56 +759,69 @@ class AWSWModBase:
         Returns:
             The value put into the key or None if it doesn't exist
         """
-        #TODO: Rename this function
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
         store = renpy.python.store_dicts["store"]
         if key in store:
             return store[key]
 
-    def findByLineNumber(self, ln, file):
+    def find_by_line_number(self, line_number, file_name):
         """Find a node by line number and file
 
         Note:
-            Due to the fact that line numbers can change between versions, this only should be used as a last resort.
+            Due to the fact that line numbers can change between versions,
+            this only should be used as a last resort.
 
         Args:
-            ln (int): The line number
-            file (str): The file name
+            line_number (int): The line number
+            file_name (str): The file name
 
         Returns:
             The node or None if it doesn't meet the criteria provided
         """
+        #TODO: What is nf?
+        # pylint: disable=invalid-name
+        #TODO: Determine whether method should be static function
+        # pylint: disable=no-self-use
         stmts = renpy.game.script.all_stmts
 
         for node in stmts:
-            base, nfile = os.path.split(node.filename)
-            nf = nfile or os.path.basename(base)
-            if node.linenumber == ln and nf == file:
+            base_file, nfile = os.path.split(node.filename)
+            nf = nfile or os.path.basename(base_file)
+            if node.linenumber == line_number and nf == file_name:
                 return node
         return None
 
-    def getEndingHooks(self):
-        return self.endingHooks
+    def get_ending_hooks(self):
+        """Get the ending hook class
 
-    def searchPeakIf(self, node, type, maxBeforeFailure=200, skip=0):
+        Returns:
+            An instance of :class:`AWSWEndingHooks`
+        """
+        return self.ending_hooks
+
+    def search_peak_if(self, node, type_, max_depth=200, skip=0):
         """Search recursively for a node type.
 
         This enters if statement blocks in order to find your specified node type
 
         Args:
             node (Node): The starting node
-            type (Node): A *subclass*, not an instance, of a :class:`renpy.ast.Node` object
+            type_ (Node): A *subclass*, not an instance, of a :class:`renpy.ast.Node` object
             maxBeforeFailure (int): How many nodes to iterate through before giving up
 
         Returns:
             A :class:`renpy.ast.Node` object or None if not found
         """
-        for i in range(1,maxBeforeFailure):
+        # Simplify this pyramid
+        # pylint: disable=too-many-nested-blocks
+        for _ in range(1, max_depth):
             if node:
                 if isinstance(node, ast.If):
-                    for condition, block in node.entries:
+                    for _, block in node.entries:
                         if block and skip <= 0:
                             skip -= 1
-                            cand = self.searchPeakIf(block[0], type, 20)
+                            cand = self.search_peak_if(block[0], type_, 20)
                             if cand:
                                 return cand
 
@@ -692,14 +829,14 @@ class AWSWModBase:
                             skip -= 1
 
 
-                elif isinstance(node, type):
+                elif isinstance(node, type_):
                     return node
 
             else:
                 return None
             node = node.next
 
-    def findPyStatement(self, code):
+    def find_python_statement(self, code):
         """Find a specific Python node in the entire AST
 
         Args:
@@ -708,11 +845,15 @@ class AWSWModBase:
         Returns:
             The Python node
         """
+        #TODO: Determine if method should be static function
+        # pylint: disable=no-self-use
         stmts = renpy.game.script.all_stmts
 
         for node in stmts:
             if isinstance(node, ast.Python) and node.code.source == code:
                 return node
 
-if not modloader.building_documentation:
+if not modloader.BUILDING_DOCUMENTATION:
+    # Determine if this should be a constant
+    # pylint: disable=invalid-name
     base = AWSWModBase()
