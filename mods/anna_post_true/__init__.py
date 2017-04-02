@@ -1,8 +1,10 @@
+"""This file is free software under the GPLv3 license"""
+import sys
+
 import renpy
 import renpy.sl2.slast as slast
 import renpy.parser as parser
 import renpy.ast as ast
-import sys
 
 from modloader import modinfo
 from modloader.modlib import sprnt
@@ -11,27 +13,43 @@ from modloader.modclass import Mod, loadable_mod
 
 @loadable_mod
 class AWSWMod(Mod):
+    """Anna's post-true scene
+
+    Adds a new scene with Anna after the true ending
+    """
     def mod_info(self):
         return ("anna_post_true", "v0.1", "")
-        
+
     def mod_load(self):
         renpy.config.developer = True
-        golab = ml.findlabel("anna_post_true_entry") # Getting the label from our additive code. 
-        posttruehook = ml.endingHooks.hookPostTrueEnding(golab) # If we wanted, we could have a scene play post true ending, after credits, but before the return to main_menu. 
 
-        NoFunAllowed = False # Set this to true if you don't feel like playing through the true ending to watch the scene.
-        if NoFunAllowed:       
+        # Get the label from the new code and hook it to the end
+        golab = ml.findlabel("anna_post_true_entry")
+        ml.ending_hooks.hook_post_true_ending(golab)
+
+        # This is a debug option. If no_fun_allowed is set to true, you don't
+        # have to play through the ending to see the scene
+        no_fun_allowed = False
+        if no_fun_allowed:
+            # Fortunately, we can compile renpy code on the fly using :meth:`renpy.parser.parse`
             tocompile = """
             screen dummy:
                 imagebutton auto "ui/dev_%s.png" action [Start('anna_post_true_bootstrap'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.88
-            """ # This is ren'py code we want to compile. The parser can accomplish this for us. 
-            rv = parser.parse("FNDummy", tocompile) # Assembles an AST for the above code. 
-            targetDisp = None
-            for e in rv:
-                if isinstance(e, ast.Init): # Find the init node. All screens are inserted into this node to be called on game initialization. 
-                    # Get the first object in the block member of the init node (This is an object of type Screen). The block member is a list of nodes to be executed. 
-                    # This will just contain the screen node, hence why we can use [0]. We know the screen will always occupy that slot. The screen contains a member called "screen" which is the actual code, the SLScreen. 
-                    # Access the SLScreen's children, which will just contain one SLDisplayable, our target.
-                    targetDisp = e.block[0].screen.children[0]
-                        
-            ml.getsls('main_menu').children.append(targetDisp) # Append our compiled SLDisplayable to the main_menu screen. This inserts the 'dev test' button you see. 
+            """
+            compiled_nodes = parser.parse("FNDummy", tocompile)
+            target_display = None
+            for node in compiled_nodes:
+                # Find the init node. This node has all screens to be called when the game starts
+                if isinstance(node, ast.Init):
+                    # Get the first object in the block member (a list of nodes to be executed)
+                    # of the init node. The first object is an object of :class:`renpy.ast.Screen`
+                    # We can get the first element because the block always has the Screen node
+                    # A Screen node contains a member called ``screen`` which has the actual code
+                    # (The actual code is of type :class:`renpy.sl2.slast.SLScreen`)
+                    # After getting the code, get the children, which will just contain one
+                    # :class:`renpy.sl2.slast.SLDisplayable`, which is what we want
+                    target_display = node.block[0].screen.children[0]
+
+            # After getting the SLDisplayable, append that to the main menu screen.
+            # That's how we put the button "DEV TEST" on the main menu screen
+            ml.getsls('main_menu').children.append(target_display)

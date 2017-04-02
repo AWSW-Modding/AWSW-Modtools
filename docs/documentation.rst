@@ -13,13 +13,9 @@ To execute pylint under a Unix environment:
 
 * Install normally through Python 2's pip
 * Enter the game/ folder in the installation directory
-* Run ``PYTHONPATH=.. pylint modloader``
+* Run ``pylint modloader``
 
-The ``PYTHONPATH=..`` is necessary so renpy is imported.
-
-To run pylint for mods, run ``PYTHONPATH="..:." pylint mods/modname`` where modname is the mod's name.
-
-The ``PYTHONPATH="..:."`` is necessary so renpy and modloader is imported. The colon acts as a directory separator
+To run pylint for mods, run ``pylint mods/modname`` where modname is the mod's name.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _Google's style guide: https://google.github.io/styleguide/pyguide.html#Comments
