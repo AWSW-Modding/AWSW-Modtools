@@ -16,14 +16,14 @@ class AWSWMod(Mod):
         
     def mod_load(self):
         renpy.config.developer = True
-        golab = ml.findlabel("anna_post_true_entry") # Getting the label from our additive code. 
+        golab = ml.findlabel("post_true_main") # Getting the label from our additive code. 
         posttruehook = ml.endingHooks.hookPostTrueEnding(golab) # If we wanted, we could have a scene play post true ending, after credits, but before the return to main_menu. 
 
-        NoFunAllowed = False # Set this to true if you don't feel like playing through the true ending to watch the scene.
+        NoFunAllowed = True # Set this to true if you don't feel like playing through the true ending to watch the scene.
         if NoFunAllowed:       
             tocompile = """
             screen dummy:
-                imagebutton auto "ui/dev_%s.png" action [Start('anna_post_true_bootstrap'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.88
+                imagebutton auto "ui/dev_%s.png" action [Show('post_true_sceneselect'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.88
             """ # This is ren'py code we want to compile. The parser can accomplish this for us. 
             rv = parser.parse("FNDummy", tocompile) # Assembles an AST for the above code. 
             targetDisp = None
