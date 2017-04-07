@@ -15,8 +15,7 @@ def get_mod_path():
     Returns:
         The full path to the mods folder
     """
-    # TODO: Use a path combining function
-    return renpy.config.gamedir + "/mods/"
+    return os.path.join(renpy.config.gamedir, "mods")
 
 
 def main():
