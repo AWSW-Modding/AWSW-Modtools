@@ -6,7 +6,16 @@ import os
 
 import renpy
 from renpy import ast
-from renpy.sl2 import slast
+
+import modloader
+
+def _imports():
+    # pylint: disable=invalid-name
+    global slast
+    from renpy.sl2 import slast
+
+if not modloader.BUILDING_DOCUMENTATION:
+    _imports()
 
 def get_screen(scr, nodes=None):
     """Get a screen based off of its name
