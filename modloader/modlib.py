@@ -4,14 +4,14 @@ This file contains all the functions needed to modify and extend AwSW.
 
 This file is free software under the GPLv3 license.
 """
-import os
 import string
 
 import renpy
-import renpy.ast as ast
 import renpy.python
+from renpy import ast
 
 import modloader
+from modloader import modast
 
 def _imports():
     # Unfortunately importing renpy.sl2.slast is impractical because
@@ -408,45 +408,6 @@ class AWSWModBase(object):
         self.name_serial = 1
         self.home_hook = AWSWHomeHook(self)
 
-    def getscreen(self, scr):
-        """Get a screen based off of its name
-
-        Args:
-            scr (str): The screen's name
-
-        Returns:
-            A :class:`renpy.display.screen.Screen` object
-        """
-        #TODO: Determine if this method can be a static function
-        # pylint: disable=no-self-use
-        return renpy.display.screen.get_screen_variant(scr)
-
-    def getsls(self, scr):
-        """Get the SLScreen based off of its name
-
-        Args:
-            scr (str): The screen's name
-
-        Returns:
-            A :class:`renpy.sl2.slast.SLScreen` object
-        """
-        #TODO: Determine if this method can be a static function
-        # pylint: disable=no-self-use
-        return self.getscreen(scr).ast
-
-    def findlabel(self, lab):
-        """Find a label based off of its name
-
-        Args:
-            lab (str): The label's name
-
-        Returns:
-            A :class:`renpy.ast.Label` object
-        """
-        #TODO: Determine if this method can be a static function
-        # pylint: disable=no-self-use
-        return renpy.game.script.lookup(lab)
-
     def hook_opcode(self, node, func):
         """Hook ``func`` to ``node``
 
@@ -528,7 +489,7 @@ class AWSWModBase(object):
         Returns:
             An :class:`ASTHook` object
         """
-        node_label = self.findlabel(label)
+        node_label = modast.find_label(label)
         return self.hook_opcode(node_label, func)
 
     def unhooklabel(self, label):
@@ -537,58 +498,11 @@ class AWSWModBase(object):
         Args:
             label (str): The label's name
         """
-        found_node = self.findlabel(label)
+        #TODO: Determine if method should be a static function
+        # pylint: disable=no-self-use
+        found_node = modast.find_label(label)
         if isinstance(found_node, ASTHook):
             found_node.from_op.next = found_node.next
-
-    def search_post_node(self, node, type_, max_depth=200):
-        """Search for a specific type of node.
-
-        Args:
-            node (Node): The node to start the search
-            type_ (Node): The node *class*, not an instance of a class, to search for
-            max_depth (int): The number of nodes to search before giving up.
-                Defaults to 200. The higher the number, the slower the process
-        """
-        #TODO: Determine if this should be a method or a static function
-        # pylint: disable=no-self-use
-
-        for _ in range(1, max_depth):
-            node = node.next
-            if node:
-                if isinstance(node, type_):
-                    return node
-
-            else:
-                return None
-
-    def search_post_node_callback(self, node, func, max_depth=200):
-        """Search for a node and check with ``func``
-
-        If ``func`` returns a truthy value, return the node. Else, skip it.
-
-        Args:
-            node (Node): Starting node
-
-            func (function): Function to check for node. Given one argument,
-                node, which is the node that is at the current depth
-
-            max_depth (int): The maximum number of nodes to go through before giving up
-
-        Returns:
-            A :class:`renpy.ast.Node` or None if no node is found
-        """
-        #TODO: Rename this function to something better
-        #TODO: Determine if this method should be a static function
-        # pylint: disable=no-self-use
-        for _ in range(1, max_depth):
-            node = node.next
-            if node:
-                ret = func(node)
-                if ret:
-                    return node
-            else:
-                return None
 
     def disable_slast_cache(self):
         """Disable SLAst's load cache"""
@@ -601,101 +515,6 @@ class AWSWModBase(object):
         #TODO: Determine if method should be a static function
         # pylint: disable=no-self-use
         renpy.game.script.init_bytecode = lambda *_: None
-
-    def remove_slif(self, scr, comp):
-        """Remove an :class:`renpy.sl2.slast.SLIf` statement and its branches
-
-        Args:
-            scr (SLScreen): The screen object to iterate over
-            comp (str): String comparison for
-
-        Returns:
-            True if removed, False if not
-        """
-        # slast exists, but is not imported. See the top of the file for why
-        # TODO: Determine if method should be a static function
-        # pylint: disable=undefined-variable, no-self-use
-        for i in scr.children:
-            if isinstance(i, slast.SLIf):
-                for cond, block in i.entries:
-                    if cond == comp:
-                        block.children = []
-                        return True
-        return False
-
-    def find_menu(self, needle):
-        """Find a menu based off of a menu choice
-
-        This searches the entire AST tree to find the menu choice.
-        If it still cannot find it, it returns None
-
-        Args:
-            needle (str): The menu choice to look for
-
-        Returns:
-            A list of menus.
-        """
-        #TODO: Determine if method should be static function
-        # pylint: disable=no-self-use
-        stmts = renpy.game.script.all_stmts
-        #TODO: Figure out what multi_search does
-        multi_search = False
-        if isinstance(needle, list):
-            multi_search = True
-
-        needle2 = None
-        retlist = []
-
-        #TODO: Attempt to simplify this pyramid
-        # pylint: disable=too-many-nested-blocks
-        for node in stmts:
-            if isinstance(node, ast.Menu):
-                if multi_search:
-                    needle2 = needle[:]
-                for _, (label, _, _) in enumerate(node.items):
-                    if multi_search:
-                        for stri in needle2:
-                            if stri == label:
-                                needle2.remove(stri)
-                        if len(needle2) == 0:
-                            retlist.append(node)
-                    elif label == needle:
-                        retlist.append(node)
-        return list(set(retlist))
-
-    def find_say(self, needle): # Searches the entire AST for a say statement.
-        """Find a :class:`renpy.ast.Say` node based on what is said
-
-        This searches the entire AST tree for the specified statement.
-        If none is found the function returns None.
-
-        Args:
-            needle (str): The said statement
-
-        Returns:
-            A :class:`renpy.ast.Node` node.
-        """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        stmts = renpy.game.script.all_stmts
-
-        for node in stmts:
-            if isinstance(node, ast.Say) and node.what == needle:
-                return node
-
-        return None
-
-    def add_menu_option(self, menu, option, node):
-        """Add a dialog option to a given menu
-
-        Args:
-            menu (Menu): A menu to append the option
-            option (str): The option name to add to the menu
-            node (Node): The node to execute after
-        """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        menu.items.append((option, "True", [node]))
 
     def get_menu_hook(self, menu):
         """Get the equivalent :class:`AWSWMenuHook` object
@@ -715,24 +534,25 @@ class AWSWModBase(object):
         """
         return self.home_hook
 
-    def step_op(self, node, num):
-        """Get the ``num``th node after ``node``
+    def get_node_from_location(self, node, location):
+        """Get the ``location``th node after ``node``
 
         Note:
             This skips :class:`ASTHook` nodes
 
         Args:
-            node (Node): The node to start searching from
-            num (int): The number of nodes to skip
+            node (Node): The starting search node
+            location (int): The number of nodes to skip
 
         Returns:
             A :class:`renpy.ast.Node` object
         """
-        #TODO: Determine a better method name
         #TODO: Determine whether method should be static function
         # pylint: disable=no-self-use
-        for _ in range(0, num):
+        for _ in range(0, location):
             node = node.next
+
+            # Effectively skip the ASTHook nodes by continuing on
             while node and isinstance(node, ASTHook):
                 node = node.next
         return node
@@ -764,33 +584,6 @@ class AWSWModBase(object):
         store = renpy.python.store_dicts["store"]
         if key in store:
             return store[key]
-
-    def find_by_line_number(self, line_number, file_name):
-        """Find a node by line number and file
-
-        Note:
-            Due to the fact that line numbers can change between versions,
-            this only should be used as a last resort.
-
-        Args:
-            line_number (int): The line number
-            file_name (str): The file name
-
-        Returns:
-            The node or None if it doesn't meet the criteria provided
-        """
-        #TODO: What is nf?
-        # pylint: disable=invalid-name
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        stmts = renpy.game.script.all_stmts
-
-        for node in stmts:
-            base_file, nfile = os.path.split(node.filename)
-            nf = nfile or os.path.basename(base_file)
-            if node.linenumber == line_number and nf == file_name:
-                return node
-        return None
 
     def get_ending_hooks(self):
         """Get the ending hook class
@@ -836,22 +629,6 @@ class AWSWModBase(object):
                 return None
             node = node.next
 
-    def find_python_statement(self, code):
-        """Find a specific Python node in the entire AST
-
-        Args:
-            code (str): The Python code to search for
-
-        Returns:
-            The Python node
-        """
-        #TODO: Determine if method should be static function
-        # pylint: disable=no-self-use
-        stmts = renpy.game.script.all_stmts
-
-        for node in stmts:
-            if isinstance(node, ast.Python) and node.code.source == code:
-                return node
 
 if not modloader.BUILDING_DOCUMENTATION:
     # Determine if this should be a constant

@@ -3,7 +3,7 @@ import renpy
 import renpy.parser as parser
 import renpy.ast as ast
 
-from modloader import modinfo
+from modloader import modinfo, modast
 from modloader.modlib import sprnt
 from modloader.modlib import base as ml
 from modloader.modclass import Mod, loadable_mod
@@ -25,14 +25,14 @@ class AWSWMod(Mod):
         # Hook every point where the chapter is changed and set mod_currentChapter to the
         # integer value of the current chapter. This will allow route mods to make comparisons.
         home_hook = ml.get_home_hook()
-        home_hook.hook_chapter_1(ml.findlabel("_core_updateChapter"))
+        home_hook.hook_chapter_1(modast.find_label("_core_updateChapter"))
 
-        stmt = ml.find_python_statement('chapter2unplayed = False')
-        ml.call_hook(stmt, ml.findlabel("_core_updateChapter"))
-        stmt = ml.find_python_statement('chapter3unplayed = False')
-        ml.call_hook(stmt, ml.findlabel("_core_updateChapter"))
-        stmt = ml.find_python_statement('chapter4unplayed = False')
-        ml.call_hook(stmt, ml.findlabel("_core_updateChapter"))
+        stmt = modast.find_python_statement('chapter2unplayed = False')
+        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
+        stmt = modast.find_python_statement('chapter3unplayed = False')
+        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
+        stmt = modast.find_python_statement('chapter4unplayed = False')
+        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
 
         # How to abuse the ren'py parser for your own personal gain!
         target_display = None
@@ -49,7 +49,7 @@ class AWSWMod(Mod):
                 for child in node.block[0].screen.children:
                     target_display = child
 
-        ml.getsls('main_menu').children.append(target_display)
+        modast.get_slscreen('main_menu').children.append(target_display)
 
     def mod_complete(self):
         # This is called after all mods are loaded, preventing us from getting a partial list of

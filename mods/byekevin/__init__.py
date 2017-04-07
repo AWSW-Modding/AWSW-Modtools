@@ -2,7 +2,7 @@
 import renpy
 import renpy.ast as ast
 
-from modloader import modinfo
+from modloader import modinfo, modast
 from modloader.modlib import sprnt
 from modloader.modlib import base as ml
 from modloader.modclass import Mod, loadable_mod
@@ -15,17 +15,16 @@ class AWSWMod(Mod):
 
     def mod_load(self):
         # Find and remove where we find Kevin
-        found = ml.search_post_node(ml.findlabel("c4hatchery"), ast.Scene, 20)
+        found = modast.search_for_node_type(modast.find_label("c4hatchery"), ast.Scene, 20)
         hook = ml.hook_opcode(found, None)
-        hook.chain(ml.search_post_node(found, ast.Scene))
+        hook.chain(modast.search_for_node_type(found, ast.Scene))
 
         # Remove Kevin from the main screen
-        mainscr = ml.getsls('main_menu')
+        mainscr = modast.get_slscreen('main_menu')
 
         # Remove Kevin from the persistent file
-        ml.remove_slif(mainscr, 'persistent.playedkevin')
+        modast.remove_slif(mainscr, 'persistent.playedkevin')
 
-        #TODO: Find what the following lines do
         ending_hooks = ml.get_ending_hooks()
         true_search = ending_hooks.get_post_izumi_node()
 
@@ -46,5 +45,5 @@ class AWSWMod(Mod):
                 and node.next.imspec[0][0] == 'meetingkevin':
                 return True
 
-        kevin_credits = ml.search_post_node_callback(true_search, kevin_cb, 800)
-        kevin_credits.chain(ml.search_post_node(kevin_credits, ast.Scene))
+        kevin_credits = modast.search_for_node_with_criteria(true_search, kevin_cb, 800)
+        kevin_credits.chain(modast.search_for_node_type(kevin_credits, ast.Scene))

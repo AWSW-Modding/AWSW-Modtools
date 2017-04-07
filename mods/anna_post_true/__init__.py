@@ -6,7 +6,7 @@ import renpy.sl2.slast as slast
 import renpy.parser as parser
 import renpy.ast as ast
 
-from modloader import modinfo
+from modloader import modinfo, modast
 from modloader.modlib import sprnt
 from modloader.modlib import base as ml
 from modloader.modclass import Mod, loadable_mod
@@ -24,7 +24,7 @@ class AWSWMod(Mod):
         renpy.config.developer = True
 
         # Get the label from the new code and hook it to the end
-        golab = ml.findlabel("anna_post_true_entry")
+        golab = modast.find_label("anna_post_true_entry")
         ml.ending_hooks.hook_post_true_ending(golab)
 
         # This is a debug option. If no_fun_allowed is set to true, you don't
@@ -52,4 +52,4 @@ class AWSWMod(Mod):
 
             # After getting the SLDisplayable, append that to the main menu screen.
             # That's how we put the button "DEV TEST" on the main menu screen
-            ml.getsls('main_menu').children.append(target_display)
+            modast.get_slscreen('main_menu').children.append(target_display)
