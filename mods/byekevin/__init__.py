@@ -47,3 +47,6 @@ class AWSWMod(Mod):
 
         kevin_credits = modast.search_for_node_with_criteria(true_search, kevin_cb, 800)
         kevin_credits.chain(modast.search_for_node_type(kevin_credits, ast.Scene))
+
+    def mod_complete(self):
+        pass

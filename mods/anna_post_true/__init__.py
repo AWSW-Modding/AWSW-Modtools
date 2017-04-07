@@ -53,3 +53,6 @@ class AWSWMod(Mod):
             # After getting the SLDisplayable, append that to the main menu screen.
             # That's how we put the button "DEV TEST" on the main menu screen
             modast.get_slscreen('main_menu').children.append(target_display)
+
+    def mod_complete(self):
+        pass

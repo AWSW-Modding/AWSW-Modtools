@@ -10,14 +10,13 @@ class Mod(object):
     Execution order is as follows:
     :meth:`mod_load` -> :meth:`mod_complete`
     """
-    # pylint: disable=no-self-use
     def mod_info(self):
         """Get the mod info
 
         Returns:
             A tuple with the name, version, and author
         """
-        raise Exception("Mod info isn't overriden")
+        raise NotImplementedError("Mod info isn't overriden")
 
     def mod_load(self):
         """Executes when the mod is loaded
@@ -27,14 +26,14 @@ class Mod(object):
         See Also:
             :meth:`mod_complete`
         """
-        pass
+        raise NotImplementedError("Mod load isn't overriden")
 
     def mod_complete(self):
         """Executes when all mods are loaded
 
         This method is useful for dependency loading
         """
-        pass
+        raise NotImplementedError("Mod complete isn't overriden")
 
 
 def loadable_mod(modclass):
