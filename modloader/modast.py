@@ -7,15 +7,6 @@ import os
 import renpy
 from renpy import ast
 
-import modloader
-
-def _imports():
-    # pylint: disable=invalid-name
-    global slast
-    from renpy.sl2 import slast
-
-if not modloader.BUILDING_DOCUMENTATION:
-    _imports()
 
 def get_screen(scr, nodes=None):
     """Get a screen based off of its name
@@ -113,7 +104,7 @@ def remove_slif(scr, comparison):
         True if removed, False if not
     """
     for child in scr.children:
-        if isinstance(child, slast.SLIf):
+        if isinstance(child, renpy.sl2.slast.SLIf):
             for condition, block in child.entries:
                 if condition == comparison:
                     block.children = []

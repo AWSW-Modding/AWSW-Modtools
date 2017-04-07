@@ -13,16 +13,6 @@ from renpy import ast
 import modloader
 from modloader import modast
 
-def _imports():
-    # Unfortunately importing renpy.sl2.slast is impractical because
-    # it eventually tries to import a Cython-compiled file.
-    # pylint: disable=invalid-name
-    global slast
-    import renpy.sl2.slast as slast
-
-if not modloader.BUILDING_DOCUMENTATION:
-    _imports()
-
 def sprnt(str_):
     """Print an encoded string to stdout
 
