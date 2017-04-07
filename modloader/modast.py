@@ -93,8 +93,11 @@ def search_for_node_with_criteria(node, func, max_depth=200):
     """
     for _ in range(1, max_depth):
         node = node.next
-        if node and isinstance(node, ast.Node) and func(node):
-            return node
+
+        #TODO: Figure out why ``if node and func(node):`` doesn't work
+        if node:
+            if func(node):
+                return node
         else:
             return None
 

@@ -93,7 +93,7 @@ class AWSWEndingHooks(object):
         self.base = base_
         # pylint: disable=line-too-long
         search_str = string.translate("Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv'f obql. Fur jnf qrnq.", ROT13)
-        self.post_izumi_node = self.base.find_say(search_str)
+        self.post_izumi_node = modast.find_say(search_str)
 
     def get_post_izumi_node(self):
         """Get the post-true Izumi's tear scene
@@ -249,9 +249,9 @@ class AWSWHomeHook(object):
                            "chap3altmenub1", "chap4altmenua1", "chap4altmenub1"]
         self.alt_menus = [] # I'm not sure what I want to do about this yet.
         for lab in alt_menu_labels:
-            self.alt_menus.append(self.base.findlabel(lab).next)
+            self.alt_menus.append(modast.find_label(lab).next)
 
-        chapter_menus_ = self.base.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
+        chapter_menus_ = modast.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
         chapter_menus_[:] = [node for node in chapter_menus_ if node not in self.alt_menus]
         self.chapter_menus = chapter_menus_
 
@@ -275,12 +275,16 @@ class AWSWHomeHook(object):
         self.InitAnswPoints = []
         for lab in answToHook:
             closure_val = "playmessage = False"
-            labNode = self.base.findlabel(lab)
-            hkPt = self.base.search_post_node_callback(labNode, nodeCB)
+            labNode = modast.find_label(lab)
+
+            #TODO: This is returning None
+            hkPt = modast.search_for_node_with_criteria(labNode, nodeCB)
+            print type(hkPt)
+
             # New mods will be inserted BEFORE this node, so we'll be alright.
-            self.base.call_hook(hkPt, self.base.findlabel('_mod_fixansw'))
+            self.base.call_hook(hkPt, modast.find_label('_mod_fixansw'))
             closure_val = "remyavailable = True"
-            hkPt2 = self.base.search_post_node_callback(labNode, nodeCB)
+            hkPt2 = modast.search_for_node_with_criteria(labNode, nodeCB)
 
             self.InitAnswPoints.append((hkPt, hkPt2))
 
