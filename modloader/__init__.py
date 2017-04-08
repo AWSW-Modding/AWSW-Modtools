@@ -32,7 +32,7 @@ def main():
     for mod in os.listdir(get_mod_path()):
         # Some mods require resources to be recognized by renpy.
         # If a folder exists, force renpy to load it
-        resource_dir = get_mod_path() + mod + "/resource"
+        resource_dir = os.path.join(get_mod_path(), mod, 'resource')
         if os.path.isdir(resource_dir):
             renpy.config.searchpath.append(resource_dir)
 
