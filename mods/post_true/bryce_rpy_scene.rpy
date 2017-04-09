@@ -63,7 +63,7 @@ label bryce_post_true_entry:
             c "True, but if you're going to be in my world, among my people, you have to act a certain way. Otherwise they'll judge you for it."
             Br "And what if I don't give a damn what they think?"
             c "If I bring you through the portal, you're partly my responsibility. If you want to stay here, you can."
-            $ bryce_post_modd -= 1
+            $ bryce_post_mood -= 1
             
         "Whatever works for you, I guess. Do you have any hobbies that distract you from wanting to drink?":
             Br "Building that model ship helped. At first I found it frustrating that I couldn't keep my claws steady or see the tiny stupid parts. But if I was sober, I could just barely do it, so it's a good excuse not to drink."
