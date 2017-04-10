@@ -36,7 +36,7 @@ label remy_post_true_entry:
     c "Yes, in spacetime. The Earth itself is moving, so if you went back or forward in time to this location, you'd end up floating in space."
     Ry "I see. Is there anyway of finding out the coordinates of a given date?"
     c "Probably, that's how they sent me back here in the first place. But I don't know how. The first time, the coordinates were loaded into the portal's computer before I arrived, and every time after that, Izumi loaded it."
-    Ry "The dragon nodded. He looked like he was deep in thought. His front claw wandered to his tie and gently touched it."
+    m "The dragon nodded. He looked like he was deep in thought. His front claw wandered to his tie and gently touched it."
     
     menu:
         "You can't use it to go back in time, if you're wondering.":
