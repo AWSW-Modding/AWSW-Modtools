@@ -3,7 +3,10 @@ Installation
 
 Download the mod tools here_.
 Extract the zip and copy-paste bootstrap.rpy, mods, and modloader folders to the game directory in your AWSW installation.
+
 The DRM-free installation directory is wherever you extracted the game. The Steam installation directory can be found by right-clicking the entry in your Steam library, hitting 'Properties', clicking the 'Local Files' tab, and then clicking 'Browse Local Files'.
+
+The only mod required is the core mod. The core mod loads some crucial components of the mod framework.
 
 .. _here: https://github.com/AWSWCommunity/AWSW-Modtools/archive/develop.zip
 
@@ -14,6 +17,7 @@ The resulting directory structure should look like the following:
     Installation Directory
     |-- game
         |-- mods
+            |-- core
             |-- ...
         |-- modloader
             |-- ...
