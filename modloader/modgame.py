@@ -18,6 +18,17 @@ ROT13 = string.maketrans(
     "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
 
 
+def sprnt(str_):
+    """Print an encoded string to stdout
+
+    Encode the string in UTF-8 before printing it out to stdout
+    This helps avoid Unicode errors
+
+    Args:
+        string (str): The string to be printed
+    """
+    print str_.encode('utf-8')
+
 class AWSWEndingHooks(object):
     """The ending hooks for the game"""
 

@@ -7,8 +7,8 @@ import renpy.parser as parser
 import renpy.ast as ast
 
 from modloader import modinfo, modast
-from modloader.modlib import sprnt
-from modloader.modlib import base as ml
+from modloader.modgame import sprnt
+from modloader.modgame import base as ml
 from modloader.modclass import Mod, loadable_mod
 
 @loadable_mod
