@@ -3,6 +3,7 @@
 This file is free software under the GPLv3 license
 """
 import os
+import string
 
 import renpy
 from renpy import ast
@@ -204,3 +205,140 @@ def find_python_statement(statement):
         if isinstance(node, ast.Python) and node.code.source == statement:
             return node
     return None
+
+ROT13 = string.maketrans(
+    "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
+    "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
+
+class ASTHook(ast.Node):
+    """A custom :class:`renpy.ast.Node` that acts as a hook between
+        other node objects.
+
+    Note:
+        Don't instantiate this class directly. Ren'Py uses an
+        internal serial for the call stack and other uses. This
+        class emulates that at the base class.
+
+    Attributes:
+        hook_func: A function that's called when the node is executed.
+                If the function returns a non-None value, the next
+                node will be skipped.
+        fromOp: Unknown
+        __oldNext: The original next node before hooking was done
+    """
+    def __init__(self, loc, hook_func=None, from_op=None):
+        #TODO: Understand fromOp and __oldNext
+        super(ASTHook, self).__init__(loc)
+
+        self.hook_func = hook_func
+        self.from_op = from_op
+        self.old_next = None
+
+    def execute(self):
+        """Execute hook after node is called"""
+        ast.statement_name("hook")
+        ret = None
+        if self.hook_func:
+            ret = self.hook_func(self)
+        if not ret:
+            self.exec_continue()
+
+    def exec_continue(self):
+        """Continue"""
+        ast.next_node(self.next)
+
+    def unhook(self):
+        """Remove the hook"""
+        self.from_op.next = self.old_next
+
+
+class MenuHook(object):
+    """A hook class for editing a specific menu"""
+
+    def __init__(self, menu_, base_):
+        """Make a hook class for the specific ``menu_`` object
+
+        Args:
+            menu_ (renpy.ast.Menu): The Menu node to be hooked
+            base_ (AWSWModBase): An instance of the mod base class
+        """
+        if not isinstance(menu_, ast.Menu):
+            raise AssertionError("MenuHook not instantiated with a Menu node!")
+
+        self.menu = menu_
+        self.base = base_
+        # Copy the menu.items list, not a reference to it
+        self.old_items = menu_.items[:]
+
+    def delete_item(self, item):
+        """Delete an item from the menu"""
+        # TODO: Describe what the hell is happening here.
+        self.get_items()[:] = [(lab, cond, block) for _, (lab, cond, block)
+                               in enumerate(self.get_items()) if lab != item]
+        return None
+
+    def get_item(self, item):
+        """Get an item from the menu"""
+        for obj in self.get_items():
+            if obj[0] == item:
+                return obj
+
+    def get_option_code(self, item):
+        """Get an item's SL code from the menu"""
+        obj = self.get_item(item)
+        return obj[2]
+
+    def get_items(self):
+        """Get all the items in the menu"""
+        return self.menu.items
+
+    def set_conditional(self, item, new_cond):
+        """Change the conditional statement for ``item``
+
+        Returns:
+            True if successful and False if not
+        """
+        for i, (lab, _, block) in enumerate(self.get_items()):
+            if lab == item:
+                self.menu.items[i] = (lab, new_cond, block)
+                return True
+        return False
+
+    def add_item(self, label, hook, condition="True"):
+        """Add a new item to the menu
+
+        Args:
+            label (str): The option's label
+
+            hook: Either a :class:`renpy.ast.Node` or a function to be
+                    executed after the menu choice has been selected
+
+            condition (str): A Python string to evaluate to determine
+                    whether or not the choice should be shown
+
+        Returns:
+            None if ``hook`` is a :class:`renpy.ast.Node` or a
+            :class:`ASTHook` if ``hook`` is a function
+        """
+        if isinstance(hook, ast.Node):
+            self.get_items().append((label, condition, [hook])) # Adding a dialogue option.
+            return None
+        else:
+            node = ASTHook(("AWSWMod", 1))
+            node.from_op = self.menu
+            node.hook_func = hook
+            node.name = "AWSWModOp_" + str(self.base.name_serial)
+            self.base.name_serial += 1
+            self.get_items().append((label, condition, [node]))
+            return node
+
+    def add_item_call(self, label, usr_hook, condition="True"):
+        #TODO: Determine what this does
+        # pylint: disable=missing-docstring, invalid-name
+        hook = self.add_item(label, None, condition)
+
+        def call_func(hook):
+            rv = renpy.game.context().call(usr_hook.name, return_site=self.menu.next.name)
+            hook.chain(rv)
+
+        hook.hook_func = call_func
