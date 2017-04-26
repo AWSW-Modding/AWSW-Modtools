@@ -366,3 +366,162 @@ class MenuHook(object):
             hook.chain(rv)
 
         hook.hook_func = call_func
+
+
+def hook_opcode(node, func):
+    """Hook ``func`` to ``node``
+
+    Args:
+        node (Node): The node object for the function to hook
+        func (function): The function to be executed when the node is executed
+
+    Todo:
+        Check if a hook already exists and make the code more cohesive
+
+    Returns:
+        An :class:`ASTHook` object
+    """
+    # Keep a copy of the node's original next node
+    next_statement = node.next
+
+    # Make a new ASTHook and hook it to the node
+    # The tuple is in the format (filename, filenumber)
+    # This is used by the renpy stacktrace
+    hook = ASTHook(("AWSWMod", 1), func, node)
+    node.next = hook
+
+    # Put the original next node to the hook node
+    # Also keep a copy of the original next node in the hook node, allowing us to unhook it
+    hook.chain(next_statement)
+    hook.old_next = next_statement
+
+    return hook
+
+
+def call_hook(node, dest_node, func=None):
+    """Hook ``func`` to ``node`` and once executed, redirect execution to
+        ``dest_node``
+
+    Args:
+        node (Node): The node to hook
+        dest_node (Node): the node to go after ``node`` is executed
+        func (function): The function to call
+
+    Returns:
+        An :class:`ASTHook` object
+    """
+    hook = hook_opcode(node, None)
+
+    def call_function(hook):
+        if func:
+            func(hook)
+
+        #TODO: Better understand this line
+        label = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
+        hook.chain(label)
+
+    hook.hook_func = call_function
+    return hook
+
+
+def unhook_label(label):
+    """Unhook a hook from a lbel
+
+    Args:
+        label (str): The label's name
+    """
+    #TODO: Test this
+    found_node = find_label(label)
+    if isinstance(found_node, ASTHook):
+        found_node.from_op.next = found_node.next
+
+
+def disable_slast_cache():
+    """Disable SLAst's load cache"""
+    renpy.sl2.slast.load_cache = lambda *_: None
+
+
+def disable_bytecode_cache():
+    """Disable bytecode cache"""
+    renpy.game.script.init_bytecode = lambda *_: None
+
+
+def get_node_after_nodes(node, location):
+    """Get the ``location``th node after ``node``
+
+    Note:
+        This skips :class:`ASTHook` nodes
+
+    Args:
+        node (Node): The starting search node
+        location (int): The number of nodes to skip
+
+    Returns:
+        A :class:`renpy.ast.Node` object
+    """
+    for _ in range(0, location):
+        node = node.next
+
+        # Effectively skip the ASTHook nodes by continuing on
+        while node and isinstance(node, ASTHook):
+            node = node.next
+    return node
+
+
+def get_renpy_global(key):
+    """Get a Ren'Py global
+
+    Args:
+        key (str): The dictionary key
+
+    Returns:
+        The value put into the key or None if it doesn't exist
+    """
+    store = renpy.python.store_dicts["store"]
+    if key in store:
+        return store[key]
+
+
+def set_renpy_global(key, val):
+    """Set a Ren'Py glboal
+
+    Ren'Py globals can be used during execution of rpy.
+
+    Args:
+        key (str): The dictionary key
+        val (str): The value of the dictionary object
+    """
+    renpy.python.store_dicts["store"][key] = val
+
+
+def jump_ret(node, dest_node, return_node, func=None):
+    """Hook ``func`` to ``node`` and once executed, redirect execution to
+        ``dest_node`` and allow ``return_node`` to be executed after
+        ``dest_node`` returns
+
+    Args:
+        node (Node): The node to hook
+        dest_node (Node): The node to go after ``node`` is executed
+        return_node (Node): The node that is executed after ``dest_node`` returns
+        func (function): The function hook
+
+    Returns:
+        An :class:`ASTHook` object
+    """
+    hook = call_hook(node, dest_node, func)
+    hook.next = return_node
+    return hook
+
+
+def hook_label(label, func):
+    """Hook a function to a label
+
+    Args:
+        label (renpy.ast.Label): The label
+        func (function): The function to be hooked
+
+    Returns:
+        An :class:`ASTHook` object
+    """
+    node_label = find_label(label)
+    return hook_opcode(node_label, func)

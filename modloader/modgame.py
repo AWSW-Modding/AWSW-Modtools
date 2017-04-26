@@ -60,7 +60,7 @@ class AWSWEndingHooks(object):
             An :class:`ASTHook` instance
         """
         fincall = self.get_post_izumi_node().next
-        return self.base.call_hook(fincall, node)
+        return modast.call_hook(fincall, node)
 
     def hook_post_evil_ending(self, node):
         """Hook ``node`` to the post-evil ending node
@@ -146,12 +146,11 @@ class AWSWHomeHook(object):
             closure_val = "playmessage = False"
             labNode = modast.find_label(lab)
 
-            #TODO: This is returning None
             hkPt = modast.search_for_node_with_criteria(labNode, nodeCB)
             print type(hkPt)
 
             # New mods will be inserted BEFORE this node, so we'll be alright.
-            self.base.call_hook(hkPt, modast.find_label('_mod_fixansw'))
+            modast.call_hook(hkPt, modast.find_label('_mod_fixansw'))
             closure_val = "remyavailable = True"
             hkPt2 = modast.search_for_node_with_criteria(labNode, nodeCB)
 
@@ -169,7 +168,7 @@ class AWSWHomeHook(object):
         # pylint: disable=invalid-name
         if isinstance(dest_node, ast.Node):
             for (hkPt, _) in self.InitAnswPoints:
-                self.base.call_hook(hkPt, dest_node)
+                modast.call_hook(hkPt, dest_node)
 #        else:
 #            for (hkPt, hkPt2) in self.InitAnswPoints:
 #                #TODO: Figure out what this closure does
@@ -196,10 +195,10 @@ class AWSWHomeHook(object):
         # pylint: disable=invalid-name
         if isinstance(dest_node, ast.Node):
             for (hkPt, hkPt2) in self.InitAnswPoints:
-                self.base.call_hook(hkPt2, dest_node)
+                modast.call_hook(hkPt2, dest_node)
         else:
             for (hkPt, hkPt2) in self.InitAnswPoints:
-                self.base.hook_opcode(hkPt2, dest_node)
+                modast.hook_opcode(hkPt2, dest_node)
 
     def add_route(self, title, route_hook, condition="True"):
         """Add a route to the chapter menu
@@ -234,26 +233,26 @@ class AWSWHomeHook(object):
         chapter_labels = ["chapter2", "chapter3", "chapter4"]
 
         if isinstance(hook, ast.Node):
-            for lab in chapter_labels:
-                self.base.call_hook(self.base.findlabel(lab), hook, None)
+            for label in chapter_labels:
+                modast.call_hook(self.base.findlabel(label), hook, None)
 
-            self.base.call_hook(self.chapter_1_hook, hook, None)
+            modast.call_hook(self.chapter_1_hook, hook, None)
         else:
             #TODO: Determine which ch_id is actually being used
             # pylint: disable=function-redefined
-            for lab in chapter_labels:
+            for label in chapter_labels:
                 def ch_id(hook2):
                     if hook:
-                        hook(hook2, lab)
-                self.base.hooklabel(lab, ch_id)
+                        hook(hook2, label)
+                modast.hook_label(label, ch_id)
 
-            #TODO: What does lab mean here?
+            #TODO: What does label mean here?
             # pylint: disable=undefined-loop-variable, function-redefined
             def ch_id(hook2):
                 if hook:
-                    hook(hook2, lab)
+                    hook(hook2, label)
 
-            self.base.hook_opcode(self.chapter_1_hook, ch_id)
+            modast.hook_opcode(self.chapter_1_hook, ch_id)
 
     def hook_chapter_1(self, hook):
         """Hook a node to the start of Chapter 1
@@ -261,10 +260,9 @@ class AWSWHomeHook(object):
         Args:
             hook (Node): The node to hook
         """
-        self.base.call_hook(self.chapter_1_hook, hook)
+        modast.call_hook(self.chapter_1_hook, hook)
 
 
-#TODO: Reduce the amount of public methods
 # pylint: disable=too-many-public-methods
 class AWSWModBase(object):
     """The modding framework base.
@@ -281,117 +279,6 @@ class AWSWModBase(object):
         self.name_serial = 1
         self.home_hook = AWSWHomeHook(self)
 
-    def hook_opcode(self, node, func):
-        """Hook ``func`` to ``node``
-
-        Args:
-            node (Node): The node object for the function to hook
-            func (function): The function to be executed when the node is executed
-
-        Todo:
-            Check if a hook already exists and make the code more cohesive
-
-        Returns:
-            An :class:`ASTHook` object
-        """
-        #TODO: Determine if method should be a function
-        # pylint: disable=no-self-use
-        # Keep a copy of the node's original next node
-        next_statement = node.next
-
-        # Make a new ASTHook and hook it to the node
-        # The tuple is in the format (filename, filenumber)
-        # This is used by the renpy stacktrace
-        hook = modast.ASTHook(("AWSWMod", 1), func, node)
-        node.next = hook
-
-        # Put the original next node to the hook node
-        # Also keep a copy of the original next node in the hook node, allowing us to unhook it
-        hook.chain(next_statement)
-        hook.old_next = next_statement
-
-        return hook
-
-    def jump_ret(self, node, dest_node, ret_node, func=None):
-        """Hook ``func`` to ``node`` and once executed, redirect execution to
-            ``dest_node`` and allow ``ret_node`` to be executed after
-            ``dest_node`` returns.
-
-        Args:
-            node (Node): The node to hook
-            dest_node (Node): The node to go after ``node`` is executed
-            ret_node (Node): The node that is executed after ``dest_node`` returns
-            func (function): The function hook
-
-        Returns:
-            An :class:`ASTHook` object
-        """
-        hook = self.call_hook(node, dest_node, func)
-        hook.next = ret_node
-        return hook
-
-    def call_hook(self, node, dest_node, func=None):
-        """Hook ``func`` to ``node`` and once executed, redirect execution to
-            ``dest_node``
-
-        Args:
-            node (Node): The node to hook
-            dest_node (Node): The node to go after ``node`` is executed
-            func (function): The function hook
-
-        Returns:
-            An :class:`ASTHook` object
-        """
-        hook = self.hook_opcode(node, None)
-        #TODO: Determine what this function does
-        # pylint: disable=missing-docstring
-        def call_func(hook):
-            # pylint: disable=invalid-name
-            if func:
-                func(hook)
-            rv = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
-            hook.chain(rv)
-
-
-        hook.hook_func = call_func
-        return hook
-
-    def hooklabel(self, label, func):
-        """Hook a function to a label
-
-        Args:
-            label (renpy.ast.Label): The label
-            func (function): The function to be hooked
-
-        Returns:
-            An :class:`ASTHook` object
-        """
-        node_label = modast.find_label(label)
-        return self.hook_opcode(node_label, func)
-
-    def unhooklabel(self, label):
-        """Unhook hooks from a label
-
-        Args:
-            label (str): The label's name
-        """
-        #TODO: Determine if method should be a static function
-        # pylint: disable=no-self-use
-        found_node = modast.find_label(label)
-        if isinstance(found_node, modast.ASTHook):
-            found_node.from_op.next = found_node.next
-
-    def disable_slast_cache(self):
-        """Disable SLAst's load cache"""
-        #TODO: Determine if method should be a static function
-        # pylint: disable=no-self-use
-        renpy.sl2.slast.load_cache = lambda *_: None
-
-    def disable_bytecode_cache(self):
-        """Disable bytecode cache"""
-        #TODO: Determine if method should be a static function
-        # pylint: disable=no-self-use
-        renpy.game.script.init_bytecode = lambda *_: None
 
     def get_menu_hook(self, menu):
         """Get the equivalent :class:`AWSWMenuHook` object
@@ -399,9 +286,7 @@ class AWSWModBase(object):
         Returns:
             The equivalent :class:`AWSWMenuHook` object
         """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        return modast.MenuHook(menu, base)
+        return modast.MenuHook(menu, self)
 
     def get_home_hook(self):
         """Get the home hook class
@@ -411,56 +296,6 @@ class AWSWModBase(object):
         """
         return self.home_hook
 
-    def get_node_from_location(self, node, location):
-        """Get the ``location``th node after ``node``
-
-        Note:
-            This skips :class:`ASTHook` nodes
-
-        Args:
-            node (Node): The starting search node
-            location (int): The number of nodes to skip
-
-        Returns:
-            A :class:`renpy.ast.Node` object
-        """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        for _ in range(0, location):
-            node = node.next
-
-            # Effectively skip the ASTHook nodes by continuing on
-            while node and isinstance(node, modast.ASTHook):
-                node = node.next
-        return node
-
-    def set_renpy_global(self, key, val):
-        """Set a Ren'Py global
-
-        Ren'Py globals can be used during execution of rpy.
-
-        Args:
-            key (str): The dictionary key
-            val: The value of the dictionary object
-        """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        renpy.python.store_dicts["store"][key] = val
-
-    def get_renpy_global(self, key):
-        """Get a Ren'Py global
-
-        Args:
-            key (str): The dictionary key
-
-        Returns:
-            The value put into the key or None if it doesn't exist
-        """
-        #TODO: Determine whether method should be static function
-        # pylint: disable=no-self-use
-        store = renpy.python.store_dicts["store"]
-        if key in store:
-            return store[key]
 
     def get_ending_hooks(self):
         """Get the ending hook class
