@@ -20,7 +20,7 @@ class AWSWMod(Mod):
     def mod_load(self):
         # This is called due to renpy's screen cache. Any modifications to screens with an
         # enabled cache will fail!
-        ml.disable_slast_cache()
+        modast.disable_slast_cache()
 
         # Hook every point where the chapter is changed and set mod_currentChapter to the
         # integer value of the current chapter. This will allow route mods to make comparisons.
@@ -28,11 +28,11 @@ class AWSWMod(Mod):
         home_hook.hook_chapter_1(modast.find_label("_core_updateChapter"))
 
         stmt = modast.find_python_statement('chapter2unplayed = False')
-        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
+        modast.call_hook(stmt, modast.find_label("_core_updateChapter"))
         stmt = modast.find_python_statement('chapter3unplayed = False')
-        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
+        modast.call_hook(stmt, modast.find_label("_core_updateChapter"))
         stmt = modast.find_python_statement('chapter4unplayed = False')
-        ml.call_hook(stmt, modast.find_label("_core_updateChapter"))
+        modast.call_hook(stmt, modast.find_label("_core_updateChapter"))
 
         # How to abuse the ren'py parser for your own personal gain!
         target_display = None
@@ -54,4 +54,4 @@ class AWSWMod(Mod):
     def mod_complete(self):
         # This is called after all mods are loaded, preventing us from getting a partial list of
         # mods (say, if core was loaded before myMod1).
-        ml.set_renpy_global('modsDesc', ', '.join([mod_name for mod_name in modinfo.modlist]))
+        modast.set_renpy_global('modsDesc', ', '.join([mod_name for mod_name in modinfo.modlist]))

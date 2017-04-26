@@ -16,7 +16,7 @@ class AWSWMod(Mod):
     def mod_load(self):
         # Find and remove where we find Kevin
         found = modast.search_for_node_type(modast.find_label("c4hatchery"), ast.Scene, 20)
-        hook = ml.hook_opcode(found, None)
+        hook = modast.hook_opcode(found, None)
         hook.chain(modast.search_for_node_type(found, ast.Scene))
 
         # Remove Kevin from the main screen
