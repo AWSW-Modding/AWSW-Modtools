@@ -223,16 +223,22 @@ class ASTHook(ast.Node):
         hook_func: A function that's called when the node is executed.
                 If the function returns a non-None value, the next
                 node will be skipped.
-        fromOp: Unknown
-        __oldNext: The original next node before hooking was done
+        from_op: The original node before hooking
+        old_next: The original next node before hooking was done
     """
-    def __init__(self, loc, hook_func=None, from_op=None):
-        #TODO: Understand fromOp and __oldNext
+    _serial = 1
+
+    def __init__(self, loc, hook_func_=None, from_op_=None):
         super(ASTHook, self).__init__(loc)
 
-        self.hook_func = hook_func
-        self.from_op = from_op
+        self.hook_func = hook_func_
+        self.from_op = from_op_
         self.old_next = None
+
+        # Create a unique name
+        self.name = "AWSWModOp_" + str(ASTHook._serial)
+        ASTHook._serial += 1
+        renpy.game.script.namemap[self.name] = self
 
     def execute(self):
         """Execute hook after node is called"""
@@ -240,6 +246,7 @@ class ASTHook(ast.Node):
         ret = None
         if self.hook_func:
             ret = self.hook_func(self)
+
         if not ret:
             self.exec_continue()
 
@@ -270,26 +277,45 @@ class MenuHook(object):
         # Copy the menu.items list, not a reference to it
         self.old_items = menu_.items[:]
 
-    def delete_item(self, item):
-        """Delete an item from the menu"""
-        # TODO: Describe what the hell is happening here.
-        self.get_items()[:] = [(lab, cond, block) for _, (lab, cond, block)
-                               in enumerate(self.get_items()) if lab != item]
-        return None
+    def delete_item(self, label):
+        """Delete a choice from the menu
 
-    def get_item(self, item):
-        """Get an item from the menu"""
-        for obj in self.get_items():
-            if obj[0] == item:
-                return obj
+        Args:
+            label (str): The label to search for
+        """
+        # choice[0] is the choice's label
+        self.get_items()[:] = [choice for choice in self.get_items() if choice[0] != label]
 
-    def get_option_code(self, item):
-        """Get an item's SL code from the menu"""
-        obj = self.get_item(item)
-        return obj[2]
+    def get_item(self, label):
+        """Get a choice from the menu
+
+        Args:
+            label (str): The label to search for
+        """
+        # obj[0] is the choice's label
+        for choice in self.get_items():
+            if choice[0] == label:
+                return choice
+
+    def get_option_code(self, label):
+        """Get a choice's SL code from the menu
+
+        Args:
+            choice (str): The choice to get
+        """
+        # choice[2] is the choice's SL code
+        choice = self.get_item(label)
+        return choice[2]
 
     def get_items(self):
-        """Get all the items in the menu"""
+        """Get all the items in the menu
+
+        Returns:
+            A list of three-element tuples where the format is (label, condition, block), where
+            label is the visible label given to the user,
+            condition is a Python statement that determines whether or not to show the choice, and
+            block is SL code
+        """
         return self.menu.items
 
     def set_conditional(self, item, new_cond):
@@ -298,14 +324,14 @@ class MenuHook(object):
         Returns:
             True if successful and False if not
         """
-        for i, (lab, _, block) in enumerate(self.get_items()):
-            if lab == item:
-                self.menu.items[i] = (lab, new_cond, block)
+        for i, (label, _, block) in enumerate(self.get_items()):
+            if label == item:
+                self.menu.items[i] = (label, new_cond, block)
                 return True
         return False
 
     def add_item(self, label, hook, condition="True"):
-        """Add a new item to the menu
+        """Add a new choice to the menu
 
         Args:
             label (str): The option's label
@@ -327,8 +353,6 @@ class MenuHook(object):
             node = ASTHook(("AWSWMod", 1))
             node.from_op = self.menu
             node.hook_func = hook
-            node.name = "AWSWModOp_" + str(self.base.name_serial)
-            self.base.name_serial += 1
             self.get_items().append((label, condition, [node]))
             return node
 

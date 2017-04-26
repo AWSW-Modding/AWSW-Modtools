@@ -93,7 +93,12 @@ class AWSWEndingHooks(object):
 
 
 class AWSWHomeHook(object):
-    """Hook the menu found in the player's apartment."""
+    """Hook the menu found in the player's apartment.
+
+    Attributes:
+        base (AWSWModBase):
+            An instance of the mod base
+    """
 
     def __init__(self, base_):
         """Hook the hooks in the appropriate places.
@@ -104,12 +109,17 @@ class AWSWHomeHook(object):
         self.base = base_
         self.hooks = []
 
+        # The alt menus are actually the character selection menus
+        # The "a" and "b" versions are the first character selection and the second character
+        # selection for the chapter, respectively.
         alt_menu_labels = ["chap2altmenua1", "chap2altmenub1", "chap3altmenua1",
                            "chap3altmenub1", "chap4altmenua1", "chap4altmenub1"]
-        self.alt_menus = [] # I'm not sure what I want to do about this yet.
+
+        self.alt_menus = []
         for lab in alt_menu_labels:
             self.alt_menus.append(modast.find_label(lab).next)
 
+        #TODO: Understand what chapter_menus_ does that alt_menus doesn't
         chapter_menus_ = modast.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
         chapter_menus_[:] = [node for node in chapter_menus_ if node not in self.alt_menus]
         self.chapter_menus = chapter_menus_
@@ -284,17 +294,21 @@ class AWSWModBase(object):
         Returns:
             An :class:`ASTHook` object
         """
+        #TODO: Determine if method should be a function
+        # pylint: disable=no-self-use
+        # Keep a copy of the node's original next node
         next_statement = node.next
 
-        hook = modast.ASTHook(("AWSWMod", 1)) # hooking hooks breaks
-        hook.from_op = node
+        # Make a new ASTHook and hook it to the node
+        # The tuple is in the format (filename, filenumber)
+        # This is used by the renpy stacktrace
+        hook = modast.ASTHook(("AWSWMod", 1), func, node)
         node.next = hook
+
+        # Put the original next node to the hook node
+        # Also keep a copy of the original next node in the hook node, allowing us to unhook it
         hook.chain(next_statement)
         hook.old_next = next_statement
-        hook.hook_func = func
-        hook.name = "AWSWModOp_" + str(self.name_serial)
-        self.name_serial += 1
-        renpy.game.script.namemap[hook.name] = hook
 
         return hook
 
