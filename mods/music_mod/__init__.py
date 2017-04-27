@@ -18,18 +18,17 @@ from modloader.modclass import Mod, loadable_mod
 def song_choice():
     """Returns a random path for music
 
-    For use in music_screen_meowers.rpy
-
     Returns:
-        A path to a music file
+    A path to a music file
     """
-    path = os.path.join(renpy.config.gamedir, 'mods/music_mod/resource/mx')
+    path = renpy.config.gamedir + "/mods/music_mod/resource/mx"
     music_files = [x for x in os.listdir(path) if x.endswith(('.mp3', '.wav', '.ogg'))]
 
     if not music_files:
-        raise Exception("At least one music file is required")
+        raise Exception("At least one music file is required.")
 
-    return os.path.join('mx', random.choice(music_files))
+    return "mx/" + random.choice(music_files)
+
 
 @loadable_mod
 class AWSWMod(Mod):
