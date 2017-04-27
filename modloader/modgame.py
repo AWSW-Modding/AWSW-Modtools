@@ -72,8 +72,12 @@ class AWSWEndingHooks(object):
         return None
 
     def hook_route_ending(self, route):
-        # What is this function?
-        # pylint: disable=missing-docstring, no-self-use, unused-argument
+        """Hook ``node`` to the end of all routes
+
+        Todo:
+            Program this.
+        """
+        # pylint: disable=no-self-use, unused-argument
         return None
 
     def get_ending_picker_menu(self):

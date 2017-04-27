@@ -1,4 +1,4 @@
-modlib
+API
 ------
 
 .. automodule:: modloader.modgame
