@@ -19,7 +19,24 @@ If you get an output that starts with ``Python 3``, you have installed the incor
 If you get an output that starts with ``Python 2``, you have installed the correct version of Python.
 
 Getting media and compiled source code
---------------------------------------
+======================================
+
+There are two ways you can get the media and compiled source code from the archive.
+
+
+Easy way
+--------
+
+First, obtain a copy of `QuickBMS`_ and download two scripts (by right-clicking and clicking Save Page As...): `Python Pickle Parser`_ and `RPA Renpy No Python`_,
+then make a new folder.
+
+Launch QuckBMS and select the RPA Renpy No Python script. It will ask you for the archive.rpa; give the archive.rpa from the game directory in the installation folder.
+After, it will ask for a folder; select the folder you have made.
+
+*Credits to @JeffMakesGames on the unofficial AwSW discord.*
+
+Hard way
+--------
 
 *This assumes you know the basics of command line, such as changing directories.*
 
@@ -72,7 +89,7 @@ Some notable folders include:
 +-----------------+-----------------------------------------------------------------+
 
 Getting the source code
------------------------
+=======================
 
 Source code is the human-readable version of the game. All dialog options, games, and spoilers are in these files.
 However, the code is compiled into Ren'Py compiled files. They have an extension of .rpyc.
@@ -84,3 +101,7 @@ To get the source code, we need to decompile the game. The source code has an ex
 
 .. _rpatool: https://github.com/Shizmob/rpatool/archive/master.zip
 .. _unrpyc: https://github.com/CensoredUsername/unrpyc/archive/master.zip
+
+.. _QuickBMS: http://aluigi.altervista.org/quickbms.htm
+.. _Python Pickle Parser: http://aluigi.altervista.org/bms/pickle.bms
+.. _RPA Renpy No Python: http://aluigi.altervista.org/bms/rpa_renpy_nopython.bms
