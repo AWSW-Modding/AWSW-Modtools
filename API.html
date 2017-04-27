@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>modlib &#8212; AWSW-Modtools  documentation</title>
+    <title>API &#8212; AWSW-Modtools  documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -42,36 +42,21 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-modloader.modlib">
-<span id="modlib"></span><h1>modlib<a class="headerlink" href="#module-modloader.modlib" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-modloader.modgame">
+<span id="api"></span><h1>API<a class="headerlink" href="#module-modloader.modgame" title="Permalink to this headline">¶</a></h1>
 <p>The modding library.</p>
 <p>This file contains all the functions needed to modify and extend AwSW.</p>
 <p>This file is free software under the GPLv3 license.</p>
 <dl class="class">
-<dt id="modloader.modlib.ASTHook">
-<em class="property">class </em><code class="descclassname">modloader.modlib.</code><code class="descname">ASTHook</code><span class="sig-paren">(</span><em>loc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#ASTHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.ASTHook" title="Permalink to this definition">¶</a></dt>
-<dd><p>A custom <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> that acts as a hook between other node objects.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Don&#8217;t instantiate this class directly. Ren&#8217;Py uses an internal serial for the call stack and other uses. This class emulates that at the base class.</p>
-</div>
-<dl class="attribute">
-<dt id="modloader.modlib.ASTHook.hook_func">
-<code class="descname">hook_func</code><a class="headerlink" href="#modloader.modlib.ASTHook.hook_func" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function that&#8217;s called when the node is executed. If the function returns a non-None value, the next node will be skipped.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="modloader.modlib.AWSWEndingHooks">
-<em class="property">class </em><code class="descclassname">modloader.modlib.</code><code class="descname">AWSWEndingHooks</code><span class="sig-paren">(</span><em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWEndingHooks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWEndingHooks" title="Permalink to this definition">¶</a></dt>
-<dd><p>The ending hooks for the game.</p>
+<dt id="modloader.modgame.AWSWEndingHooks">
+<em class="property">class </em><code class="descclassname">modloader.modgame.</code><code class="descname">AWSWEndingHooks</code><span class="sig-paren">(</span><em>base_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ending hooks for the game</p>
 <dl class="method">
-<dt id="modloader.modlib.AWSWEndingHooks.getEndingPickerMenu">
-<code class="descname">getEndingPickerMenu</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWEndingHooks.getEndingPickerMenu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWEndingHooks.getEndingPickerMenu" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWEndingHooks.get_ending_picker_menu">
+<code class="descname">get_ending_picker_menu</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks.get_ending_picker_menu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks.get_ending_picker_menu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get Chapter 5&#8217;s menu on who to go to the fireworks.</p>
-<p>Get an instance of <code class="xref py py-class docutils literal"><span class="pre">AWSWMenuHooks</span></code> for use of making new choices on who to go to the festival with.</p>
+<p>Get an instance of <code class="xref py py-class docutils literal"><span class="pre">AWSWMenuHooks</span></code> for use of making
+new choices on who to go to the festival with.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -83,8 +68,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWEndingHooks.getPostTrueEndingIzumiScene">
-<code class="descname">getPostTrueEndingIzumiScene</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWEndingHooks.getPostTrueEndingIzumiScene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWEndingHooks.getPostTrueEndingIzumiScene" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWEndingHooks.get_post_izumi_node">
+<code class="descname">get_post_izumi_node</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks.get_post_izumi_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks.get_post_izumi_node" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the post-true Izumi&#8217;s tear scene</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -97,8 +82,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWEndingHooks.hookPostEvilEnding">
-<code class="descname">hookPostEvilEnding</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWEndingHooks.hookPostEvilEnding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWEndingHooks.hookPostEvilEnding" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWEndingHooks.hook_post_evil_ending">
+<code class="descname">hook_post_evil_ending</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks.hook_post_evil_ending"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks.hook_post_evil_ending" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hook <code class="docutils literal"><span class="pre">node</span></code> to the post-evil ending node</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
@@ -107,29 +92,45 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWEndingHooks.hookPostTrueEnding">
-<code class="descname">hookPostTrueEnding</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWEndingHooks.hookPostTrueEnding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWEndingHooks.hookPostTrueEnding" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWEndingHooks.hook_post_true_ending">
+<code class="descname">hook_post_true_ending</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks.hook_post_true_ending"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks.hook_post_true_ending" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hook <code class="docutils literal"><span class="pre">node</span></code> to the post-true ending node</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> instance</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An <code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code> instance</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="modloader.modgame.AWSWEndingHooks.hook_route_ending">
+<code class="descname">hook_route_ending</code><span class="sig-paren">(</span><em>route</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWEndingHooks.hook_route_ending"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWEndingHooks.hook_route_ending" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook <code class="docutils literal"><span class="pre">node</span></code> to the end of all routes</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Program this.</p>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
-<dt id="modloader.modlib.AWSWHomeHook">
-<em class="property">class </em><code class="descclassname">modloader.modlib.</code><code class="descname">AWSWHomeHook</code><span class="sig-paren">(</span><em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWHomeHook">
+<em class="property">class </em><code class="descclassname">modloader.modgame.</code><code class="descname">AWSWHomeHook</code><span class="sig-paren">(</span><em>base_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hook the menu found in the player&#8217;s apartment.</p>
+<dl class="attribute">
+<dt id="modloader.modgame.AWSWHomeHook.base">
+<code class="descname">base</code><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.base" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>AWSWModBase</em> &#8211; An instance of the mod base</p>
+</dd></dl>
+
 <dl class="method">
-<dt id="modloader.modlib.AWSWHomeHook.addAnswerMachineCheckHook">
-<code class="descname">addAnswerMachineCheckHook</code><span class="sig-paren">(</span><em>dest_node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook.addAnswerMachineCheckHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook.addAnswerMachineCheckHook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Change the answering machine&#8217;s output.</p>
+<dt id="modloader.modgame.AWSWHomeHook.addAnswerMachineCheckHook">
+<code class="descname">addAnswerMachineCheckHook</code><span class="sig-paren">(</span><em>dest_node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook.addAnswerMachineCheckHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.addAnswerMachineCheckHook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the answering machine&#8217;s output.</p>
 <p>Return true if the dialog should pop up and return false if it shouldn&#8217;t.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -142,22 +143,23 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWHomeHook.addAnswerMachineScene">
-<code class="descname">addAnswerMachineScene</code><span class="sig-paren">(</span><em>dest_node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook.addAnswerMachineScene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook.addAnswerMachineScene" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWHomeHook.addAnswerMachineScene">
+<code class="descname">addAnswerMachineScene</code><span class="sig-paren">(</span><em>dest_node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook.addAnswerMachineScene"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.addAnswerMachineScene" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a hook before the answering machine plays</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dest_node</strong> &#8211; Can be either a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> or a function. Called after the machine check returns true</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dest_node</strong> &#8211; Can be either a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> or a
+function. Called after the machine check returns true</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWHomeHook.addRoute">
-<code class="descname">addRoute</code><span class="sig-paren">(</span><em>title</em>, <em>routeHook</em>, <em>condition='True'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook.addRoute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook.addRoute" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWHomeHook.add_route">
+<code class="descname">add_route</code><span class="sig-paren">(</span><em>title</em>, <em>route_hook</em>, <em>condition='True'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook.add_route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.add_route" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a route to the chapter menu</p>
 <p>The route will only appear if the condition evaluate to true.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -166,7 +168,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The human-readable menu option</li>
-<li><strong>routeHook</strong> (<em>Node</em>) &#8211; The <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> object to change to</li>
+<li><strong>route_hook</strong> (<em>Node</em>) &#8211; The <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> object to change to</li>
 <li><strong>condition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The Python string to evaluate if the option should appear</li>
 </ul>
 </td>
@@ -176,8 +178,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWHomeHook.hookChapter1">
-<code class="descname">hookChapter1</code><span class="sig-paren">(</span><em>hook</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook.hookChapter1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook.hookChapter1" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWHomeHook.hook_chapter_1">
+<code class="descname">hook_chapter_1</code><span class="sig-paren">(</span><em>hook</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook.hook_chapter_1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.hook_chapter_1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hook a node to the start of Chapter 1</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -190,8 +192,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWHomeHook.hookChapterChange">
-<code class="descname">hookChapterChange</code><span class="sig-paren">(</span><em>hook</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWHomeHook.hookChapterChange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWHomeHook.hookChapterChange" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWHomeHook.hook_chapter_change">
+<code class="descname">hook_chapter_change</code><span class="sig-paren">(</span><em>hook</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWHomeHook.hook_chapter_change"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWHomeHook.hook_chapter_change" title="Permalink to this definition">¶</a></dt>
 <dd><p>Hook a change of the chapters</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -206,323 +208,67 @@
 </dd></dl>
 
 <dl class="class">
-<dt id="modloader.modlib.AWSWMenuHook">
-<em class="property">class </em><code class="descclassname">modloader.modlib.</code><code class="descname">AWSWMenuHook</code><span class="sig-paren">(</span><em>menu</em>, <em>base</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWMenuHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWMenuHook" title="Permalink to this definition">¶</a></dt>
-<dd><p>A hook class for editing a specific menu</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="modloader.modlib.AWSWModBase">
-<em class="property">class </em><code class="descclassname">modloader.modlib.</code><code class="descname">AWSWModBase</code><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWModBase">
+<em class="property">class </em><code class="descclassname">modloader.modgame.</code><code class="descname">AWSWModBase</code><a class="reference internal" href="_modules/modloader/modgame.html#AWSWModBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWModBase" title="Permalink to this definition">¶</a></dt>
 <dd><p>The modding framework base.</p>
 <p>This class contains all the base functions needed to edit the AST, screens, and screen language.</p>
 <dl class="attribute">
-<dt id="modloader.modlib.AWSWModBase.endingHooks">
-<code class="descname">endingHooks</code><a class="headerlink" href="#modloader.modlib.AWSWModBase.endingHooks" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>AWSWEndingHooks</em> &#8211; An instance of the <a class="reference internal" href="#modloader.modlib.AWSWEndingHooks" title="modloader.modlib.AWSWEndingHooks"><code class="xref py py-class docutils literal"><span class="pre">AWSWEndingHooks</span></code></a>.</p>
+<dt id="modloader.modgame.AWSWModBase.ending_hooks">
+<code class="descname">ending_hooks</code><a class="headerlink" href="#modloader.modgame.AWSWModBase.ending_hooks" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>AWSWEndingHooks</em> &#8211; An instance of the <a class="reference internal" href="#modloader.modgame.AWSWEndingHooks" title="modloader.modgame.AWSWEndingHooks"><code class="xref py py-class docutils literal"><span class="pre">AWSWEndingHooks</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="modloader.modlib.AWSWModBase.homeHook">
-<code class="descname">homeHook</code><a class="headerlink" href="#modloader.modlib.AWSWModBase.homeHook" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWModBase.home_hook">
+<code class="descname">home_hook</code><a class="headerlink" href="#modloader.modgame.AWSWModBase.home_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>AWSWHomeHook</em> &#8211; An instance of the <code class="xref py py-class docutils literal"><span class="pre">AWSWHOmeHook</span></code></p>
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWModBase.DisableBCache">
-<code class="descname">DisableBCache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.DisableBCache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.DisableBCache" title="Permalink to this definition">¶</a></dt>
-<dd><p>Disable bytecode cache</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.DisableSCache">
-<code class="descname">DisableSCache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.DisableSCache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.DisableSCache" title="Permalink to this definition">¶</a></dt>
-<dd><p>Disable SLAst&#8217;s load cache</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.addMenuOption">
-<code class="descname">addMenuOption</code><span class="sig-paren">(</span><em>menu</em>, <em>option</em>, <em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.addMenuOption"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.addMenuOption" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a dialog option to a given menu</p>
+<dt id="modloader.modgame.AWSWModBase.get_ending_hooks">
+<code class="descname">get_ending_hooks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWModBase.get_ending_hooks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWModBase.get_ending_hooks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the ending hook class</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>menu</strong> (<em>Menu</em>) &#8211; A menu to append the option</li>
-<li><strong>option</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The option name to add to the menu</li>
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node to execute after</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An instance of <a class="reference internal" href="#modloader.modgame.AWSWEndingHooks" title="modloader.modgame.AWSWEndingHooks"><code class="xref py py-class docutils literal"><span class="pre">AWSWEndingHooks</span></code></a></td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWModBase.call_hook">
-<code class="descname">call_hook</code><span class="sig-paren">(</span><em>node</em>, <em>dest_node</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.call_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.call_hook" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code> and once executed, redirect execution to</dt>
-<dd><code class="docutils literal"><span class="pre">dest_node</span></code></dd>
-</dl>
+<dt id="modloader.modgame.AWSWModBase.get_home_hook">
+<code class="descname">get_home_hook</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWModBase.get_home_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWModBase.get_home_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the home hook class</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node to hook</li>
-<li><strong>dest_node</strong> (<em>Node</em>) &#8211; The node to go after <code class="docutils literal"><span class="pre">node</span></code> is executed</li>
-<li><strong>func</strong> (<em>function</em>) &#8211; The function hook</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The <a class="reference internal" href="#modloader.modgame.AWSWHomeHook" title="modloader.modgame.AWSWHomeHook"><code class="xref py py-class docutils literal"><span class="pre">AWSWHomeHook</span></code></a> object</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWModBase.findByLineNumber">
-<code class="descname">findByLineNumber</code><span class="sig-paren">(</span><em>ln</em>, <em>file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.findByLineNumber"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.findByLineNumber" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find a node by line number and file</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Due to the fact that line numbers can change between versions, this only should be used as a last resort.</p>
-</div>
+<dt id="modloader.modgame.AWSWModBase.get_menu_hook">
+<code class="descname">get_menu_hook</code><span class="sig-paren">(</span><em>menu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWModBase.get_menu_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWModBase.get_menu_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the equivalent <code class="xref py py-class docutils literal"><span class="pre">AWSWMenuHook</span></code> object</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ln</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The line number</li>
-<li><strong>file</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The file name</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The node or None if it doesn&#8217;t meet the criteria provided</p>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The equivalent <code class="xref py py-class docutils literal"><span class="pre">AWSWMenuHook</span></code> object</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="modloader.modlib.AWSWModBase.findMenu">
-<code class="descname">findMenu</code><span class="sig-paren">(</span><em>needle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.findMenu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.findMenu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find a menu based off of a menu choice</p>
-<p>This searches the entire AST tree to find the menu choice. If it still cannot find it, it returns None</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>needle</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The menu choice to look for</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of menus.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.findPyStatement">
-<code class="descname">findPyStatement</code><span class="sig-paren">(</span><em>code</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.findPyStatement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.findPyStatement" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find a specific Python node in the entire AST</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>code</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The Python code to search for</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The Python node</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.findSay">
-<code class="descname">findSay</code><span class="sig-paren">(</span><em>needle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.findSay"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.findSay" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Say</span></code> node based on what is said</p>
-<p>This searches the entire AST tree for the specified statement.
-If none is found the function returns None.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>needle</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The said statement</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> node.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.findlabel">
-<code class="descname">findlabel</code><span class="sig-paren">(</span><em>lab</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.findlabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.findlabel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find a label based off of its name</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lab</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label&#8217;s name</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Label</span></code> object</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.getRGlobal">
-<code class="descname">getRGlobal</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.getRGlobal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.getRGlobal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a Ren&#8217;Py global</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The dictionary key</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The value put into the key or None if it doesn&#8217;t exist</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.getscreen">
-<code class="descname">getscreen</code><span class="sig-paren">(</span><em>scr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.getscreen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.getscreen" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a screen based off of its name</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The screen&#8217;s name</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.display.screen.Screen</span></code> object</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.getsls">
-<code class="descname">getsls</code><span class="sig-paren">(</span><em>scr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.getsls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.getsls" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the SLScreen based off of its name</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>scr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The screen&#8217;s name</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.sl2.slast.SLScreen</span></code> object</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.hook_opcode">
-<code class="descname">hook_opcode</code><span class="sig-paren">(</span><em>node</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.hook_opcode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.hook_opcode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code></p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node object for the function to hook</li>
-<li><strong>func</strong> (<em>function</em>) &#8211; The function to be executed when the node is executed</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition-todo admonition" id="index-1">
-<p class="first admonition-title">Todo</p>
-<p class="last">Check if a hook already exists and make the code more cohesive</p>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.hooklabel">
-<code class="descname">hooklabel</code><span class="sig-paren">(</span><em>lab</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.hooklabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.hooklabel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hook a function to a label</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lab</strong> (<em>renpy.ast.Label</em>) &#8211; The label</li>
-<li><strong>func</strong> (<em>function</em>) &#8211; The function to be hooked</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.jump_ret">
-<code class="descname">jump_ret</code><span class="sig-paren">(</span><em>node</em>, <em>dest_node</em>, <em>ret_node</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.jump_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.jump_ret" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code> and once executed, redirect execution to</dt>
-<dd><code class="docutils literal"><span class="pre">dest_node</span></code> and allow <code class="docutils literal"><span class="pre">ret_node</span></code> to be executed after
-<code class="docutils literal"><span class="pre">dest_node</span></code> returns.</dd>
-</dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node to hook</li>
-<li><strong>dest_node</strong> (<em>Node</em>) &#8211; The node to go after <code class="docutils literal"><span class="pre">node</span></code> is executed</li>
-<li><strong>ret_node</strong> (<em>Node</em>) &#8211; The node that is executed after <code class="docutils literal"><span class="pre">dest_node</span></code> returns</li>
-<li><strong>func</strong> (<em>function</em>) &#8211; The function hook</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.nullPyexpr">
-<code class="descname">nullPyexpr</code><span class="sig-paren">(</span><em>scr</em>, <em>comp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.nullPyexpr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.nullPyexpr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove an if statement and its branches</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>scr</strong> (<em>Screen</em>) &#8211; The screen object to iterate over</li>
-<li><strong>comp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; String comparison for</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.searchPeakIf">
-<code class="descname">searchPeakIf</code><span class="sig-paren">(</span><em>node</em>, <em>type</em>, <em>maxBeforeFailure=200</em>, <em>skip=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.searchPeakIf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.searchPeakIf" title="Permalink to this definition">¶</a></dt>
+<dt id="modloader.modgame.AWSWModBase.search_peak_if">
+<code class="descname">search_peak_if</code><span class="sig-paren">(</span><em>node</em>, <em>type_</em>, <em>max_depth=200</em>, <em>skip=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#AWSWModBase.search_peak_if"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.AWSWModBase.search_peak_if" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search recursively for a node type.</p>
 <p>This enters if statement blocks in order to find your specified node type</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -543,59 +289,348 @@ If none is found the function returns None.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.searchPostNode">
-<code class="descname">searchPostNode</code><span class="sig-paren">(</span><em>node</em>, <em>type</em>, <em>maxBeforeFailure=200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.searchPostNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.searchPostNode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Search for a specific type of node.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modgame.sprnt">
+<code class="descclassname">modloader.modgame.</code><code class="descname">sprnt</code><span class="sig-paren">(</span><em>str_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modgame.html#sprnt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modgame.sprnt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print an encoded string to stdout</p>
+<p>Encode the string in UTF-8 before printing it out to stdout
+This helps avoid Unicode errors</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node to start the search</li>
-<li><strong>type</strong> (<em>Node</em>) &#8211; The node <em>class</em>, not an instance of a class, to search for</li>
-<li><strong>maxBeforeFailure</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of nodes to search before giving up</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>string</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The string to be printed</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.setRGlobal">
-<code class="descname">setRGlobal</code><span class="sig-paren">(</span><em>key</em>, <em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.setRGlobal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.setRGlobal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a Ren&#8217;Py global</p>
-<p>Ren&#8217;Py globals can be used during execution of rpy.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>key</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The dictionary key</li>
-<li><strong>val</strong> &#8211; The value of the dictionary object</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.stepOp">
-<code class="descname">stepOp</code><span class="sig-paren">(</span><em>node</em>, <em>num</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.stepOp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.stepOp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the <code class="docutils literal"><span class="pre">num</span></code> nodes after <code class="docutils literal"><span class="pre">node</span></code></p>
+<span class="target" id="module-modloader.modast"></span><p>Get and modify nodes in the AST tree</p>
+<p>This file is free software under the GPLv3 license</p>
+<dl class="class">
+<dt id="modloader.modast.ASTHook">
+<em class="property">class </em><code class="descclassname">modloader.modast.</code><code class="descname">ASTHook</code><span class="sig-paren">(</span><em>loc</em>, <em>hook_func_=None</em>, <em>from_op_=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#ASTHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.ASTHook" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>A custom <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> that acts as a hook between</dt>
+<dd>other node objects.</dd>
+</dl>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This skips <a class="reference internal" href="#modloader.modlib.ASTHook" title="modloader.modlib.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> nodes</p>
+<p class="last">Don&#8217;t instantiate this class directly. Ren&#8217;Py uses an
+internal serial for the call stack and other uses. This
+class emulates that at the base class.</p>
+</div>
+<dl class="attribute">
+<dt id="modloader.modast.ASTHook.hook_func">
+<code class="descname">hook_func</code><a class="headerlink" href="#modloader.modast.ASTHook.hook_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function that&#8217;s called when the node is executed.
+If the function returns a non-None value, the next
+node will be skipped.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="modloader.modast.ASTHook.from_op">
+<code class="descname">from_op</code><a class="headerlink" href="#modloader.modast.ASTHook.from_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>The original node before hooking</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="modloader.modast.ASTHook.old_next">
+<code class="descname">old_next</code><a class="headerlink" href="#modloader.modast.ASTHook.old_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>The original next node before hooking was done</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.ASTHook.exec_continue">
+<code class="descname">exec_continue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#ASTHook.exec_continue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.ASTHook.exec_continue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Continue</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.ASTHook.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#ASTHook.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.ASTHook.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute hook after node is called</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.ASTHook.unhook">
+<code class="descname">unhook</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#ASTHook.unhook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.ASTHook.unhook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the hook</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="modloader.modast.MenuHook">
+<em class="property">class </em><code class="descclassname">modloader.modast.</code><code class="descname">MenuHook</code><span class="sig-paren">(</span><em>menu_</em>, <em>base_</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook" title="Permalink to this definition">¶</a></dt>
+<dd><p>A hook class for editing a specific menu</p>
+<dl class="method">
+<dt id="modloader.modast.MenuHook.add_item">
+<code class="descname">add_item</code><span class="sig-paren">(</span><em>label</em>, <em>hook</em>, <em>condition='True'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.add_item"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.add_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new choice to the menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The option&#8217;s label</li>
+<li><strong>hook</strong> &#8211; Either a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> or a function to be
+executed after the menu choice has been selected</li>
+<li><strong>condition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; A Python string to evaluate to determine
+whether or not the choice should be shown</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None if <code class="docutils literal"><span class="pre">hook</span></code> is a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> or a
+<a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> if <code class="docutils literal"><span class="pre">hook</span></code> is a function</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.MenuHook.delete_item">
+<code class="descname">delete_item</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.delete_item"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.delete_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a choice from the menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label to search for</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.MenuHook.get_item">
+<code class="descname">get_item</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.get_item"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.get_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a choice from the menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label to search for</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.MenuHook.get_items">
+<code class="descname">get_items</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.get_items"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.get_items" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the items in the menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of three-element tuples where the format is (label, condition, block), where
+label is the visible label given to the user,
+condition is a Python statement that determines whether or not to show the choice, and
+block is SL code</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.MenuHook.get_option_code">
+<code class="descname">get_option_code</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.get_option_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.get_option_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a choice&#8217;s SL code from the menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>choice</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The choice to get</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="modloader.modast.MenuHook.set_conditional">
+<code class="descname">set_conditional</code><span class="sig-paren">(</span><em>item</em>, <em>new_cond</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#MenuHook.set_conditional"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.MenuHook.set_conditional" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the conditional statement for <code class="docutils literal"><span class="pre">item</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if successful and False if not</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.add_menu_option">
+<code class="descclassname">modloader.modast.</code><code class="descname">add_menu_option</code><span class="sig-paren">(</span><em>menu</em>, <em>option</em>, <em>node</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#add_menu_option"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.add_menu_option" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a dialog option to a given menu</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>menu</strong> (<em>Menu</em>) &#8211; The menu to modify</li>
+<li><strong>option</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The option&#8217;s text</li>
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node to execute if the node is selected</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.call_hook">
+<code class="descclassname">modloader.modast.</code><code class="descname">call_hook</code><span class="sig-paren">(</span><em>node</em>, <em>dest_node</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#call_hook"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.call_hook" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code> and once executed, redirect execution to</dt>
+<dd><code class="docutils literal"><span class="pre">dest_node</span></code></dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node to hook</li>
+<li><strong>dest_node</strong> (<em>Node</em>) &#8211; the node to go after <code class="docutils literal"><span class="pre">node</span></code> is executed</li>
+<li><strong>func</strong> (<em>function</em>) &#8211; The function to call</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.disable_bytecode_cache">
+<code class="descclassname">modloader.modast.</code><code class="descname">disable_bytecode_cache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#disable_bytecode_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.disable_bytecode_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable bytecode cache</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.disable_slast_cache">
+<code class="descclassname">modloader.modast.</code><code class="descname">disable_slast_cache</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#disable_slast_cache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.disable_slast_cache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable SLAst&#8217;s load cache</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.find_in_source_code">
+<code class="descclassname">modloader.modast.</code><code class="descname">find_in_source_code</code><span class="sig-paren">(</span><em>line_number</em>, <em>file_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#find_in_source_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.find_in_source_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a node by line number and file name</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Line numbers and file names can change between versions. Use the
+function as a last resort only.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>node</strong> (<em>Node</em>) &#8211; The node to start searching from</li>
-<li><strong>num</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of nodes to skip</li>
+<li><strong>line_number</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The line number</li>
+<li><strong>file_name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The file name</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The node or None if it doesn&#8217;t meet the criteria provided</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.find_label">
+<code class="descclassname">modloader.modast.</code><code class="descname">find_label</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#find_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.find_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a label based off of its name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label&#8217;s name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Label</span></code> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.find_menu">
+<code class="descclassname">modloader.modast.</code><code class="descname">find_menu</code><span class="sig-paren">(</span><em>needle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#find_menu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.find_menu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find menus based off a single menu choice</p>
+<p>This searches the entire AST tree to find the menu choice.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>needle</strong> &#8211; The menu choice to look for. If needle is a string, search for
+the string. If needle is a list of strings, the program automatically
+enters multisearch mode</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of matching menus</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.find_python_statement">
+<code class="descclassname">modloader.modast.</code><code class="descname">find_python_statement</code><span class="sig-paren">(</span><em>statement</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#find_python_statement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.find_python_statement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a specific Python node in the entire AST</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>statement</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The Python statement to look for</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The Python node if found, None if not</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.find_say">
+<code class="descclassname">modloader.modast.</code><code class="descname">find_say</code><span class="sig-paren">(</span><em>needle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#find_say"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.find_say" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Say</span></code> node based on what is said</p>
+<p>This searches the entire AST tree for the specified statement.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>needle</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The statement to search for</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> node</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.get_node_after_nodes">
+<code class="descclassname">modloader.modast.</code><code class="descname">get_node_after_nodes</code><span class="sig-paren">(</span><em>node</em>, <em>location</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#get_node_after_nodes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.get_node_after_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the <code class="docutils literal"><span class="pre">location``th</span> <span class="pre">node</span> <span class="pre">after</span> <span class="pre">``node</span></code></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This skips <a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> nodes</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The starting search node</li>
+<li><strong>location</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of nodes to skip</li>
 </ul>
 </td>
 </tr>
@@ -606,32 +641,240 @@ If none is found the function returns None.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="modloader.modlib.AWSWModBase.unhooklabel">
-<code class="descname">unhooklabel</code><span class="sig-paren">(</span><em>lab</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#AWSWModBase.unhooklabel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.AWSWModBase.unhooklabel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unhook hooks from a label</p>
+<dl class="function">
+<dt id="modloader.modast.get_renpy_global">
+<code class="descclassname">modloader.modast.</code><code class="descname">get_renpy_global</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#get_renpy_global"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.get_renpy_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a Ren&#8217;Py global</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lab</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label&#8217;s name</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The dictionary key</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The value put into the key or None if it doesn&#8217;t exist</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
-</dd></dl>
-
 <dl class="function">
-<dt id="modloader.modlib.sprnt">
-<code class="descclassname">modloader.modlib.</code><code class="descname">sprnt</code><span class="sig-paren">(</span><em>string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modlib.html#sprnt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modlib.sprnt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Print an encoded string to stdout</p>
-<p>This function is not like your standard print function. Rather, it encodes the string in UTF-8 to avoid Unicode errors</p>
+<dt id="modloader.modast.get_screen">
+<code class="descclassname">modloader.modast.</code><code class="descname">get_screen</code><span class="sig-paren">(</span><em>scr</em>, <em>nodes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#get_screen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.get_screen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a screen based off of its name</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>string</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The string to be printed</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>scr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The screen&#8217;s name</li>
+<li><strong>nodes</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; A list of screen variants. If None, default to all screens</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <code class="xref py py-class docutils literal"><span class="pre">renpy.display.screen.Screen</span></code> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.get_slscreen">
+<code class="descclassname">modloader.modast.</code><code class="descname">get_slscreen</code><span class="sig-paren">(</span><em>scr</em>, <em>nodes=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#get_slscreen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.get_slscreen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a screen&#8217;s executable based off of its name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>scr</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The screen&#8217;s name</li>
+<li><strong>nodes</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; A list of screen variants. If None, default to all screens</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <code class="xref py py-class docutils literal"><span class="pre">renpy.display.screen.Screen</span></code> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.hook_label">
+<code class="descclassname">modloader.modast.</code><code class="descname">hook_label</code><span class="sig-paren">(</span><em>label</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#hook_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.hook_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook a function to a label</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>label</strong> (<em>renpy.ast.Label</em>) &#8211; The label</li>
+<li><strong>func</strong> (<em>function</em>) &#8211; The function to be hooked</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.hook_opcode">
+<code class="descclassname">modloader.modast.</code><code class="descname">hook_opcode</code><span class="sig-paren">(</span><em>node</em>, <em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#hook_opcode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.hook_opcode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node object for the function to hook</li>
+<li><strong>func</strong> (<em>function</em>) &#8211; The function to be executed when the node is executed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<p class="last">Check if a hook already exists and make the code more cohesive</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An <a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.jump_ret">
+<code class="descclassname">modloader.modast.</code><code class="descname">jump_ret</code><span class="sig-paren">(</span><em>node</em>, <em>dest_node</em>, <em>return_node</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#jump_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.jump_ret" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Hook <code class="docutils literal"><span class="pre">func</span></code> to <code class="docutils literal"><span class="pre">node</span></code> and once executed, redirect execution to</dt>
+<dd><code class="docutils literal"><span class="pre">dest_node</span></code> and allow <code class="docutils literal"><span class="pre">return_node</span></code> to be executed after
+<code class="docutils literal"><span class="pre">dest_node</span></code> returns</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node to hook</li>
+<li><strong>dest_node</strong> (<em>Node</em>) &#8211; The node to go after <code class="docutils literal"><span class="pre">node</span></code> is executed</li>
+<li><strong>return_node</strong> (<em>Node</em>) &#8211; The node that is executed after <code class="docutils literal"><span class="pre">dest_node</span></code> returns</li>
+<li><strong>func</strong> (<em>function</em>) &#8211; The function hook</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An <a class="reference internal" href="#modloader.modast.ASTHook" title="modloader.modast.ASTHook"><code class="xref py py-class docutils literal"><span class="pre">ASTHook</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.remove_slif">
+<code class="descclassname">modloader.modast.</code><code class="descname">remove_slif</code><span class="sig-paren">(</span><em>scr</em>, <em>comparison</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#remove_slif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.remove_slif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a block (equivalent to a Node) from a <code class="xref py py-class docutils literal"><span class="pre">renpy.sl2.slast.SLIf</span></code> object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>scr</strong> (<em>SLScreen</em>) &#8211; The SLScreen node to start the search</li>
+<li><strong>comparison</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The comparison string for the expression</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">True if removed, False if not</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.search_for_node_type">
+<code class="descclassname">modloader.modast.</code><code class="descname">search_for_node_type</code><span class="sig-paren">(</span><em>node</em>, <em>type_</em>, <em>max_depth=200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#search_for_node_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.search_for_node_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for a specific type of node</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node to start the search</li>
+<li><strong>type</strong> (<em>class</em>) &#8211; The node class, not an instance of the class, to search for</li>
+<li><strong>max_depth</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of nodes to search before giving up
+Defaults to 200. The higher the number, the slower the process</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> object if a match occurs or None if no match occurs</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.search_for_node_with_criteria">
+<code class="descclassname">modloader.modast.</code><code class="descname">search_for_node_with_criteria</code><span class="sig-paren">(</span><em>node</em>, <em>func</em>, <em>max_depth=200</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#search_for_node_with_criteria"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.search_for_node_with_criteria" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for a node and check with <code class="docutils literal"><span class="pre">func</span></code></p>
+<p>If <code class="docutils literal"><span class="pre">func</span></code> returns a truthy value, return the node. Else, skip it</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<em>Node</em>) &#8211; The node to start the search</li>
+<li><strong>func</strong> (<em>function</em>) &#8211; Function to check for the given node. Given one argument,
+node (of type <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code>), which is the node that is at the current depth.
+Do not make the functions complex or it will slow down the game significantly.</li>
+<li><strong>max_depth</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of nodes to search before giving up
+Defaults to 200. The higher the number, the slower the process</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <code class="xref py py-class docutils literal"><span class="pre">renpy.ast.Node</span></code> object if a match occurs or None if no match occurs</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.set_renpy_global">
+<code class="descclassname">modloader.modast.</code><code class="descname">set_renpy_global</code><span class="sig-paren">(</span><em>key</em>, <em>val</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#set_renpy_global"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.set_renpy_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a Ren&#8217;Py glboal</p>
+<p>Ren&#8217;Py globals can be used during execution of rpy.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The dictionary key</li>
+<li><strong>val</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The value of the dictionary object</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="modloader.modast.unhook_label">
+<code class="descclassname">modloader.modast.</code><code class="descname">unhook_label</code><span class="sig-paren">(</span><em>label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/modloader/modast.html#unhook_label"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#modloader.modast.unhook_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unhook a hook from a lbel</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>label</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The label&#8217;s name</td>
 </tr>
 </tbody>
 </table>
@@ -677,7 +920,7 @@ If none is found the function returns None.</p>
       &copy;2017, AWSWCommunity.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |

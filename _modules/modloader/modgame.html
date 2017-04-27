@@ -1,0 +1,439 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>modloader.modgame &#8212; AWSW-Modtools  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for modloader.modgame</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The modding library.</span>
+
+<span class="sd">This file contains all the functions needed to modify and extend AwSW.</span>
+
+<span class="sd">This file is free software under the GPLv3 license.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">string</span>
+
+<span class="kn">import</span> <span class="nn">renpy</span>
+<span class="kn">import</span> <span class="nn">renpy.python</span>
+<span class="kn">from</span> <span class="nn">renpy</span> <span class="k">import</span> <span class="n">ast</span>
+
+<span class="kn">import</span> <span class="nn">modloader</span>
+<span class="kn">from</span> <span class="nn">modloader</span> <span class="k">import</span> <span class="n">modast</span>
+
+<span class="n">ROT13</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">maketrans</span><span class="p">(</span>
+    <span class="s2">&quot;NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="sprnt"><a class="viewcode-back" href="../../API.html#modloader.modgame.sprnt">[docs]</a><span class="k">def</span> <span class="nf">sprnt</span><span class="p">(</span><span class="n">str_</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Print an encoded string to stdout</span>
+
+<span class="sd">    Encode the string in UTF-8 before printing it out to stdout</span>
+<span class="sd">    This helps avoid Unicode errors</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        string (str): The string to be printed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span> <span class="n">str_</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks">[docs]</a><span class="k">class</span> <span class="nc">AWSWEndingHooks</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The ending hooks for the game&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new ending hook class</span>
+
+<span class="sd">        This function is also responsible for finding the true-ending post-Izumi node</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_ (AWSWModBase): An instance of the AWSWModBase class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base_</span>
+        <span class="c1"># pylint: disable=line-too-long</span>
+        <span class="n">search_str</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="s2">&quot;Fur pybfrq ure rlrf nf n fvatyr grne ena qbja ure snpr. V zbirq gb jvcr vg sebz ure, naq pbhyq nyernql srry gur jnezgu qenvavat sebz Vmhzv&#39;f obql. Fur jnf qrnq.&quot;</span><span class="p">,</span> <span class="n">ROT13</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_izumi_node</span> <span class="o">=</span> <span class="n">modast</span><span class="o">.</span><span class="n">find_say</span><span class="p">(</span><span class="n">search_str</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AWSWEndingHooks.get_post_izumi_node"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks.get_post_izumi_node">[docs]</a>    <span class="k">def</span> <span class="nf">get_post_izumi_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the post-true Izumi&#39;s tear scene</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Say` node object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_izumi_node</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.hook_post_true_ending"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks.hook_post_true_ending">[docs]</a>    <span class="k">def</span> <span class="nf">hook_post_true_ending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``node`` to the post-true ending node</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An :class:`ASTHook` instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fincall</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_post_izumi_node</span><span class="p">()</span><span class="o">.</span><span class="n">next</span>
+        <span class="k">return</span> <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">fincall</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.hook_post_evil_ending"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks.hook_post_evil_ending">[docs]</a>    <span class="k">def</span> <span class="nf">hook_post_evil_ending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``node`` to the post-evil ending node</span>
+
+<span class="sd">        Todo:</span>
+<span class="sd">            Program this.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=unused-argument, no-self-use</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.hook_route_ending"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks.hook_route_ending">[docs]</a>    <span class="k">def</span> <span class="nf">hook_route_ending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">route</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook ``node`` to the end of all routes</span>
+
+<span class="sd">        Todo:</span>
+<span class="sd">            Program this.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=no-self-use, unused-argument</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="AWSWEndingHooks.get_ending_picker_menu"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWEndingHooks.get_ending_picker_menu">[docs]</a>    <span class="k">def</span> <span class="nf">get_ending_picker_menu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get Chapter 5&#39;s menu on who to go to the fireworks.</span>
+
+<span class="sd">        Get an instance of :class:`AWSWMenuHooks` for use of making</span>
+<span class="sd">        new choices on who to go to the festival with.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An instance of :class:`AWSWMenuHooks`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ch5</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="s2">&quot;chapter5&quot;</span><span class="p">)</span>
+        <span class="n">menu_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">searchPostNode</span><span class="p">(</span><span class="n">ch5</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Menu</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+        <span class="n">menu_hooks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">get_menu_hook</span><span class="p">(</span><span class="n">menu_node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">menu_hooks</span></div></div>
+
+
+<div class="viewcode-block" id="AWSWHomeHook"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook">[docs]</a><span class="k">class</span> <span class="nc">AWSWHomeHook</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Hook the menu found in the player&#39;s apartment.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        base (AWSWModBase):</span>
+<span class="sd">            An instance of the mod base</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook the hooks in the appropriate places.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_ (AWSWModBase): An instance of the mod base class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hooks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># The alt menus are actually the character selection menus</span>
+        <span class="c1"># The &quot;a&quot; and &quot;b&quot; versions are the first character selection and the second character</span>
+        <span class="c1"># selection for the chapter, respectively.</span>
+        <span class="n">alt_menu_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chap2altmenua1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap2altmenub1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap3altmenua1&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;chap3altmenub1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap4altmenua1&quot;</span><span class="p">,</span> <span class="s2">&quot;chap4altmenub1&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alt_menus</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">alt_menu_labels</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alt_menus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">modast</span><span class="o">.</span><span class="n">find_label</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">)</span>
+
+        <span class="c1">#TODO: Understand what chapter_menus_ does that alt_menus doesn&#39;t</span>
+        <span class="n">chapter_menus_</span> <span class="o">=</span> <span class="n">modast</span><span class="o">.</span><span class="n">find_menu</span><span class="p">([</span><span class="s2">&quot;Meet with Bryce.&quot;</span><span class="p">])</span> <span class="c1"># Choice was 100% unbiased thanks</span>
+        <span class="n">chapter_menus_</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">chapter_menus_</span> <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alt_menus</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chapter_menus</span> <span class="o">=</span> <span class="n">chapter_menus_</span>
+
+        <span class="n">stmts</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stmts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Python</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;brycebar = False&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">chapter_1_hook</span> <span class="o">=</span> <span class="n">node</span>
+
+        <span class="c1">#TODO: Understand what this variable name is</span>
+        <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="n">answToHook</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chapter2chars&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter3chars&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter4chars&quot;</span><span class="p">]</span>
+        <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># pylint: disable=missing-docstring</span>
+        <span class="k">def</span> <span class="nf">nodeCB</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Python</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">closure_val</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1">#TODO: Understand what this variable name is</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="n">answToHook</span><span class="p">:</span>
+            <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;playmessage = False&quot;</span>
+            <span class="n">labNode</span> <span class="o">=</span> <span class="n">modast</span><span class="o">.</span><span class="n">find_label</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+
+            <span class="n">hkPt</span> <span class="o">=</span> <span class="n">modast</span><span class="o">.</span><span class="n">search_for_node_with_criteria</span><span class="p">(</span><span class="n">labNode</span><span class="p">,</span> <span class="n">nodeCB</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="nb">type</span><span class="p">(</span><span class="n">hkPt</span><span class="p">)</span>
+
+            <span class="c1"># New mods will be inserted BEFORE this node, so we&#39;ll be alright.</span>
+            <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">modast</span><span class="o">.</span><span class="n">find_label</span><span class="p">(</span><span class="s1">&#39;_mod_fixansw&#39;</span><span class="p">))</span>
+            <span class="n">closure_val</span> <span class="o">=</span> <span class="s2">&quot;remyavailable = True&quot;</span>
+            <span class="n">hkPt2</span> <span class="o">=</span> <span class="n">modast</span><span class="o">.</span><span class="n">search_for_node_with_criteria</span><span class="p">(</span><span class="n">labNode</span><span class="p">,</span> <span class="n">nodeCB</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">))</span>
+
+<div class="viewcode-block" id="AWSWHomeHook.addAnswerMachineCheckHook"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook.addAnswerMachineCheckHook">[docs]</a>    <span class="k">def</span> <span class="nf">addAnswerMachineCheckHook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if the answering machine&#39;s output.</span>
+
+<span class="sd">        Return true if the dialog should pop up and return false if it shouldn&#39;t.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dest_node: Can be either a :class:`renpy.ast.Node` or a function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Figure out what the variable names mean</span>
+        <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dest_node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span></div>
+<span class="c1">#        else:</span>
+<span class="c1">#            for (hkPt, hkPt2) in self.InitAnswPoints:</span>
+<span class="c1">#                #TODO: Figure out what this closure does</span>
+<span class="c1">#                # It&#39;s not called on anywhere</span>
+<span class="c1">#                # pylint: disable=missing-docstring, unused-variable</span>
+<span class="c1">#                def det_func(hook):</span>
+<span class="c1">#                    ret = False</span>
+<span class="c1">#                    if dest_node:</span>
+<span class="c1">#                        ret = dest_node(hook)</span>
+<span class="c1">#                    if ret:</span>
+<span class="c1">#                        self.base.setRGlobal(&#39;playmessage&#39;, True)</span>
+<span class="c1">#</span>
+<span class="c1">#                # Why is this even here? We don&#39;t use ``hook`` after this</span>
+<span class="c1">#                #hook = self.hook_opcode(hkPt, dest_node)</span>
+
+<div class="viewcode-block" id="AWSWHomeHook.addAnswerMachineScene"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook.addAnswerMachineScene">[docs]</a>    <span class="k">def</span> <span class="nf">addAnswerMachineScene</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a hook before the answering machine plays</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dest_node: Can be either a :class:`renpy.ast.Node` or a</span>
+<span class="sd">                function. Called after the machine check returns true</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#TODO: Change the variable names</span>
+        <span class="c1"># pylint: disable=invalid-name</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dest_node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="n">hkPt2</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">hkPt</span><span class="p">,</span> <span class="n">hkPt2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">InitAnswPoints</span><span class="p">:</span>
+                <span class="n">modast</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="n">hkPt2</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook.add_route"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook.add_route">[docs]</a>    <span class="k">def</span> <span class="nf">add_route</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">route_hook</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a route to the chapter menu</span>
+
+<span class="sd">        The route will only appear if the condition evaluate to true.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            title (str): The human-readable menu option</span>
+<span class="sd">            route_hook (Node): The :class:`renpy.ast.Node` object to change to</span>
+<span class="sd">            condition (str): The Python string to evaluate if the option should appear</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">menu</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chapter_menus</span><span class="p">:</span>
+            <span class="n">hook</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">get_menu_hook</span><span class="p">(</span><span class="n">menu</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hooks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
+            <span class="n">hook2</span> <span class="o">=</span> <span class="n">hook</span><span class="o">.</span><span class="n">addItem</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">call_func</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+                <span class="c1">#TODO: What does rv stand for?</span>
+                <span class="c1"># pylint: disable=invalid-name</span>
+                <span class="n">rv</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">route_hook</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                               <span class="n">return_site</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="s1">&#39;_mod_fixjmp&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">rv</span><span class="p">)</span>
+            <span class="n">hook2</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">call_func</span></div>
+
+
+<div class="viewcode-block" id="AWSWHomeHook.hook_chapter_change"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook.hook_chapter_change">[docs]</a>    <span class="k">def</span> <span class="nf">hook_chapter_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook a change of the chapters</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hook: A :class:`renpy.ast.Node` object or function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">chapter_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;chapter2&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter3&quot;</span><span class="p">,</span> <span class="s2">&quot;chapter4&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">chapter_labels</span><span class="p">:</span>
+                <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">findlabel</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="n">hook</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chapter_1_hook</span><span class="p">,</span> <span class="n">hook</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#TODO: Determine which ch_id is actually being used</span>
+            <span class="c1"># pylint: disable=function-redefined</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">chapter_labels</span><span class="p">:</span>
+                <span class="k">def</span> <span class="nf">ch_id</span><span class="p">(</span><span class="n">hook2</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+                        <span class="n">hook</span><span class="p">(</span><span class="n">hook2</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+                <span class="n">modast</span><span class="o">.</span><span class="n">hook_label</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">ch_id</span><span class="p">)</span>
+
+            <span class="c1">#TODO: What does label mean here?</span>
+            <span class="c1"># pylint: disable=undefined-loop-variable, function-redefined</span>
+            <span class="k">def</span> <span class="nf">ch_id</span><span class="p">(</span><span class="n">hook2</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">hook</span><span class="p">:</span>
+                    <span class="n">hook</span><span class="p">(</span><span class="n">hook2</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+
+            <span class="n">modast</span><span class="o">.</span><span class="n">hook_opcode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chapter_1_hook</span><span class="p">,</span> <span class="n">ch_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWHomeHook.hook_chapter_1"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWHomeHook.hook_chapter_1">[docs]</a>    <span class="k">def</span> <span class="nf">hook_chapter_1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook a node to the start of Chapter 1</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hook (Node): The node to hook</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modast</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chapter_1_hook</span><span class="p">,</span> <span class="n">hook</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># pylint: disable=too-many-public-methods</span>
+<div class="viewcode-block" id="AWSWModBase"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWModBase">[docs]</a><span class="k">class</span> <span class="nc">AWSWModBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The modding framework base.</span>
+
+<span class="sd">    This class contains all the base functions needed to edit the AST, screens, and screen language.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        ending_hooks (AWSWEndingHooks): An instance of the :class:`AWSWEndingHooks`.</span>
+<span class="sd">        home_hook (AWSWHomeHook): An instance of the :class:`AWSWHOmeHook`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ending_hooks</span> <span class="o">=</span> <span class="n">AWSWEndingHooks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name_serial</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home_hook</span> <span class="o">=</span> <span class="n">AWSWHomeHook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="AWSWModBase.get_menu_hook"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWModBase.get_menu_hook">[docs]</a>    <span class="k">def</span> <span class="nf">get_menu_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">menu</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the equivalent :class:`AWSWMenuHook` object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The equivalent :class:`AWSWMenuHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">modast</span><span class="o">.</span><span class="n">MenuHook</span><span class="p">(</span><span class="n">menu</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.get_home_hook"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWModBase.get_home_hook">[docs]</a>    <span class="k">def</span> <span class="nf">get_home_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the home hook class</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The :class:`AWSWHomeHook` object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">home_hook</span></div>
+
+
+<div class="viewcode-block" id="AWSWModBase.get_ending_hooks"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWModBase.get_ending_hooks">[docs]</a>    <span class="k">def</span> <span class="nf">get_ending_hooks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the ending hook class</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An instance of :class:`AWSWEndingHooks`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ending_hooks</span></div>
+
+<div class="viewcode-block" id="AWSWModBase.search_peak_if"><a class="viewcode-back" href="../../API.html#modloader.modgame.AWSWModBase.search_peak_if">[docs]</a>    <span class="k">def</span> <span class="nf">search_peak_if</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search recursively for a node type.</span>
+
+<span class="sd">        This enters if statement blocks in order to find your specified node type</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): The starting node</span>
+<span class="sd">            type_ (Node): A *subclass*, not an instance, of a :class:`renpy.ast.Node` object</span>
+<span class="sd">            maxBeforeFailure (int): How many nodes to iterate through before giving up</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`renpy.ast.Node` object or None if not found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Simplify this pyramid</span>
+        <span class="c1"># pylint: disable=too-many-nested-blocks</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">node</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">If</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">entries</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span> <span class="ow">and</span> <span class="n">skip</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">skip</span> <span class="o">-=</span> <span class="mi">1</span>
+                            <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_peak_if</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">type_</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">cand</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">cand</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">skip</span> <span class="o">-=</span> <span class="mi">1</span>
+
+
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">type_</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">node</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">next</span></div></div>
+
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">modloader</span><span class="o">.</span><span class="n">BUILDING_DOCUMENTATION</span><span class="p">:</span>
+    <span class="c1"># Determine if this should be a constant</span>
+    <span class="c1"># pylint: disable=invalid-name</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">AWSWModBase</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, AWSWCommunity.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
