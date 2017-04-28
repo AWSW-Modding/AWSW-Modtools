@@ -483,7 +483,7 @@ def get_renpy_global(key):
 
 
 def set_renpy_global(key, val):
-    """Set a Ren'Py glboal
+    """Set a Ren'Py global
 
     Ren'Py globals can be used during execution of rpy.
 
