@@ -42,39 +42,46 @@ Have fun and enjoy.
 Credits
 =======
 
-Primary Writer
+:Primary Writer:
 	AdamJ1664
 
-Additional Writers
+:Additional Writers:
     Cryoraptor
 
-Editor
+:Editor:
     Meowers!
 
-Additional Music
+:Additional Music:
 	Haze by Crinkles - Soundtrack in a box 16
+
 	Alps by Crinkles - Soundtrack in a box 16
+
     Bolt by Crinkles - Soundtrack in a box 16
+
     Terrace by Crinkles - Soundtrack in a box 16
+
 		https://crinklesmusic.bandcamp.com/album/soundtrack-from-a-box-16
+
 	Pirate Manners - Cap's on, Hat's Off
+
 		https://bossfightmusic.bandcamp.com/album/caps-on-hats-off
 
-Additional Sound Effects
+:Additional Sound Effects:
 	Freesound.org
+
     Recording's by AdamJ1664
 
-Additional character assets
+:Additional character assets:
 	Provided by Kothorix
+
 	With edits by AdamJ1664
 
-Additional Backgrounds
+:Additional Backgrounds:
 	New Retro Arcade Neon - Digital Cyber Cherries
+
 		http://digitalcybercherries.com/
 
-Testers
+:Testers:
 	Cryoraptor
 	DragonMalte
     Meowers!
-
-__init__.py file was pulled from ByeKevin mod and edited by AdamJ1664
