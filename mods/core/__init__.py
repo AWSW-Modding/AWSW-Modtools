@@ -51,6 +51,13 @@ class AWSWMod(Mod):
 
         modast.get_slscreen('main_menu').children.append(target_display)
 
+        # Append the NSFW selection each game
+        # Credits to yoshisman8 for the code
+        toggler = modast.find_label("lewdtoggler")
+        bootup = modast.find_label("nameentry")
+        modast.call_hook(bootup, toggler)
+
+
     def mod_complete(self):
         # This is called after all mods are loaded, preventing us from getting a partial list of
         # mods (say, if core was loaded before myMod1).
