@@ -1,4 +1,4 @@
-label lewdtoggler
+label lewdtoggler:
 
     $ nsfwtoggle = False 
     
@@ -20,4 +20,4 @@ label lewdtoggler
             s "You have chosen to not see the NSFW scenes."
             
             $ nsfwtoggle = False
-return
+    return
