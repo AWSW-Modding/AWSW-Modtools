@@ -4,6 +4,9 @@ image anna blushpalm = "cr/anna_blushpalm.png"
 image anna lipbite = "cr/anna_lipbite.png"
 
 label a4romanceL:
+
+        if not nsfwtoggle:
+            return
         
         An smirk "Now stand still..."
             
