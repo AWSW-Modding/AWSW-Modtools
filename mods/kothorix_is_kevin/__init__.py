@@ -20,7 +20,8 @@ class AWSWMod(Mod):
         kothorix_date_initalize = modast.find_label("KothorixDate_init")
 
         home_hook.hook_chapter_1(kothorix_date_initalize)
-        home_hook.add_route("Meet with Kothorix.", kothorix_date_scene, "MeetKothorix == 1 and KothorixDated < 1")
+        home_hook.add_route("Meet with Kothorix.", kothorix_date_scene,
+                            "MeetKothorix == 1 and KothorixDated < 1")
 
 
         found = modast.search_for_node_type(modast.find_label("c4hatchery"), ast.Scene, 20)
