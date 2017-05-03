@@ -14,7 +14,7 @@ class Mod(object):
         """Get the mod info
 
         Returns:
-            A tuple with the name, version, and author
+            A tuple with the name, version, author, and (optionally) if the mod is NSFW
         """
         raise NotImplementedError("Mod info isn't overriden")
 
@@ -49,8 +49,6 @@ def loadable_mod(modclass):
         raise Exception("Class must be a subclass of Mod")
 
     mod = modclass()
-    mod_name, version, author = mod.mod_info()
     mod.mod_load()
 
-    info = (mod, mod_name, version, author, sys.modules[modclass.__module__])
-    modinfo.add_mod(modclass.__module__, info)
+    modinfo.add_mod(mod.mod_info()[0], mod)
