@@ -31,6 +31,23 @@ To get full functionality from the modloader, it is recommended that you inherit
         def mod_complete(self): # called after all mods are loaded. 
             pass
 
+However, to make a NSFW mod, it's slightly different.
+
+.. code:: python
+
+    @loadable_mod
+    class AWSWMod(Mod):
+        def mod_info(self):
+            return ("MyModName", "v0.1", "AuthorName", True)
+
+        def mod_load(self): # called immediately after loading. Most code should go here. 
+            pass
+
+        def mod_complete(self): # called after all mods are loaded. 
+            pass
+
+Please notice the tuple has a new fourth element that is True. If the fourth element is True, that indicates to the modloader to display a simple warning to people who want to enable or disable NSFW scenes.
+
 Python and the Dangers of Rollback
 ----------------------------------
 

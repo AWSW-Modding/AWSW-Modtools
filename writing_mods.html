@@ -69,6 +69,20 @@
         <span class="k">pass</span>
 </pre></div>
 </div>
+<p>However, to make a NSFW mod, it&#8217;s slightly different.</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="nd">@loadable_mod</span>
+<span class="k">class</span> <span class="nc">AWSWMod</span><span class="p">(</span><span class="n">Mod</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">mod_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;MyModName&quot;</span><span class="p">,</span> <span class="s2">&quot;v0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;AuthorName&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">mod_load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># called immediately after loading. Most code should go here.</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">mod_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="c1"># called after all mods are loaded.</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Please notice the tuple has a new fourth element that is True. If the fourth element is True, that indicates to the modloader to display a simple warning to people who want to enable or disable NSFW scenes.</p>
 <div class="section" id="python-and-the-dangers-of-rollback">
 <h2>Python and the Dangers of Rollback<a class="headerlink" href="#python-and-the-dangers-of-rollback" title="Permalink to this headline">¶</a></h2>
 <p>Rollback is an integral feature of Ren&#8217;py, allowing the user to step back in time and make different choices. Usually rollback will play well with mods, but there are some cases that can introduce non-deterministic behavior. The main issue that rollback has is only Python objects encoded in Ren&#8217;Py&#8217;s AST(and then, only a select few statements) are rolled back. For this reason, Python functions should not be used in hooks if you can avoid them.</p>
