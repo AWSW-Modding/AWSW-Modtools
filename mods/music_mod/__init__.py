@@ -27,7 +27,7 @@ class AWSWMod(Mod):
 
     def readFilePart(self, path):
         with open(path) as f:
-            for i in xrange(19): # 15 is arbitrary... find out where the first line is in your file using raise Exception(line), seen below
+            for i in xrange(19): # 19 is placed here specifically for music_screen_meowers.rpy, change in the case file changes
                 f.next()
             strReturn = ""
             for line in f:
@@ -36,9 +36,7 @@ class AWSWMod(Mod):
             return strReturn
 
     def readFilesFromInitDir(self):
-        fixPath = renpy.config.gamedir + "/mods/"
-        fixPath += "music_mod/resource/initRead/"
-
+        fixPath = renpy.config.gamedir + "/mods/music_mod/resource/initRead/"
         dirList = os.listdir(fixPath)
         for filename in dirList:
             if filename.endswith(".rpy"):

@@ -1,15 +1,13 @@
 init python:
     def songChoice():
         import os, random
-        #fixPath = os.getcwd().replace("\\", "/")
-        fixPath = renpy.config.gamedir + "/mods/"
-        fixPath += "music_mod/resource/mx/" # must follow this path, or else with crash
+        fixPath = renpy.config.gamedir + "/mods/music_mod/resource/mx/" # must follow this path, or else with crash
         
-        list = []
+        addedList = []
         dirList = os.listdir(fixPath)
         for filename in dirList:            
             if (filename.endswith(".mp3")) or (filename.endswith(".wav")) or (filename.endswith(".ogg")):
-                list.append(filename)
+                List.append(filename)
                 
         listSize = len(list)
         if not list:
