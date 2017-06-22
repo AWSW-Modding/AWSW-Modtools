@@ -7,14 +7,13 @@ init python:
         dirList = os.listdir(fixPath)
         for filename in dirList:            
             if (filename.endswith(".mp3")) or (filename.endswith(".wav")) or (filename.endswith(".ogg")):
-                List.append(filename)
+                addedList.append(filename)
                 
-        listSize = len(list)
-        if not list:
+        listSize = len(addedList)
+        if not addedList:
             raise Exception("/music_mod/resource/mx/ must have at least one song in it!")
         
-        selectPos = int(random.random() * listSize)
-        return "mx/" + list[selectPos]
+        return "mx/" + addedList[int(random.random() * listSize)]
 
 screen meowers_music_selection:       
     imagebutton:
@@ -22,5 +21,5 @@ screen meowers_music_selection:
         action [Play("audio", "se/sounds/open.wav"), 
                 Play("music", songChoice())]
         hovered Play("audio", "se/sounds/select.ogg") 
-        xalign 0.87
-        yalign 0.85
+        xalign 0.95
+        yalign 0.95
