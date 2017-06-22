@@ -94,35 +94,57 @@ This sample code will remove Kevin's encounter and main menu icon. The full mod 
 
 .. code:: python
 
-    import renpy
-    import renpy.ast as ast
-    from modloader import modinfo
-    from modloader.modlib import sprnt
-    from modloader.modlib import base as ml # ml shortcut 
-    from modloader.modclass import Mod, loadable_mod # Import the base class and the decorator
+import renpy
+import renpy.ast as ast
 
-    @loadable_mod
-    class AWSWMod(Mod):
-        def mod_info(self):
-            return ("byekevin", "v0.1", "")
+from modloader import modinfo, modast
+from modloader.modgame import sprnt
+from modloader.modgame import base as ml
+from modloader.modclass import Mod, loadable_mod
 
-        def mod_load(self):
-            found = ml.searchPostNode(ml.findlabel("c4hatchery"), ast.Scene, 20) # search max of 20 nodes after c4hatchery label, look for the first scene initialization (which happens to be one opcode away, for now) 
-            hook = ml.hook_opcode(found, None) # insert a hooking node after scene, but before the narrator's say statement
-            hook.chain(ml.searchPostNode(found, ast.Scene)) # normally the hooking node would point back to the dialogue. Skip all the way to the next scene instead. 
+@loadable_mod
+class AWSWMod(Mod):
+    """Removes Kevin from the game"""
+    def mod_info(self):
+        return ("byekevin", "v0.2", "")
 
-            mainscr = ml.getsls('main_menu') # get the main screen (cache is disabled)
-            ml.nullPyexpr(mainscr, 'persistent.playedkevin') # remove the if block
+    def mod_load(self):
+        # Find and remove where we find Kevin
+        found = modast.search_for_node_type(modast.find_label("c4hatchery"), ast.Scene, 20)
+        hook = modast.hook_opcode(found, None)
+        hook.chain(modast.search_for_node_type(found, ast.Scene))
 
-            eHooks = ml.getEndingHooks()
-            true_search = eHooks.getPostTrueEndingIzumiScene()
+        # Remove Kevin from the main screen
+        mainscr = modast.get_slscreen('main_menu')
 
-            def kevinCB(node):
-                if node.next is not None and isinstance(node.next, renpy.ast.Show) and node.next.imspec[0][0] == 'meetingkevin': # imspec is part of the image ID in show opcodes.
-                    return True
+        # Remove Kevin from the persistent file
+        modast.remove_slif(mainscr, 'persistent.playedkevin')
 
-            kevin_credits = ml.searchPostNodeCB(true_search, kevinCB, 800) # search for a node using the kevinCB callback. 
-            kevin_credits.chain(ml.searchPostNode(kevin_credits, ast.Scene)) # Show and with are separate instructions.
+        ending_hooks = ml.get_ending_hooks()
+        true_search = ending_hooks.get_post_izumi_node()
+
+        def kevin_cb(node):
+            """Check if ``node`` is the node that we see Kevin
+
+            Args:
+                node (Node): The current node
+
+            See also:
+                :meth:`modloader.modlib.AWSWModBase.search_post_node_callback`
+            """
+            # Python does short-circuit evaluation; we don't evaluate the next boolean
+            # statement if the current one isn't true. So in our case, if node.next is None,
+            # we don't calculate if node.next is an instance of Show. Similarly, if node.next is
+            # not None but it isn't an instance of Show, we don't check the imspec of the object
+            if node.next is not None and isinstance(node.next, renpy.ast.Show)
+                and node.next.imspec[0][0] == 'meetingkevin':
+                return True
+
+        kevin_credits = modast.search_for_node_with_criteria(true_search, kevin_cb, 800)
+        kevin_credits.chain(modast.search_for_node_type(kevin_credits, ast.Scene))
+
+    def mod_complete(self):
+        pass
 
 See the mods/ and devmods/ folders for further sample code. devmods/ contains a few different examples with fully annotated code. 
 
