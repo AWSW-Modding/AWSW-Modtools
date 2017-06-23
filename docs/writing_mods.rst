@@ -96,33 +96,39 @@ This sample code will remove Kevin's encounter and main menu icon. The full mod 
 
     import renpy
     import renpy.ast as ast
-    from modloader import modinfo
-    from modloader.modlib import sprnt
-    from modloader.modlib import base as ml # ml shortcut 
+
+    from modloader import modinfo, modast
+    from modloader.modgame import sprnt
+    from modloader.modgame import base as ml # ml shortcut
     from modloader.modclass import Mod, loadable_mod # Import the base class and the decorator
 
     @loadable_mod
     class AWSWMod(Mod):
+        """Removes Kevin from the game"""
         def mod_info(self):
-            return ("byekevin", "v0.1", "")
+            return ("byekevin", "v0.2", "")
 
         def mod_load(self):
-            found = ml.searchPostNode(ml.findlabel("c4hatchery"), ast.Scene, 20) # search max of 20 nodes after c4hatchery label, look for the first scene initialization (which happens to be one opcode away, for now) 
-            hook = ml.hook_opcode(found, None) # insert a hooking node after scene, but before the narrator's say statement
-            hook.chain(ml.searchPostNode(found, ast.Scene)) # normally the hooking node would point back to the dialogue. Skip all the way to the next scene instead. 
+            found = modast.search_for_node_type(modast.find_label("c4hatchery"), ast.Scene, 20) # search max of 20 nodes after c4hatchery label, look for the first scene initialization (which happens to be one opcode away, for now)
+            hook = modast.hook_opcode(found, None) # insert a hooking node after scene, but before the narrator's say statement
+            hook.chain(modast.search_for_node_type(found, ast.Scene)) # normally the hooking node would point back to the dialogue. Skip all the way to the next scene instead.
 
-            mainscr = ml.getsls('main_menu') # get the main screen (cache is disabled)
-            ml.nullPyexpr(mainscr, 'persistent.playedkevin') # remove the if block
+            mainscr = modast.get_slscreen('main_menu') # get the main screen (cache is disabled)
+            modast.remove_slif(mainscr, 'persistent.playedkevin') # remove Kevin from the persistent file
 
-            eHooks = ml.getEndingHooks()
-            true_search = eHooks.getPostTrueEndingIzumiScene()
+            ending_hooks = ml.get_ending_hooks()
+            true_search = ending_hooks.get_post_izumi_node()
 
-            def kevinCB(node):
-                if node.next is not None and isinstance(node.next, renpy.ast.Show) and node.next.imspec[0][0] == 'meetingkevin': # imspec is part of the image ID in show opcodes.
+            def kevin_cb(node):
+                if node.next is not None and isinstance(node.next, renpy.ast.Show)
+                    and node.next.imspec[0][0] == 'meetingkevin': # imspec is part of the image ID in show opcodes.
                     return True
 
-            kevin_credits = ml.searchPostNodeCB(true_search, kevinCB, 800) # search for a node using the kevinCB callback. 
-            kevin_credits.chain(ml.searchPostNode(kevin_credits, ast.Scene)) # Show and with are separate instructions.
+            kevin_credits = modast.search_for_node_with_criteria(true_search, kevin_cb, 800) # search for a node using the kevinCB callback.
+            kevin_credits.chain(modast.search_for_node_type(kevin_credits, ast.Scene)) # Show and with are separate instructions.
+
+        def mod_complete(self):
+            pass
 
 See the mods/ and devmods/ folders for further sample code. devmods/ contains a few different examples with fully annotated code. 
 
