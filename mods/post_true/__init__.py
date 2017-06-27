@@ -22,7 +22,7 @@ class AWSWMod(Mod):
     def mod_load(self):
         # Get the label from the new code and hook it to the end
         endLabel = modast.find_label("post_true_main")
-        ml.ending_hooks.hook_post_true_ending(golab)
+        ml.ending_hooks.hook_post_true_ending(endLabel)
 
         # add button for testing...
         #tocompile = """
