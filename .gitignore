@@ -1,4 +1,4 @@
--*.pyc
--*.rpyc
--*.pyo
--docs/_build/
+*.pyc
+*.rpyc
+*.pyo
+docs/_build/

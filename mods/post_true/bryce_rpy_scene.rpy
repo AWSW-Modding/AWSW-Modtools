@@ -1,9 +1,7 @@
-label bryce_post_true_bootstrap:
+label bryce_post_true_entry:
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
     $ player_name = persistent.player_name
-    jump bryce_post_true_entry
 
-label bryce_post_true_entry:
     $ bryce_post_mood = 0
     call _mod_fixui
     stop music fadeout 1.0
