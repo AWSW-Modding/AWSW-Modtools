@@ -29,6 +29,9 @@ def main():
     # In most cases, that's fine, but when modinfo is reimported, we lose the
     # current list of mods.
 
+    import testing.test as test
+    test.test_tests()
+
     for mod in os.listdir(get_mod_path()):
         # Some mods require resources to be recognized by renpy.
         # If a folder exists, force renpy to load it
