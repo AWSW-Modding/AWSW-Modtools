@@ -14,13 +14,16 @@ screen post_true_sceneselect tag smallscreen:
         imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("post_true_sceneselect"), Play("audio", "se/sounds/close.ogg")] hovered Play("audio", "se/sounds/select.ogg") style "smallwindowclose" at nav_button
         
 label post_true_main:
+    python:
+        raise Exception("here")
+
     if annascenesfinished == 4:
-        jump anna_post_true_entry
+        jump anna_post_true_bootstrap
     elif adinescenesfinished == 4:
-        jump adine_post_true_entry
+        jump adine_post_true_bootstrap
     elif remyscenesfinished == 4:
-        jump remy_post_true_entry
+        jump remy_post_true_bootstrap
     elif brycescenesfinished == 4:
-        jump bryce_post_true_entry
+        jump bryce_post_true_bootstrap
     else:
         return
