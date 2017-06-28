@@ -16,10 +16,10 @@ class AWSWMod(Mod):
         return ("owo what's this?", "v0.1-dev", "scrlys")
 
     def mod_load(self):
-        menu = modast.get_slscreen("main_menu")
-        addition = modast.get_slscreen("this_is_a_dummy_screen")
+        label = modast.find_label("woo")
+        specific_text = modast.find_say("The year is 20XX.")
 
-        menu.children.append(addition.children[0])
+        modast.jump_ret(specific_text, label, specific_text.next)
 
     def mod_complete(self): # called after all mods are loaded.
         pass
