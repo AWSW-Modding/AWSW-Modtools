@@ -1,10 +1,7 @@
-label adine_post_true_bootstrap:
+label adine_post_true_entry:
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
     $ player_name = persistent.player_name
-    
-    jump adine_post_true_entry
 
-label adine_post_true_entry:
     $ adine_post_mood = 0
 
     $ adinestagename = persistent.adinestagename
