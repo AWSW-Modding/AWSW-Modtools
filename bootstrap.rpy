@@ -1,0 +1,2 @@
+init python:
+    import modloader
