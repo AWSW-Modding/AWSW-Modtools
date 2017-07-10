@@ -89,7 +89,7 @@ label kothorix_alley:
     show kothorix normal crossed with dissolve
     Kx "What is it?"
     c "Is that an arcade?"
-    Kx "Yes, it is. why do you ask?"
+    Kx "Yes, it is. Why do you ask?"
 
     menu:
         "Go to arcade.":

@@ -108,7 +108,7 @@ label Kothorix_mod:
             show kothorix normal with dissolve
             
             #I'm proud of this line
-            Kx "It's an amazing device, isn't it? How many years hs it sat here, olny to remain tall, proud and untouched by age? Huh I guess it and I may have a few things in common."
+            Kx "It's an amazing device, isn't it? How many years has it sat here, only to remain tall, proud and untouched by age? Huh, I guess it and I may have a few things in common."
             Kx thinking "Say, do you have any idea how this works?"
             
             menu:
@@ -134,7 +134,7 @@ label Kothorix_mod:
                         Kx normal "Oh! I know Lorem. He's the... {w=0.7}{nw}"
                         Kx somber face "Nevermind."
                         c "What? Is something wrong?"
-                        Kx somber face "Nothing's wrong, but people can often treat him badly over it."
+                        Kx somber face "Nothing's wrong, but people often treat him badly over it."
                         Kx sad down "As the police would well and truly know, considering how many times he's had to call them."
                     
                 #Date Remy once for this option.

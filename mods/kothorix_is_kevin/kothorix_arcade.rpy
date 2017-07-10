@@ -444,7 +444,6 @@ label kothorix_arcade:
             $ renpy.pause (0.2)
 
         elif usedattack == 2:
-            $ usedattack += 1
             show ronan 2 at Pan ((0, 0), (-440, 0), 0.8)
             $ renpy.pause (0.2)
             play sound slap
@@ -689,7 +688,7 @@ label kothorix_arcade_end:
     Kx normal crossed dk "Yeah, what of it?"
     c "Also, how do dragons without hands play these games?"
     Kx ramble face dk "Yeah, they are at a disadvantage in that regard. In most places you can use a mat with buttons on it."
-    c "Wait, what? A mat is placed on the floor and the dragon press the buttons with their paws?"
+    c "Wait, what? A mat is placed on the floor and the dragons press the buttons with their paws?"
     Kx normal dk "It works just like DDR, a game more formally known as Dancing Dragon Revolution."
     c "Well, I suppose that's logical, but how well does it work in practice?" 
     Kx somber face dk "Not great. Anyone who wants a mat must request it from behind the counter. Worse still, the mat takes up a lot of space."
