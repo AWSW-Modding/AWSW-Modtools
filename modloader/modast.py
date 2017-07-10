@@ -46,6 +46,7 @@ def find_label(label):
     """
     return renpy.game.script.lookup(label)
 
+
 def search_for_node_type(node, type_, max_depth=200):
     """Search for a specific type of node
 
@@ -209,6 +210,7 @@ def find_python_statement(statement):
 ROT13 = string.maketrans(
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
     "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
+
 
 class ASTHook(ast.Node):
     """A custom :class:`renpy.ast.Node` that acts as a hook between
@@ -413,6 +415,7 @@ def call_hook(node, dest_node, func=None):
     hook = hook_opcode(node, None)
 
     def call_function(hook):
+        # pylint: disable=missing-docstring
         if func:
             func(hook)
 
@@ -425,7 +428,7 @@ def call_hook(node, dest_node, func=None):
 
 
 def unhook_label(label):
-    """Unhook a hook from a lbel
+    """Unhook a hook from a label
 
     Args:
         label (str): The label's name

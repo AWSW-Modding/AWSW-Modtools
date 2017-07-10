@@ -19,9 +19,15 @@ def get_mod_path():
     return os.path.join(renpy.config.gamedir, "mods")
 
 
-# Credit to Matthew for this code: https://stackoverflow.com/a/17194836/3398583, modified by muddyfish
+# Credit to Matthew for this code: https://stackoverflow.com/a/17194836/3398583
+# Modified by muddyfish
 def rreload(module, modules=None):
-    """Recursively reload modules."""
+    """Recursively reloads a module.
+
+    Ignores modules in ``modules`` and all modules not in the mods folder
+
+
+    """
     print "RELOADING", module.__file__
     sys.stdout.flush()
     reload(module)
@@ -31,7 +37,7 @@ def rreload(module, modules=None):
         modules.append(module)
     for attribute_name in dir(module):
         attribute = getattr(module, attribute_name)
-        if type(attribute) is ModuleType:
+        if isinstance(attribute, ModuleType):
             if attribute not in modules:
                 if get_mod_path() in attribute.__file__:
                     rreload(attribute, modules)

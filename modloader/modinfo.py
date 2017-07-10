@@ -15,4 +15,5 @@ def get_mods():
 
 
 def reset_mods():
+    """Remove all mods from the registry"""
     modlist.clear()
