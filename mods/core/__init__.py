@@ -58,6 +58,7 @@ class AWSWMod(Mod):
 
         modast.get_slscreen('main_menu').children.append(target_display)
 
+
     @staticmethod
     def mod_complete():
         """Insert a NSFW warning if any mods register as NSFW"""
@@ -71,7 +72,6 @@ class AWSWMod(Mod):
                 bootup = modast.find_label("nameentry")
                 modast.call_hook(bootup, toggler)
                 break
-
         # This is called after all mods are loaded, preventing us from getting a partial list of
         # mods (say, if core was loaded before myMod1).
         modast.set_renpy_global('modsDesc', ', '.join([mod_name for mod_name in modinfo.modlist]))
