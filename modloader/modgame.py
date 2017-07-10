@@ -89,7 +89,7 @@ class AWSWEndingHooks(object):
         Returns:
             An instance of :class:`AWSWMenuHooks`
         """
-        ch5 = self.base.findlabel("chapter5")
+        ch5 = modast.find_label("chapter5")
         menu_node = self.base.searchPostNode(ch5, ast.Menu, 500)
         menu_hooks = self.base.get_menu_hook(menu_node)
 
@@ -223,7 +223,7 @@ class AWSWHomeHook(object):
                 #TODO: What does rv stand for?
                 # pylint: disable=invalid-name
                 rv = renpy.game.context().call(route_hook.name,
-                                               return_site=self.base.findlabel('_mod_fixjmp').name)
+                                               return_site=modast.find_label('_mod_fixjmp').name)
                 hook.chain(rv)
             hook2.hook_func = call_func
 
@@ -238,7 +238,7 @@ class AWSWHomeHook(object):
 
         if isinstance(hook, ast.Node):
             for label in chapter_labels:
-                modast.call_hook(self.base.findlabel(label), hook, None)
+                modast.call_hook(modast.find_label(label), hook, None)
 
             modast.call_hook(self.chapter_1_hook, hook, None)
         else:
