@@ -1,5 +1,4 @@
 """This file is free software under the GPLv3 license"""
-import sys
 from modloader import modinfo
 
 
