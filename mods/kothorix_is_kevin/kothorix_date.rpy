@@ -93,10 +93,10 @@ label Kothorix_mod_date:
         menu:
             "Two coffees.":
                 $ twocoffee = True
-                Ad fustrated b flip "So you're going to be here twice as long. Great"
+                Ad frustrated b flip "So you're going to be here twice as long. Great"
 
                 hide adine 
-                show adine fustrated b at left
+                show adine frustrated b at left
 
             "One coffee.":
                 Ad "On its way."
@@ -336,10 +336,58 @@ label Kothorix_mod_date:
         show anna normal flip
         hide anna with easeoutright
         show kothorix at center with ease
-     
+
         Kx somber face "Let's leave."
 
-    elif annastatus == "neutral":
+
+    elif annastatus == "bad":
+        m "I waved at Anna as she came into the cafe. She doesn't respond. Upon seeing Kothorix, her expression quickly turned into a smirk." 
+
+        show kothorix normal at left with ease
+        show anna normal at right with easeinright
+
+        An "Hello ye two, what brings you here?"
+        Kx ramble "[player_name] offered to have coffee with me and I, being fair and benevolent, agreed."
+        m "I'm pretty sure that's not what happened."
+        Kx normal crossed distance "Are you in here for your usual coffee?"
+        An disgust "Yes, but how would you know that?"
+        Kx "I've seen you come in here from time to time."
+        An "... How'd you see me come in here?"
+        Kx ramble"... {w=0.5}{nw}"
+
+        show kothorix sad down at left with dissolvequick
+
+        An rage "I knew it, you're stalking me!"
+        Kx ramble "No, I’m not. I just happened to see you around."
+        Kx normal crossed distance "So, while you’re here, why don’t you give me your number?"
+        An "You want my number? Why would I give a stalker my number?!"
+        m "Anna stood still for a moment, fuming."
+        show anna furious at right
+
+        show anna at center with ease
+
+        #Slapping Koth
+        play sound slap
+        show kothorix eyes closed
+        $ renpy.pause (0.2)
+        show anna at right with ease
+        $ renpy.pause (0.1)
+        show anna at right with ease
+        show kothorix sad down
+
+        #Hiding anna and showing an upset Kothorix
+        show anna disgust
+        $ renpy.pause (0.5)
+        show anna disgust flip
+        hide anna with easeoutright
+        show kothorix at center with ease
+     
+        An "Don't let me see you again!"
+        Kx somber face "Let's leave."
+
+
+    else: 
+        #anna status neutral
         m "I waved at Anna as she came into the cafe. She smiled at me. Upon seeing Kothorix, her expression quickly turned to concern."
 
         show kothorix normal at left with ease
@@ -401,51 +449,6 @@ label Kothorix_mod_date:
         hide anna with easeoutright
         show kothorix at center with ease
      
-        Kx somber face "Let's leave."
-
-    elif annastatus == "bad":
-        m "I waved at Anna as she came into the cafe. She doesn't respond. Upon seeing Kothorix, her expression quickly turned into a smirk." 
-
-        show kothorix normal at left with ease
-        show anna normal at right with easeinright
-
-        An "Hello ye two, what brings you here?"
-        Kx ramble "[player_name] offered to have coffee with me and I, being fair and benevolent, agreed."
-        m "I'm pretty sure that's not what happened."
-        Kx normal crossed distance "Are you in here for your usual coffee?"
-        An disgust "Yes, but how would you know that?"
-        Kx "I've seen you come in here from time to time."
-        An "... How'd you see me come in here?"
-        Kx ramble"... {w=0.5}{nw}"
-
-        show kothorix sad down at left with dissolvequick
-
-        An rage "I knew it, you're stalking me!"
-        Kx ramble "No, I’m not. I just happened to see you around."
-        Kx normal crossed distance "So, while you’re here, why don’t you give me your number?"
-        An "You want my number? Why would I give a stalker my number?!"
-        m "Anna stood still for a moment, fuming."
-        show anna furious at right
-
-        show anna at center with ease
-
-        #Slapping Koth
-        play sound slap
-        show kothorix eyes closed
-        $ renpy.pause (0.2)
-        show anna at right with ease
-        $ renpy.pause (0.1)
-        show anna at right with ease
-        show kothorix sad down
-
-        #Hiding anna and showing an upset Kothorix
-        show anna disgust
-        $ renpy.pause (0.5)
-        show anna disgust flip
-        hide anna with easeoutright
-        show kothorix at center with ease
-     
-        An "Don't let me see you again!"
         Kx somber face "Let's leave."
 
     if twocoffee == False:
