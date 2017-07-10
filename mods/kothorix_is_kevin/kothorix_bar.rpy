@@ -194,7 +194,7 @@ label kothorix_bar:
             Kx normal crossed dk "Well, it's a shame we didn't go then. Unfortunately, the place is closed now."
             Kx thinking dk "But, I have to ask. What are they like in your world?"
             c "That's hard to answer, considering that I don't know what your games are like."
-            Kx normal crossed dk "Ok, how about you tell me about the last game you played?"
+            Kx normal crossed dk "OK, how about you tell me about the last game you played?"
             c "Sure. The last game I played had a very different combat system from the norm."
             c "Rather than purely beating up the person you're fighting you can try to reason with them instead."
             c "Choosing the reasonable route usually led to the better ending."
@@ -298,7 +298,7 @@ label kothorix_bar:
     play sound "<loop 10 >fx/eating.wav"
     m "With rapturous attitude, we devour our meals."
     m "Turns out that dragons can eat large chunks of meat. Thankfully, humans weren't on the menu."
-    m "As I watched Kothorox rip into his meat, I wondered just how injured Reza was after he was bitten."
+    m "As I watched Kothorix rip into his meat, I wondered just how injured Reza was after he was bitten."
     stop sound fadeout 1.0
     $ renpy.pause(0.6)
 
@@ -307,7 +307,7 @@ label kothorix_bar:
     
     c "So... do you fancy anyone at the moment?"
     Kx thinking dk "What do you mean by \"fancy?\""
-    c "It's a way of saying \"Are you carrying the torch for anyone.\""
+    c "It's a way of saying \"Are you carrying the torch for anyone?\""
     Kx "I don't understand."
     c "Is there anyone around you see as fit?"
     Kx disgusted dk "Oh, just speak English already!"
@@ -318,6 +318,7 @@ label kothorix_bar:
         Kx "Well, there was this date with Anna. Remember her from the cafe?."
         c "I really don't think beans on toast count as a date."
         Kx unamused point "Semantics. A date's a date."
+
     else:
         Kx "Well, there was this date with Anna once."
         c "I noticed you caller her \"your bae.\""
@@ -360,7 +361,7 @@ label kothorix_bar:
                 Br stern "He could have been a spy, a reporter, or someone with a really large nose. Word gets out about the location of the portal, and this town is flooded with unwelcome cameras."
                 show kothorix wtf dk at right with dissolve
                 c "Bryce, seriously? A magic door opens up and two alien bodies appear, and you expect there to be no attention?"
-                c "Once here, all they'd have to do is look up at a hill and see it. I think letting a few dragons in to see it might be doing you a favor."
+                c "Once here, all they'd have to do is look up at a hill and see it. I think letting a few dragons in to see it might be doing you a favour."
                 Br angry "[player_name], don't you dare..."
                 Kx disgusted dk "Hey, it was a harmless action. Don't work yourself up."
                 Br stern "We'll settle this elsewhere."
@@ -498,7 +499,7 @@ label kothorix_bar:
 
     n "Considering that it was late and with Reza at large; there wasn't many dragons outside."
     n "With no-one to get attention from, Kothorix was left with just me."
-    n "He seems both disappointed and happy about it."
+    n "He seemed both disappointed and happy about it."
     n "Seeing a character out of his element is always an interesting sight. It's only then do you see their real character."
 
     window hide
