@@ -1,12 +1,10 @@
 init python:
     from modloader import modinfo
+    persistent.nsfwToggleSet = True
     for mod_name, mod in modinfo.get_mods().iteritems():
         mod_info = mod.mod_info()
         if len(mod_info) == 4 and mod_info[3]:
             persistent.nsfwToggleSet = False
-
-    if persistent.nsfwToggleSet is None:
-        persistent.nsfwToggleSet = True
         
 label before_main_menu:
     if not persistent.nsfwToggleSet:
