@@ -396,12 +396,12 @@ class MenuHook(object):
         if isinstance(hook, ast.Node):
             self.get_items().append((label, condition, [hook])) # Adding a dialogue option.
             return None
-        else:
-            node = ASTHook(("AWSWMod", 1))
-            node.from_op = self.menu
-            node.hook_func = hook
-            self.get_items().append((label, condition, [node]))
-            return node
+
+        node = ASTHook(("AWSWMod", 1))
+        node.from_op = self.menu
+        node.hook_func = hook
+        self.get_items().append((label, condition, [node]))
+        return node
 
     def add_item_call(self, label, usr_hook, condition="True"):
         #TODO: Determine what this does

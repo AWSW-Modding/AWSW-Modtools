@@ -1,8 +1,10 @@
 """This file is free software under the GPLv3 license"""
 import sys
 import os
-import renpy
 import shutil
+
+import renpy
+
 from modloader.modinfo import get_mods
 
 
