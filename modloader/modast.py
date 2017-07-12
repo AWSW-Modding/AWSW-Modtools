@@ -161,34 +161,38 @@ def find_say(needle):
 
 
 def find_all_hide(hide_name):
-    """Find a list of :class:`renpy.ast.Hide` nodes based on what is hidden
+    """Find a list of :class:`renpy.ast.Hide` nodes based on a string
 
     This searches the entire AST tree for the all the instances of the specified statement.
 
     Args:
-        needle (str): The object to be hidden
-
+        hide_name (str): The string to search in Hide nodes
 
     Returns:
         A list of :class:`renpy.ast.Node` nodes
     """
+    # Make a list so we can store all applicable nodes in
     rtn = []
-    for node in renpy.game.script.all_stmts: # returns a list of every node in the game
-        if isinstance(node, ast.Hide): # only returns true if it's a Hide node
-            if node.imspec[0] == (hide_name,): # only returns true if the name of the thing it's hiding is hide_name
-                # ^-- Comma: That's turning it into a one element tuple, which is like a list that can't be modified.
-                rtn.append(node) # Comma Cont: If it just had brackets, it would just get rid of them. It's a weird thing about python that you've just got to learn.
-    return rtn  # And it returns a list of all the nodes that were true
+
+    # Loop over every node in the game
+    for node in renpy.game.script.all_stmts:
+        # Ignore non-Hide nodes
+        if isinstance(node, ast.Hide):
+            # Compare the search string and the object the node is hiding
+            # Note: The comma makes it a one-element tuple, which impsec is
+            if node.imspec[0] == (hide_name,):
+                rtn.append(node)
+
+    return rtn  # Return the list
 
 
 def find_all_show(show_name):
-    """Find a list of :class:`renpy.ast.Show` nodes based on what is shown
+    """Find a list of :class:`renpy.ast.Show` nodes based on a string
 
     This searches the entire AST tree for the all the instances of the specified statement.
 
     Args:
-        needle (str): The object to be showm
-
+        show_name (str): The string to search in Show nodes
 
     Returns:
         A list of :class:`renpy.ast.Node` nodes
