@@ -172,7 +172,7 @@ def find_all_hide(hide_name):
         A list of :class:`renpy.ast.Node` nodes
     """
     # Make a list so we can store all applicable nodes in
-    rtn = []
+    result = []
 
     # Loop over every node in the game
     for node in renpy.game.script.all_stmts:
@@ -181,9 +181,9 @@ def find_all_hide(hide_name):
             # Compare the search string and the object the node is hiding
             # Note: The comma makes it a one-element tuple, which impsec is
             if node.imspec[0] == (hide_name,):
-                rtn.append(node)
+                result.append(node)
 
-    return rtn  # Return the list
+    return result  # Return the list
 
 
 def find_all_show(show_name):
