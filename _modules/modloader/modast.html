@@ -1,16 +1,13 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
     <title>modloader.modast &#8212; AWSW-Modtools  documentation</title>
-    
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
@@ -33,7 +30,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">
+  <body>
   
 
     <div class="document">
@@ -89,6 +86,7 @@
 <span class="sd">        A :class:`renpy.ast.Label` object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="search_for_node_type"><a class="viewcode-back" href="../../API.html#modloader.modast.search_for_node_type">[docs]</a><span class="k">def</span> <span class="nf">search_for_node_type</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Search for a specific type of node</span>
@@ -203,6 +201,51 @@
     <span class="k">return</span> <span class="kc">None</span></div>
 
 
+<div class="viewcode-block" id="find_all_hide"><a class="viewcode-back" href="../../API.html#modloader.modast.find_all_hide">[docs]</a><span class="k">def</span> <span class="nf">find_all_hide</span><span class="p">(</span><span class="n">hide_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a list of :class:`renpy.ast.Hide` nodes based on a string</span>
+
+<span class="sd">    This searches the entire AST tree for the all the instances of the specified statement.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hide_name (str): The string to search in Hide nodes</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of :class:`renpy.ast.Node` nodes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make a list so we can store all applicable nodes in</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Loop over every node in the game</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span><span class="p">:</span>
+        <span class="c1"># Ignore non-Hide nodes</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Hide</span><span class="p">):</span>
+            <span class="c1"># Compare the search string and the object the node is hiding</span>
+            <span class="c1"># Note: The comma makes it a one-element tuple, which impsec is</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">imspec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">hide_name</span><span class="p">,):</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span>  <span class="c1"># Return the list</span></div>
+
+
+<div class="viewcode-block" id="find_all_show"><a class="viewcode-back" href="../../API.html#modloader.modast.find_all_show">[docs]</a><span class="k">def</span> <span class="nf">find_all_show</span><span class="p">(</span><span class="n">show_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find a list of :class:`renpy.ast.Show` nodes based on a string</span>
+
+<span class="sd">    This searches the entire AST tree for the all the instances of the specified statement.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        show_name (str): The string to search in Show nodes</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of :class:`renpy.ast.Node` nodes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rtn</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">script</span><span class="o">.</span><span class="n">all_stmts</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Show</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">imspec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">show_name</span><span class="p">,):</span>
+                <span class="n">rtn</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rtn</span></div>
+
+
 <div class="viewcode-block" id="add_menu_option"><a class="viewcode-back" href="../../API.html#modloader.modast.add_menu_option">[docs]</a><span class="k">def</span> <span class="nf">add_menu_option</span><span class="p">(</span><span class="n">menu</span><span class="p">,</span> <span class="n">option</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Add a dialog option to a given menu</span>
 
@@ -254,6 +297,7 @@
     <span class="s2">&quot;NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz&quot;</span><span class="p">)</span>
 
+
 <div class="viewcode-block" id="ASTHook"><a class="viewcode-back" href="../../API.html#modloader.modast.ASTHook">[docs]</a><span class="k">class</span> <span class="nc">ASTHook</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A custom :class:`renpy.ast.Node` that acts as a hook between</span>
 <span class="sd">        other node objects.</span>
@@ -273,7 +317,7 @@
     <span class="n">_serial</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">hook_func_</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">from_op_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ASTHook</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ASTHook</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">loc</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">hook_func_</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">from_op</span> <span class="o">=</span> <span class="n">from_op_</span>
@@ -393,12 +437,12 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Node</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">get_items</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="p">[</span><span class="n">hook</span><span class="p">]))</span> <span class="c1"># Adding a dialogue option.</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">node</span> <span class="o">=</span> <span class="n">ASTHook</span><span class="p">((</span><span class="s2">&quot;AWSWMod&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">from_op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span>
-            <span class="n">node</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">hook</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">get_items</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="p">[</span><span class="n">node</span><span class="p">]))</span>
-            <span class="k">return</span> <span class="n">node</span></div>
+
+        <span class="n">node</span> <span class="o">=</span> <span class="n">ASTHook</span><span class="p">((</span><span class="s2">&quot;AWSWMod&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">from_op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">menu</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">hook</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_items</span><span class="p">()</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="p">[</span><span class="n">node</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">node</span></div>
 
     <span class="k">def</span> <span class="nf">add_item_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">usr_hook</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">):</span>
         <span class="c1">#TODO: Determine what this does</span>
@@ -442,7 +486,7 @@
     <span class="k">return</span> <span class="n">hook</span></div>
 
 
-<div class="viewcode-block" id="call_hook"><a class="viewcode-back" href="../../API.html#modloader.modast.call_hook">[docs]</a><span class="k">def</span> <span class="nf">call_hook</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="call_hook"><a class="viewcode-back" href="../../API.html#modloader.modast.call_hook">[docs]</a><span class="k">def</span> <span class="nf">call_hook</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_node</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Hook ``func`` to ``node`` and once executed, redirect execution to</span>
 <span class="sd">        ``dest_node``</span>
 
@@ -457,11 +501,14 @@
     <span class="n">hook</span> <span class="o">=</span> <span class="n">hook_opcode</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">call_function</span><span class="p">(</span><span class="n">hook</span><span class="p">):</span>
+        <span class="c1"># pylint: disable=missing-docstring</span>
         <span class="k">if</span> <span class="n">func</span><span class="p">:</span>
             <span class="n">func</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span>
 
         <span class="c1">#TODO: Better understand this line</span>
-        <span class="n">label</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">dest_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">return_site</span><span class="o">=</span><span class="n">hook</span><span class="o">.</span><span class="n">old_next</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">renpy</span><span class="o">.</span><span class="n">game</span><span class="o">.</span><span class="n">context</span><span class="p">()</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">dest_node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">return_site</span><span class="o">=</span><span class="n">hook</span><span class="o">.</span><span class="n">old_next</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">return_node</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span>
+                <span class="n">return_node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="n">hook</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 
     <span class="n">hook</span><span class="o">.</span><span class="n">hook_func</span> <span class="o">=</span> <span class="n">call_function</span>
@@ -469,7 +516,7 @@
 
 
 <div class="viewcode-block" id="unhook_label"><a class="viewcode-back" href="../../API.html#modloader.modast.unhook_label">[docs]</a><span class="k">def</span> <span class="nf">unhook_label</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Unhook a hook from a lbel</span>
+    <span class="sd">&quot;&quot;&quot;Unhook a hook from a label</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        label (str): The label&#39;s name</span>
@@ -552,9 +599,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        An :class:`ASTHook` object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">hook</span> <span class="o">=</span> <span class="n">call_hook</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
-    <span class="n">hook</span><span class="o">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">return_node</span>
-    <span class="k">return</span> <span class="n">hook</span></div>
+    <span class="k">return</span> <span class="n">call_hook</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">dest_node</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">return_node</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="hook_label"><a class="viewcode-back" href="../../API.html#modloader.modast.hook_label">[docs]</a><span class="k">def</span> <span class="nf">hook_label</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
@@ -602,7 +647,7 @@
       &copy;2017, AWSWCommunity.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

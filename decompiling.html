@@ -1,16 +1,13 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
     <title>Decompiling the game &#8212; AWSW-Modtools  documentation</title>
-    
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
@@ -35,7 +32,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">
+  <body>
   
 
     <div class="document">
@@ -45,13 +42,13 @@
             
   <div class="section" id="decompiling-the-game">
 <h1>Decompiling the game<a class="headerlink" href="#decompiling-the-game" title="Permalink to this headline">¶</a></h1>
-<p>Fortunately, this game can easily be extracted and decompiled. This makes modding much easier&#8211;if it was hard, there probably would be no modding framework.</p>
+<p>Fortunately, this game can easily be extracted and decompiled. This makes modding much easier–if it was hard, there probably would be no modding framework.</p>
 <div class="section" id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>You will need a working Python 2 installation. To check, open up a Powershell, command prompt, terminal, or equivalent and execute <code class="docutils literal"><span class="pre">python</span> <span class="pre">--version</span></code>.</p>
 <p>If you get an error such as</p>
 <blockquote>
-<div>&#8216;python&#8217; is not recognized as an internal or external command, operable program or batch file</div></blockquote>
+<div>‘python’ is not recognized as an internal or external command, operable program or batch file</div></blockquote>
 <p>then you have improperly installed Python.</p>
 <p>If you get an output that starts with <code class="docutils literal"><span class="pre">Python</span> <span class="pre">3</span></code>, you have installed the incorrect version of Python.</p>
 <p>If you get an output that starts with <code class="docutils literal"><span class="pre">Python</span> <span class="pre">2</span></code>, you have installed the correct version of Python.</p>
@@ -62,7 +59,7 @@
 <p>There are two ways you can get the media and compiled source code from the archive.</p>
 <div class="section" id="easy-way">
 <h2>Easy way<a class="headerlink" href="#easy-way" title="Permalink to this headline">¶</a></h2>
-<p>First, obtain a copy of <a class="reference external" href="http://aluigi.altervista.org/quickbms.htm">QuickBMS</a> and download two scripts (by right-clicking and clicking Save Page As...): <a class="reference external" href="http://aluigi.altervista.org/bms/pickle.bms">Python Pickle Parser</a> and <a class="reference external" href="http://aluigi.altervista.org/bms/rpa_renpy_nopython.bms">RPA Renpy No Python</a>,
+<p>First, obtain a copy of <a class="reference external" href="http://aluigi.altervista.org/quickbms.htm">QuickBMS</a> and download two scripts (by right-clicking and clicking Save Page As…): <a class="reference external" href="http://aluigi.altervista.org/bms/pickle.bms">Python Pickle Parser</a> and <a class="reference external" href="http://aluigi.altervista.org/bms/rpa_renpy_nopython.bms">RPA Renpy No Python</a>,
 then make a new folder.</p>
 <p>Launch QuckBMS and select the RPA Renpy No Python script. It will ask you for the archive.rpa; give the archive.rpa from the game directory in the installation folder.
 After, it will ask for a folder; select the folder you have made.</p>
@@ -119,7 +116,7 @@ After, it will ask for a folder; select the folder you have made.</p>
 <td>Contains backgrounds of various places in the town</td>
 </tr>
 <tr class="row-odd"><td>cg</td>
-<td>Contains all the characters&#8217; CGs among other stuff</td>
+<td>Contains all the characters’ CGs among other stuff</td>
 </tr>
 <tr class="row-even"><td>cg/extra</td>
 <td>Contains all the cards and image gallery photos</td>
@@ -149,7 +146,7 @@ After, it will ask for a folder; select the folder you have made.</p>
 <div class="section" id="getting-the-source-code">
 <h1>Getting the source code<a class="headerlink" href="#getting-the-source-code" title="Permalink to this headline">¶</a></h1>
 <p>Source code is the human-readable version of the game. All dialog options, games, and spoilers are in these files.
-However, the code is compiled into Ren&#8217;Py compiled files. They have an extension of .rpyc.
+However, the code is compiled into Ren’Py compiled files. They have an extension of .rpyc.
 To get the source code, we need to decompile the game. The source code has an extension of .rpy</p>
 <ul class="simple">
 <li>Download _unrpyc and extract the zip file into the new folder</li>
@@ -211,7 +208,7 @@ To get the source code, we need to decompile the game. The source code has an ex
       &copy;2017, AWSWCommunity.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |

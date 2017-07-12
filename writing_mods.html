@@ -1,16 +1,13 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
     <title>Writing Mods &#8212; AWSW-Modtools  documentation</title>
-    
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
@@ -35,7 +32,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">
+  <body>
   
 
     <div class="document">
@@ -48,7 +45,7 @@
 <p>Each mod has two components: the patcher and the additive game code. The patcher will do all the heavily lifting for modification of the game, and the additive game code will be anything that is new to the game.</p>
 <p>To construct a mod, see the tree below.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">MyMod</span>
-<span class="o">|--</span> <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+<span class="o">|--</span> <span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
 <span class="o">|--</span> <span class="n">myResource</span><span class="o">.</span><span class="n">rpy</span>
 <span class="o">|--</span> <span class="n">resource</span>
     <span class="o">|--</span> <span class="n">custbg</span>
@@ -56,7 +53,7 @@
 </pre></div>
 </div>
 <p>Any *.rpy file is optional, and will be loaded automatically. The main mod file is mandatory for your mod to be loaded, and <strong>must</strong> be named <code class="docutils literal"><span class="pre">__init__.py</span></code>. Every mod should start with <code class="docutils literal"><span class="pre">from</span> <span class="pre">modloader.modlib</span> <span class="pre">import</span> <span class="pre">base</span> <span class="pre">as</span> <span class="pre">ml</span></code>. This will include all the utilities needed to get started. Using <code class="docutils literal"><span class="pre">modlib</span></code> is as simple as calling functions on <code class="docutils literal"><span class="pre">ml</span></code>. The <code class="docutils literal"><span class="pre">resource</span></code> folder is optional as well. Files in this folder will be loaded into that game as if they were local to the game/ folder or the root of the archive. Should a file have the same name and location as one in the original game, the mod file will override the original.</p>
-<p>To get full functionality from the modloader, it is recommended that you inherit from the modclass.Mod class. This will give you access to hooks at various stages during mod loading, and properly inform the user of your mod&#8217;s status. To do this, include <code class="docutils literal"><span class="pre">from</span> <span class="pre">modloader.modclass</span> <span class="pre">import</span> <span class="pre">Mod,</span> <span class="pre">loadable_mod</span></code> at the top of your mod file. Define a class with a decorator as shown below:</p>
+<p>To get full functionality from the modloader, it is recommended that you inherit from the modclass.Mod class. This will give you access to hooks at various stages during mod loading, and properly inform the user of your mod’s status. To do this, include <code class="docutils literal"><span class="pre">from</span> <span class="pre">modloader.modclass</span> <span class="pre">import</span> <span class="pre">Mod,</span> <span class="pre">loadable_mod</span></code> at the top of your mod file. Define a class with a decorator as shown below:</p>
 <div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="nd">@loadable_mod</span>
 <span class="k">class</span> <span class="nc">AWSWMod</span><span class="p">(</span><span class="n">Mod</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">mod_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -69,7 +66,7 @@
         <span class="k">pass</span>
 </pre></div>
 </div>
-<p>However, to make a NSFW mod, it&#8217;s slightly different.</p>
+<p>However, to make a NSFW mod, it’s slightly different.</p>
 <div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="nd">@loadable_mod</span>
 <span class="k">class</span> <span class="nc">AWSWMod</span><span class="p">(</span><span class="n">Mod</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">mod_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -85,19 +82,19 @@
 <p>Please notice the tuple has a new fourth element that is True. If the fourth element is True, that indicates to the modloader to display a simple warning to people who want to enable or disable NSFW scenes.</p>
 <div class="section" id="python-and-the-dangers-of-rollback">
 <h2>Python and the Dangers of Rollback<a class="headerlink" href="#python-and-the-dangers-of-rollback" title="Permalink to this headline">¶</a></h2>
-<p>Rollback is an integral feature of Ren&#8217;py, allowing the user to step back in time and make different choices. Usually rollback will play well with mods, but there are some cases that can introduce non-deterministic behavior. The main issue that rollback has is only Python objects encoded in Ren&#8217;Py&#8217;s AST(and then, only a select few statements) are rolled back. For this reason, Python functions should not be used in hooks if you can avoid them.</p>
+<p>Rollback is an integral feature of Ren’py, allowing the user to step back in time and make different choices. Usually rollback will play well with mods, but there are some cases that can introduce non-deterministic behavior. The main issue that rollback has is only Python objects encoded in Ren’Py’s AST(and then, only a select few statements) are rolled back. For this reason, Python functions should not be used in hooks if you can avoid them.</p>
 </div>
 <div class="section" id="steam-updates">
 <h2>Steam Updates<a class="headerlink" href="#steam-updates" title="Permalink to this headline">¶</a></h2>
-<p>The AWSW mod tools do not modify any of the core game files. They will survive and (probably) continue working through most changes to the game&#8217;s code. Hooking via the stable and recommended methods will ensure that a modification to the game&#8217;s code does not break your mod.</p>
+<p>The AWSW mod tools do not modify any of the core game files. They will survive and (probably) continue working through most changes to the game’s code. Hooking via the stable and recommended methods will ensure that a modification to the game’s code does not break your mod.</p>
 </div>
 <div class="section" id="how-to-compile-like-a-pro">
 <h2>How to compile like a pro.<a class="headerlink" href="#how-to-compile-like-a-pro" title="Permalink to this headline">¶</a></h2>
-<p>Instead of manually creating AST Nodes to insert code into the game, or even clunkily creating entries in the rpy language and then jumping to the snippets with the patcher, you can assemble small(or big!) bits of code <em>in-line</em> by abusing the Ren&#8217;py AST Parser. This means you can get a list of objects and insert them wherever with very little effort. We use this method internally to create the mod information menu on the main screen. See the core mod or the dev_test mod for further details.</p>
+<p>Instead of manually creating AST Nodes to insert code into the game, or even clunkily creating entries in the rpy language and then jumping to the snippets with the patcher, you can assemble small(or big!) bits of code <em>in-line</em> by abusing the Ren’py AST Parser. This means you can get a list of objects and insert them wherever with very little effort. We use this method internally to create the mod information menu on the main screen. See the core mod or the dev_test mod for further details.</p>
 </div>
 <div class="section" id="debugging">
 <h2>Debugging<a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h2>
-<p>There are several obstacles to developing mods for Ren&#8217;py. The first(and biggest) is the fact that the developer has no console to watch for output while running the game! We can fix that by starting AWSW via command line with some switches set. The commands are below.</p>
+<p>There are several obstacles to developing mods for Ren’py. The first(and biggest) is the fact that the developer has no console to watch for output while running the game! We can fix that by starting AWSW via command line with some switches set. The commands are below.</p>
 <p>While in the root directory of the game, run the command for your appropriate operating system:</p>
 <div class="section" id="windows">
 <h3>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h3>
@@ -111,12 +108,12 @@
 <h3>Linux x86_64 (64 bit)<a class="headerlink" href="#linux-x86-64-64-bit" title="Permalink to this headline">¶</a></h3>
 <p><code class="docutils literal"><span class="pre">./lib/linux-x86_64/python</span> <span class="pre">-EO</span> <span class="pre">&quot;Angels</span> <span class="pre">with</span> <span class="pre">Scaly</span> <span class="pre">Wings.py&quot;</span></code></p>
 <p>Should you print to the console in your code, you may run into an error such as <code class="docutils literal"><span class="pre">LookupError:</span> <span class="pre">unknown</span> <span class="pre">encoding:</span> <span class="pre">cp437</span></code>.
-This occurs because you&#8217;re executing a local version of python, which only has utf-8 string encodings loaded in. You can fix this by using <code class="docutils literal"><span class="pre">sprnt</span></code> from <code class="docutils literal"><span class="pre">modlib</span></code> or encoding your string with <code class="docutils literal"><span class="pre">myStr.encode('utf-8')</span></code> before printing.</p>
+This occurs because you’re executing a local version of python, which only has utf-8 string encodings loaded in. You can fix this by using <code class="docutils literal"><span class="pre">sprnt</span></code> from <code class="docutils literal"><span class="pre">modlib</span></code> or encoding your string with <code class="docutils literal"><span class="pre">myStr.encode('utf-8')</span></code> before printing.</p>
 </div>
 </div>
 <div class="section" id="sample-code">
 <h2>Sample Code<a class="headerlink" href="#sample-code" title="Permalink to this headline">¶</a></h2>
-<p>This sample code will remove Kevin&#8217;s encounter and main menu icon. The full mod structure can be found in mods/.</p>
+<p>This sample code will remove Kevin’s encounter and main menu icon. The full mod structure can be found in mods/.</p>
 <div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">renpy</span>
 <span class="kn">import</span> <span class="nn">renpy.ast</span> <span class="k">as</span> <span class="nn">ast</span>
 <span class="kn">from</span> <span class="nn">modloader</span> <span class="k">import</span> <span class="n">modinfo</span>
@@ -208,7 +205,7 @@ This occurs because you&#8217;re executing a local version of python, which only
       &copy;2017, AWSWCommunity.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |
