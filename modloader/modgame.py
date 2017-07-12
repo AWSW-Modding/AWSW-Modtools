@@ -217,7 +217,7 @@ class AWSWHomeHook(object):
         for menu in self.chapter_menus:
             hook = self.base.get_menu_hook(menu)
             self.hooks.append(hook)
-            hook2 = hook.addItem(title, None, condition)
+            hook2 = hook.add_item(title, None, condition)
 
             def call_func(hook):
                 #TODO: What does rv stand for?
