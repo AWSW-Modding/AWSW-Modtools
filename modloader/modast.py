@@ -161,34 +161,38 @@ def find_say(needle):
 
 
 def find_all_hide(hide_name):
-    """Find a list of :class:`renpy.ast.Hide` nodes based on what is hidden
+    """Find a list of :class:`renpy.ast.Hide` nodes based on a string
 
     This searches the entire AST tree for the all the instances of the specified statement.
 
     Args:
-        needle (str): The object to be hidden
-
+        hide_name (str): The string to search in Hide nodes
 
     Returns:
         A list of :class:`renpy.ast.Node` nodes
     """
-    rtn = []
-    for node in renpy.game.script.all_stmts: # returns a list of every node in the game
-        if isinstance(node, ast.Hide): # only returns true if it's a Hide node
-            if node.imspec[0] == (hide_name,): # only returns true if the name of the thing it's hiding is hide_name
-                # ^-- Comma: That's turning it into a one element tuple, which is like a list that can't be modified.
-                rtn.append(node) # Comma Cont: If it just had brackets, it would just get rid of them. It's a weird thing about python that you've just got to learn.
-    return rtn  # And it returns a list of all the nodes that were true
+    # Make a list so we can store all applicable nodes in
+    result = []
+
+    # Loop over every node in the game
+    for node in renpy.game.script.all_stmts:
+        # Ignore non-Hide nodes
+        if isinstance(node, ast.Hide):
+            # Compare the search string and the object the node is hiding
+            # Note: The comma makes it a one-element tuple, which impsec is
+            if node.imspec[0] == (hide_name,):
+                result.append(node)
+
+    return result  # Return the list
 
 
 def find_all_show(show_name):
-    """Find a list of :class:`renpy.ast.Show` nodes based on what is shown
+    """Find a list of :class:`renpy.ast.Show` nodes based on a string
 
     This searches the entire AST tree for the all the instances of the specified statement.
 
     Args:
-        needle (str): The object to be showm
-
+        show_name (str): The string to search in Show nodes
 
     Returns:
         A list of :class:`renpy.ast.Node` nodes
@@ -392,12 +396,12 @@ class MenuHook(object):
         if isinstance(hook, ast.Node):
             self.get_items().append((label, condition, [hook])) # Adding a dialogue option.
             return None
-        else:
-            node = ASTHook(("AWSWMod", 1))
-            node.from_op = self.menu
-            node.hook_func = hook
-            self.get_items().append((label, condition, [node]))
-            return node
+
+        node = ASTHook(("AWSWMod", 1))
+        node.from_op = self.menu
+        node.hook_func = hook
+        self.get_items().append((label, condition, [node]))
+        return node
 
     def add_item_call(self, label, usr_hook, condition="True"):
         #TODO: Determine what this does
@@ -441,7 +445,7 @@ def hook_opcode(node, func):
     return hook
 
 
-def call_hook(node, dest_node, func=None):
+def call_hook(node, dest_node, func=None, return_node=None):
     """Hook ``func`` to ``node`` and once executed, redirect execution to
         ``dest_node``
 
@@ -461,7 +465,9 @@ def call_hook(node, dest_node, func=None):
             func(hook)
 
         #TODO: Better understand this line
-        label = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
+        label = renpy.game.context().call(dest_node.name,
+                return_site=hook.old_next.name if return_node is None else
+                return_node.name)
         hook.chain(label)
 
     hook.hook_func = call_function
@@ -552,9 +558,7 @@ def jump_ret(node, dest_node, return_node, func=None):
     Returns:
         An :class:`ASTHook` object
     """
-    hook = call_hook(node, dest_node, func)
-    hook.next = return_node
-    return hook
+    return call_hook(node, dest_node, func, return_node)
 
 
 def hook_label(label, func):
