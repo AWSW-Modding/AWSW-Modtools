@@ -160,6 +160,47 @@ def find_say(needle):
     return None
 
 
+def find_all_hide(hide_name):
+    """Find a list of :class:`renpy.ast.Hide` nodes based on what is hidden
+
+    This searches the entire AST tree for the all the instances of the specified statement.
+
+    Args:
+        needle (str): The object to be hidden
+
+
+    Returns:
+        A list of :class:`renpy.ast.Node` nodes
+    """
+    rtn = []
+    for node in renpy.game.script.all_stmts: # returns a list of every node in the game
+        if isinstance(node, ast.Hide): # only returns true if it's a Hide node
+            if node.imspec[0] == (hide_name,): # only returns true if the name of the thing it's hiding is hide_name
+                # ^-- Comma: That's turning it into a one element tuple, which is like a list that can't be modified.
+                rtn.append(node) # Comma Cont: If it just had brackets, it would just get rid of them. It's a weird thing about python that you've just got to learn.
+    return rtn  # And it returns a list of all the nodes that were true
+
+
+def find_all_show(show_name):
+    """Find a list of :class:`renpy.ast.Show` nodes based on what is shown
+
+    This searches the entire AST tree for the all the instances of the specified statement.
+
+    Args:
+        needle (str): The object to be showm
+
+
+    Returns:
+        A list of :class:`renpy.ast.Node` nodes
+    """
+    rtn = []
+    for node in renpy.game.script.all_stmts:
+        if isinstance(node, ast.Show):
+            if node.imspec[0] == (show_name,):
+                rtn.append(node)
+    return rtn
+
+
 def add_menu_option(menu, option, node):
     """Add a dialog option to a given menu
 
