@@ -11,7 +11,7 @@ label before_main_menu:
         play sound "fx/system.wav"
         s "You have installed mods that may contain NSFW scenes in them."
         s "Please note that these mods are meant for players who are at or above the legal age for viewing nsfw content."
-        s "If the player is not of age, it is assumed that they will not select "yes" at the selection page."
+        s "If the player is not of age, it is assumed that they will not select \"yes\" at the selection page."
         s "Of course, this approach relies on the player's honesty, and as such, there is the possibility that the player may end up lying."
         s "If this occurs, the sole responsiblity of such an act lies with the player, not the mod team or the community."
         s "Would you like to have these scenes enabled?"
