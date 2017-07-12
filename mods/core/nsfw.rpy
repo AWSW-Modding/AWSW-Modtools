@@ -10,7 +10,7 @@ label before_main_menu:
     if not persistent.nsfwToggleSet:
         play sound "fx/system.wav"
         s "You have installed mods that may contain NSFW scenes in them."
-        s "Please note that these mods are meant for players who are at or above the legal age for viewing nsfw content."
+        s "Please note that these mods are meant for players who are at or above the legal age for viewing adult content. \"Legal age\" is defined by the country that the player is currently living in."
         s "If the player is not of age, it is assumed that they will not select \"yes\" at the selection page."
         s "Of course, this approach relies on the player's honesty, and as such, there is the possibility that the player may end up lying."
         s "If this occurs, the sole responsiblity of such an act lies with the player, not the mod team or the community."
