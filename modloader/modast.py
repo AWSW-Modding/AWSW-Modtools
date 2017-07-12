@@ -445,7 +445,7 @@ def hook_opcode(node, func):
     return hook
 
 
-def call_hook(node, dest_node, func=None):
+def call_hook(node, dest_node, func=None, return_node=None):
     """Hook ``func`` to ``node`` and once executed, redirect execution to
         ``dest_node``
 
@@ -465,7 +465,9 @@ def call_hook(node, dest_node, func=None):
             func(hook)
 
         #TODO: Better understand this line
-        label = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
+        label = renpy.game.context().call(dest_node.name,
+                return_site=hook.old_next.name if return_node is None else
+                return_node.name)
         hook.chain(label)
 
     hook.hook_func = call_function
@@ -556,9 +558,7 @@ def jump_ret(node, dest_node, return_node, func=None):
     Returns:
         An :class:`ASTHook` object
     """
-    hook = call_hook(node, dest_node, func)
-    hook.next = return_node
-    return hook
+    return call_hook(node, dest_node, func, return_node)
 
 
 def hook_label(label, func):
