@@ -1,6 +1,5 @@
 label remy_post_true_entry:
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
-    jump remy_post_true_entry
 
     $ remy_post_mood = 0
     call _mod_fixui
