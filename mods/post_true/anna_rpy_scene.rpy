@@ -1,6 +1,5 @@
 label anna_post_true_entry:
     $ c = DynamicCharacter ("persistent.player_name", color=persistent.playercolor, callback=rolly)
-    jump anna_post_true_entry
                 
     # Post true ending, the game locks all player interaction. We need to re-enable the UI controls to allow the play to play the scene.
     
