@@ -12,3 +12,8 @@ def add_mod(mod_name, mod):
 def get_mods():
     """Get the mods in the registry"""
     return modlist
+
+
+def reset_mods():
+    """Remove all mods from the registry"""
+    modlist.clear()

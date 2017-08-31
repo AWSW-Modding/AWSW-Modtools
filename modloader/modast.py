@@ -46,6 +46,7 @@ def find_label(label):
     """
     return renpy.game.script.lookup(label)
 
+
 def search_for_node_type(node, type_, max_depth=200):
     """Search for a specific type of node
 
@@ -159,6 +160,51 @@ def find_say(needle):
     return None
 
 
+def find_all_hide(hide_name):
+    """Find a list of :class:`renpy.ast.Hide` nodes based on a string
+
+    This searches the entire AST tree for the all the instances of the specified statement.
+
+    Args:
+        hide_name (str): The string to search in Hide nodes
+
+    Returns:
+        A list of :class:`renpy.ast.Node` nodes
+    """
+    # Make a list so we can store all applicable nodes in
+    result = []
+
+    # Loop over every node in the game
+    for node in renpy.game.script.all_stmts:
+        # Ignore non-Hide nodes
+        if isinstance(node, ast.Hide):
+            # Compare the search string and the object the node is hiding
+            # Note: The comma makes it a one-element tuple, which impsec is
+            if node.imspec[0] == (hide_name,):
+                result.append(node)
+
+    return result  # Return the list
+
+
+def find_all_show(show_name):
+    """Find a list of :class:`renpy.ast.Show` nodes based on a string
+
+    This searches the entire AST tree for the all the instances of the specified statement.
+
+    Args:
+        show_name (str): The string to search in Show nodes
+
+    Returns:
+        A list of :class:`renpy.ast.Node` nodes
+    """
+    rtn = []
+    for node in renpy.game.script.all_stmts:
+        if isinstance(node, ast.Show):
+            if node.imspec[0] == (show_name,):
+                rtn.append(node)
+    return rtn
+
+
 def add_menu_option(menu, option, node):
     """Add a dialog option to a given menu
 
@@ -209,6 +255,7 @@ def find_python_statement(statement):
 ROT13 = string.maketrans(
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
     "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
+
 
 class ASTHook(ast.Node):
     """A custom :class:`renpy.ast.Node` that acts as a hook between
@@ -349,12 +396,12 @@ class MenuHook(object):
         if isinstance(hook, ast.Node):
             self.get_items().append((label, condition, [hook])) # Adding a dialogue option.
             return None
-        else:
-            node = ASTHook(("AWSWMod", 1))
-            node.from_op = self.menu
-            node.hook_func = hook
-            self.get_items().append((label, condition, [node]))
-            return node
+
+        node = ASTHook(("AWSWMod", 1))
+        node.from_op = self.menu
+        node.hook_func = hook
+        self.get_items().append((label, condition, [node]))
+        return node
 
     def add_item_call(self, label, usr_hook, condition="True"):
         #TODO: Determine what this does
@@ -398,7 +445,7 @@ def hook_opcode(node, func):
     return hook
 
 
-def call_hook(node, dest_node, func=None):
+def call_hook(node, dest_node, func=None, return_node=None):
     """Hook ``func`` to ``node`` and once executed, redirect execution to
         ``dest_node``
 
@@ -413,11 +460,14 @@ def call_hook(node, dest_node, func=None):
     hook = hook_opcode(node, None)
 
     def call_function(hook):
+        # pylint: disable=missing-docstring
         if func:
             func(hook)
 
         #TODO: Better understand this line
-        label = renpy.game.context().call(dest_node.name, return_site=hook.old_next.name)
+        label = renpy.game.context().call(dest_node.name,
+                return_site=hook.old_next.name if return_node is None else
+                return_node.name)
         hook.chain(label)
 
     hook.hook_func = call_function
@@ -425,7 +475,7 @@ def call_hook(node, dest_node, func=None):
 
 
 def unhook_label(label):
-    """Unhook a hook from a lbel
+    """Unhook a hook from a label
 
     Args:
         label (str): The label's name
@@ -508,9 +558,7 @@ def jump_ret(node, dest_node, return_node, func=None):
     Returns:
         An :class:`ASTHook` object
     """
-    hook = call_hook(node, dest_node, func)
-    hook.next = return_node
-    return hook
+    return call_hook(node, dest_node, func, return_node)
 
 
 def hook_label(label, func):
