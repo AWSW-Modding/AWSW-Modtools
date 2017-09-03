@@ -89,11 +89,11 @@ screen nsfw_toggle_screen:
                 spacing 250
 
                 textbutton "Yes":
-                    action [SetPersistentNSFW("nsfwtoggle", True), SetVariable("nsfwtoggle", True), Play("audio", "se/sounds/yes.wav")]
+                    action [SetPersistentNSFW("nsfwtoggle", True), SetVariable("nsfwtoggle", True), Play("audio", "se/sounds/yes.wav"), Hide("nsfw_toggle_screen", transition=dissolve)]
                     style "nsfw_toggle_screen_btn"
 
                 textbutton "No":
-                    action [SetPersistentNSFW("nsfwtoggle", False), SetVariable("nsfwtoggle", False), Play("audio", "se/sounds/yes.wav")]
+                    action [SetPersistentNSFW("nsfwtoggle", False), SetVariable("nsfwtoggle", False), Play("audio", "se/sounds/yes.wav"), Hide("nsfw_toggle_screen", transition=dissolve)]
                     style "nsfw_toggle_screen_btn"
 
 init python:
