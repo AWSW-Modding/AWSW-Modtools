@@ -39,8 +39,12 @@ def rreload(module, modules=None):
         attribute = getattr(module, attribute_name)
         if isinstance(attribute, ModuleType):
             if attribute not in modules:
-                if get_mod_path() in attribute.__file__:
-                    rreload(attribute, modules)
+                try:
+                    if get_mod_path() in attribute.__file__:
+                        rreload(attribute, modules)
+                except AttributeError:
+                    # Seems to happen to sys randomly
+                    pass
 
 
 def main(reload_mods=False):
