@@ -1,7 +1,16 @@
 """This file is free software under the GPLv3 license"""
 import sys
 import os
+import renpy
+sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
+import ssl
+
 import shutil
+from urllib2 import urlopen
+import json
+from cStringIO import StringIO
+import zipfile
+from collections import namedtuple
 
 from renpy.display.core import Displayable
 from renpy.display.render import Render, render
@@ -12,6 +21,11 @@ from renpy.text.text import Text
 from renpy.display.imagelike import Solid
 
 from modloader.modinfo import get_mods
+from modloader import get_mod_path
+
+
+BRANCHES_API = "https://api.github.com/repos/AWSW-Modding/AWSW-Modtools/branches"
+ZIP_LOCATION = "https://github.com/AWSW-Modding/AWSW-Modtools/archive/{mod_name}.zip"
 
 
 class MessageDisplayable(Displayable):
@@ -54,3 +68,42 @@ def remove_mod(mod_name):
     sys.stdout.flush()
 
     renpy.exports.reload_script()
+
+
+def github_downloadable_mods():
+    url_f = urlopen(BRANCHES_API)
+    branches = json.load(url_f)
+    url_f.close()
+    mod_info = namedtuple("DownloadableModInfo", ["download_link",
+                                                  "mod_name",
+                                                  "author",
+                                                  "description",
+                                                  "image"])
+    data = []
+    for branch in branches:
+        name = branch["name"]
+        if name.startswith("mod-"):
+            data.append(mod_info(ZIP_LOCATION.format(mod_name=name),
+                                 name.replace("mod-", "", 1),
+                                 "DummyAuthor",
+                                 "DummyDescription",
+                                 "http://s-media-cache-ak0.pinimg.com/originals/42/41/90/424190c7f88c514a1c26a79572d61191.png"
+                                 ))
+    return data
+
+
+def download_github_mod(name, download_link, show_download=True, reload_script=True):
+    if show_download:
+        show_message("Downloading {}".format(name))
+    mod_folder = os.path.join(get_mod_path(), name)
+    if os.path.exists(mod_folder):
+        shutil.rmtree(mod_folder, ignore_errors=True)
+    request = urlopen(download_link)
+    zip_f = zipfile.ZipFile(StringIO(request.read()))
+    zip_f.extractall(get_mod_path())
+    root = zip_f.namelist()[0]
+    os.rename(os.path.join(get_mod_path(), root),
+              mod_folder)
+    if reload_script:
+        show_message("Reloading Game...")
+        renpy.exports.reload_script()
