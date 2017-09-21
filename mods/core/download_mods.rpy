@@ -60,12 +60,12 @@ screen modmenu_download:
                     ImageURL(url)
                 text name
                 text author
-                textbutton "Install" action [Show("modmenu_install_confirm", modid=modid, modname=name), Play("audio", "se/sounds/open.ogg")] hovered Play("audio", "se/sounds/select.ogg")
+                textbutton "Install" action [Show("modmenu_install_confirm", modid=modid, modname=name), Play("audio", "se/sounds/open.ogg")]
                 text description size 24
 
     window id "close":
         style "download_mods"
-        imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu_download", transition=dissolve), Play("audio", "se/sounds/close.ogg"), Show("modmenu")] hovered Play("audio", "se/sounds/select.ogg", Show("modmenu"))
+        imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu_download", transition=dissolve), Play("audio", "se/sounds/close.ogg"), Show("modmenu")]
 
 
 
@@ -79,8 +79,8 @@ screen modmenu_install_confirm(modid, modname) tag smallscreen2:
 
         hbox xalign 0.5 yalign 0.8:
             spacing 250
-            textbutton "Yes" action [Hide("modmenu_install_confirm"), Play("audio", "se/sounds/close.ogg"), lambda download_github_mod=download_github_mod, modname=modname, modid=modid: download_github_mod(modname, modid), Show("modmenu_download")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
-            textbutton "No" action [Hide("modmenu_install_confirm"), Show("modmenu_download"), Play("audio", "se/sounds/close.ogg")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
+            textbutton "Yes" action [Hide("modmenu_install_confirm"), Play("audio", "se/sounds/close.ogg"), lambda download_github_mod=download_github_mod, modname=modname, modid=modid: download_github_mod(modname, modid), Show("modmenu_download")] style "yesnobutton"
+            textbutton "No" action [Hide("modmenu_install_confirm"), Show("modmenu_download"), Play("audio", "se/sounds/close.ogg")] style "yesnobutton"
 
         label "Are you sure you want to install [modname]?":
             style "yesno_prompt"
