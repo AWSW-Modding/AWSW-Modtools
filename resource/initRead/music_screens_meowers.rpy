@@ -1,7 +1,7 @@
 init python:
     def songChoice():
         import os, random
-        fixPath = renpy.config.gamedir + "/mods/music_mod/resource/mx/" # must follow this path, or else with crash
+        fixPath = renpy.config.gamedir + "/mods/music/resource/mx/" # must follow this path, or else with crash
         
         addedList = []
         dirList = os.listdir(fixPath)

@@ -30,7 +30,7 @@ class AWSWMod(Mod):
         return ("meowers' music mod", "v1.0", "meowers!")
 
     def mod_load(self):
-        path = renpy.config.gamedir + "\\mods\\music_mod\\resource\\initRead\\music_screens_meowers.rpy"
+        path = renpy.config.gamedir + "\\mods\\music\\resource\\initRead\\music_screens_meowers.rpy"
         readString = self.readFilePart(path)
         self.insertIntoMainMenu(readString)
 
