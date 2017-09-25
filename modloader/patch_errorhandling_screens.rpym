@@ -239,14 +239,12 @@ screen error_screen_confirm_remove(traceback_fn):
             text "Are you sure you wish to continue?" substitute False
             text "" substitute False
             vbox:
-                spacing 150
+                spacing 50
 
                 textbutton _("Continue and Delete Mods"):
-                    xalign 1.0
                     action _RemoveMod(traceback_fn)
 
                 textbutton _("Quit Game"):
-                    xalign 1.0
                     action __ErrorQuit()
 
 # This screen can be customized to add additional actions to the exception
