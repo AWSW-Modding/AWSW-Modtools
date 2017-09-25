@@ -23,7 +23,7 @@
 # module (as opposed to a .rpy file) because that allows us to ensure
 # that it is fully loaded or run before any other Ren'Py code runs.
 
-# Modified by Simon Beal (muddyfish, Blue)
+# Modified by Simon Beal (muddyfish, Blue) 2017
 # Add functionality to remove problematic mods from the game
 # We're patching the module to this version before the original loads
 # (haha comment above) via a Ren'py extention file
@@ -137,18 +137,20 @@ init python:
                     if exception.filename.startswith("game/mods/"):
                         # Get mods folder and mod folder names
                         mod_dir = exception.filename.split("/", 3)[1:3]
-                        show_message("Removing mod {}".format(mod_dir[-1]))
-                        path = os.path.join(renpy.config.gamedir, *mod_dir)
-                        if os.path.exists(path):
-                            shutil.rmtree(path)
+                        if mod_dir[-1] != "core":
+                            show_message("Removing mod {}".format(mod_dir[-1]))
+                            path = os.path.join(renpy.config.gamedir, *mod_dir)
+                            if os.path.exists(path):
+                                shutil.rmtree(path)
                 show_message("Reloading game")
                 renpy.exports.utter_restart()
             else:
                 for mod_dir in renpy.parser.mod_paths:
-                    show_message("Removing mod {}".format(mod_dir[-1]))
-                    path = os.path.join(renpy.config.gamedir, *mod_dir)
-                    if os.path.exists(path):
-                        shutil.rmtree(path)
+                    if mod_dir[-1] != "core":
+                        show_message("Removing mod {}".format(mod_dir[-1]))
+                        path = os.path.join(renpy.config.gamedir, *mod_dir)
+                        if os.path.exists(path):
+                            shutil.rmtree(path)
                 show_message("Reloading game")
                 renpy.exports.utter_restart()
 
@@ -216,6 +218,37 @@ init python:
         def __call__(self):
             renpy.quit(status=1)
 
+screen error_screen_confirm_remove(traceback_fn):
+    modal True
+    zorder 1090
+
+    frame:
+        style_group ""
+
+        has side "t c b":
+            spacing gui._scale(10)
+
+        label _("Uninstall mods")
+
+        viewport:
+            id "viewport"
+
+            has vbox
+
+            text "This will uninstall all mods that raised an error" substitute False
+            text "Are you sure you wish to continue?" substitute False
+            text "" substitute False
+            vbox:
+                spacing 150
+
+                textbutton _("Continue and Delete Mods"):
+                    xalign 1.0
+                    action _RemoveMod(traceback_fn)
+
+                textbutton _("Quit Game"):
+                    xalign 1.0
+                    action __ErrorQuit()
+
 # This screen can be customized to add additional actions to the exception
 # screen. It currently takes two positional parameters.
 #
@@ -227,7 +260,7 @@ init python:
 screen _exception_actions(traceback_fn, tt, *args):
 
     textbutton _("Remove Mod and Reload"):
-        action _RemoveMod(traceback_fn)
+        action Show("error_screen_confirm_remove", traceback_fn=traceback_fn)
         hovered tt.action(_("If the exception was caused by a mod, remove that mod and reload the game."))
 
     textbutton _("Copy to Clipboard"):
@@ -345,7 +378,7 @@ screen _parse_errors:
                     hovered tt.action(_("Copies the errors.txt file to the clipboard."))
 
                 textbutton _("Remove Mod and Reload"):
-                    action _RemoveMod(error_fn)
+                    action Show("error_screen_confirm_remove", traceback_fn=error_fn)
                     hovered tt.action(_("If the exception was caused by a mod, remove that mod and reload the game."))
 
                 vbox:
