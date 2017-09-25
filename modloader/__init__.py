@@ -5,7 +5,6 @@ import os
 import sys
 import importlib
 import renpy
-from modloader import modinfo, modclass
 
 print 'AWSW Mod Loader Init'
 
@@ -49,6 +48,9 @@ def rreload(module, modules=None):
 
 def main(reload_mods=False):
     """Load the mods"""
+    # Don't want to do this at the top because it breaks initial parse error handling.
+    from modloader import modinfo, modclass
+
     # By appending the mod folder to the import path we can do something like
     # `import test` to import the mod named test in the mod folder.
     sys.path.append(get_mod_path())
@@ -88,6 +90,7 @@ def main(reload_mods=False):
     # Force renpy to reindex all game files
     renpy.loader.old_config_archives = None
 
+
 # When we build the documentation, renpy.config.gamedir will not exist
 # However, when the game is ran, it will exist. We take abuse of that
 
@@ -97,5 +100,5 @@ try:
 except AttributeError:
     BUILDING_DOCUMENTATION = True
 
-if not BUILDING_DOCUMENTATION:
-    main()
+
+
