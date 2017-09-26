@@ -1,5 +1,5 @@
 init python:
+    import sys
+    reload_mods = "modloader" in sys.modules
     import modloader
-    # Is true when reloading
-    if renpy.loader.old_config_archives:
-        modloader.main(reload_mods=True)
+    modloader.main(reload_mods=reload_mods)

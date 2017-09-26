@@ -5,7 +5,7 @@ import os
 import sys
 import importlib
 import renpy
-from modloader import modinfo, modclass
+import argparse
 
 print 'AWSW Mod Loader Init'
 
@@ -39,12 +39,28 @@ def rreload(module, modules=None):
         attribute = getattr(module, attribute_name)
         if isinstance(attribute, ModuleType):
             if attribute not in modules:
-                if get_mod_path() in attribute.__file__:
-                    rreload(attribute, modules)
+                try:
+                    if get_mod_path() in attribute.__file__:
+                        rreload(attribute, modules)
+                except AttributeError:
+                    # Seems to happen to sys randomly
+                    pass
+
+
+def test_command():
+    renpy.arguments.takes_no_arguments("Run internal modtools tests")
+
+    import testing.test as test
+    test.test_tests()
+
+    return False
 
 
 def main(reload_mods=False):
     """Load the mods"""
+    # Don't want to do this at the top because it breaks initial parse error handling.
+    from modloader import modinfo, modclass
+
     # By appending the mod folder to the import path we can do something like
     # `import test` to import the mod named test in the mod folder.
     sys.path.append(get_mod_path())
@@ -54,8 +70,10 @@ def main(reload_mods=False):
     # In most cases, that's fine, but when modinfo is reimported, we lose the
     # current list of mods.
 
-    import testing.test as test
-    test.test_tests()
+    # To run tests, do `python -O Angels with Scaly Wings.py . modtools_tests` in the AWSW root folder.
+    # Otherwise `.` has to be the path to the AWSW directory
+
+    renpy.arguments.register_command("modtools_tests", test_command)
 
     modinfo.reset_mods()
 
@@ -84,6 +102,7 @@ def main(reload_mods=False):
     # Force renpy to reindex all game files
     renpy.loader.old_config_archives = None
 
+
 # When we build the documentation, renpy.config.gamedir will not exist
 # However, when the game is ran, it will exist. We take abuse of that
 
@@ -93,5 +112,5 @@ try:
 except AttributeError:
     BUILDING_DOCUMENTATION = True
 
-if not BUILDING_DOCUMENTATION:
-    main()
+
+

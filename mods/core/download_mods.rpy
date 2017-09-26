@@ -3,7 +3,6 @@ screen modmenu_download:
 
     window id "modmenu_download" at alpha_dissolve:
         style "nvl_window"
-        imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu_download", transition=dissolve), Play("audio", "se/sounds/close.ogg"), Show("modmenu")] hovered Play("audio", "se/sounds/select.ogg", Show("modmenu")) xalign 1.1 yalign -0.1 at nav_button
 
     python:
         from renpy.display.im import Image
@@ -34,9 +33,11 @@ screen modmenu_download:
                     return [self.url]
         ImageURL = Wrapper(ImageURL)
 
-        # (modid, name, author, description, image
+        style.download_mods = Style(style.default)
 
-        contents = [(123, "Test mod", "muddyfish", "A test mod with an extremely long, multiline description. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", "http://s-media-cache-ak0.pinimg.com/originals/42/41/90/424190c7f88c514a1c26a79572d61191.png") for i in range(10)]
+        # (modid, name, author, description, image
+        from modloader.modconfig import github_downloadable_mods
+        contents = github_downloadable_mods()
 
     vpgrid:
 
@@ -59,21 +60,27 @@ screen modmenu_download:
                     ImageURL(url)
                 text name
                 text author
-                textbutton "Install" action [Show("modmenu_install_confirm", modid=modid, modname=name), Play("audio", "se/sounds/open.ogg")] hovered Play("audio", "se/sounds/select.ogg")
+                textbutton "Install" action [Show("modmenu_install_confirm", modid=modid, modname=name), Play("audio", "se/sounds/open.ogg")]
                 text description size 24
+
+    window id "close":
+        style "download_mods"
+        imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu_download", transition=dissolve), Play("audio", "se/sounds/close.ogg"), Show("modmenu")]
 
 
 
 screen modmenu_install_confirm(modid, modname) tag smallscreen2:
     modal True
+    python:
+        from modloader.modconfig import download_github_mod
 
     window id "modmenu_install_confirm" at popup2:
         style "alertwindow"
 
         hbox xalign 0.5 yalign 0.8:
             spacing 250
-            textbutton "Yes" action [Hide("modmenu_install_confirm"), Play("audio", "se/sounds/close.ogg"), Show("modmenu_download")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
-            textbutton "No" action [Hide("modmenu_install_confirm"), Show("modmenu_download"), Play("audio", "se/sounds/close.ogg")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
+            textbutton "Yes" action [Hide("modmenu_install_confirm"), Play("audio", "se/sounds/close.ogg"), lambda download_github_mod=download_github_mod, modname=modname, modid=modid: download_github_mod(modname, modid), Show("modmenu_download")] style "yesnobutton"
+            textbutton "No" action [Hide("modmenu_install_confirm"), Show("modmenu_download"), Play("audio", "se/sounds/close.ogg")] style "yesnobutton"
 
         label "Are you sure you want to install [modname]?":
             style "yesno_prompt"

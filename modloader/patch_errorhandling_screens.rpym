@@ -1,0 +1,394 @@
+# Copyright 2004-2016 Tom Rothamel <pytom@bishoujo.us>
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# This file contains the code for in-game Ren'Py error handling. It's a
+# module (as opposed to a .rpy file) because that allows us to ensure
+# that it is fully loaded or run before any other Ren'Py code runs.
+
+# Modified by Simon Beal (muddyfish, Blue) 2017
+# Add functionality to remove problematic mods from the game
+# We're patching the module to this version before the original loads
+# (haha comment above) via a Ren'py extention file
+
+
+init python:
+
+    # Null translation function. This gets redefined once things start
+    # successfully.
+    def _(s):
+        return s
+
+    # This function is responsible for taking a traceback, and converting
+    # it to a string that can be shown with text.
+    def __format_traceback(s):
+        import re
+
+        lines = [ i.replace("{", "{{") for i in s.split("\n") ]
+
+        rv = [ ("{size=%d}" % gui._scale(22)) + lines[0] + "{/size}" ]
+
+        for i in lines[1:]:
+            i = re.sub(r'(File "(.*)", line (\d+))', r'{a=edit:\3:\2}\1{/a}', i)
+            rv.append("  " + i)
+
+        rv[1] = "{vspace=5}" + rv[1]
+
+        return "\n".join(rv)
+
+
+    def __format_parse_errors(s):
+        import re
+
+        rv = ""
+
+        lines = s.split("\n")
+        len_lines = len(lines)
+
+        ln = 0
+
+        while ln < len_lines:
+            line = lines[ln]
+            ln += 1
+
+            if ln < len_lines and lines[ln].endswith("^"):
+                highlight = len(lines[ln]) - 1
+                ln += 1
+            else:
+                highlight = -1
+
+            pos = 0
+
+            for c in line:
+                if pos == highlight:
+                    rv += u"{color=#c00}\u2192{/color}"
+                    highlight = -1
+
+                pos += 1
+
+                if c == "{":
+                    rv += "{{"
+                else:
+                    rv += c
+
+            if highlight > 0:
+                rv += u"{color=#c00}\u2190{/color}"
+
+            rv += "\n"
+
+
+        rv = re.sub(r'(File "(.*)", line (\d+))', r'{a=edit:\3:\2}\1{/a}', rv)
+
+        return rv
+
+    class _EditFile(Action):
+        def __init__(self, filename, line=1):
+            self.filename = filename
+            self.line = line
+
+        def __call__(self):
+            try:
+                renpy.launch_editor([ self.filename ], self.line, transient=1)
+            except:
+                pass
+
+    class _CopyFile(Action):
+        def __init__(self, filename):
+            self.filename = filename
+
+        def __call__(self):
+            import pygame.scrap
+
+            with open(self.filename, "rb") as f:
+                f.read(3) # skip the BOM.
+                s = u"[code]\n{}[/code]\n".format(f.read().decode("utf-8"))
+
+            s = s.replace("\n", "\r\n")
+            s = s.replace("\r\r", "\r")
+
+            pygame.scrap.put(pygame.SCRAP_TEXT, s.encode("utf-8"))
+
+    class _RemoveMod(Action):
+        def __init__(self, filename, line=1):
+            pass
+
+        def __call__(self):
+            import shutil, os, sys
+            from modloader.modconfig import show_message
+            if renpy.parser.parse_errors:
+                for exception in renpy.parser.exceptions:
+                    if exception.filename.startswith("game/mods/"):
+                        # Get mods folder and mod folder names
+                        mod_dir = exception.filename.split("/", 3)[1:3]
+                        if mod_dir[-1] != "core":
+                            show_message("Removing mod {}".format(mod_dir[-1]))
+                            path = os.path.join(renpy.config.gamedir, *mod_dir)
+                            if os.path.exists(path):
+                                shutil.rmtree(path)
+                show_message("Reloading game")
+                renpy.exports.utter_restart()
+            else:
+                for mod_dir in renpy.parser.mod_paths:
+                    if mod_dir[-1] != "core":
+                        show_message("Removing mod {}".format(mod_dir[-1]))
+                        path = os.path.join(renpy.config.gamedir, *mod_dir)
+                        if os.path.exists(path):
+                            shutil.rmtree(path)
+                show_message("Reloading game")
+                renpy.exports.utter_restart()
+
+
+    def __can_open_traceback():
+        return True
+
+    class __TooltipAction(object):
+
+        def __init__(self, tooltip, value):
+            self.tooltip = tooltip
+            self.value = value
+
+        def __call__(self):
+            if self.tooltip.value != self.value:
+                self.tooltip.value = self.value
+                renpy.restart_interaction()
+
+        def unhovered(self):
+            if self.tooltip.value != self.tooltip.default:
+                self.tooltip.value = self.tooltip.default
+                renpy.restart_interaction()
+
+    class __Tooltip(object):
+        def __init__(self, default):
+            self.value = default
+            self.default = default
+
+        def action(self, value):
+            return __TooltipAction(self, value)
+
+    class __XScrollValue(BarValue):
+        def __init__(self, viewport):
+            self.viewport = viewport
+
+        def get_adjustment(self):
+            w = renpy.get_widget(None, self.viewport)
+            if not isinstance(w, Viewport):
+                raise Exception("The displayable with id %r is not declared, or not a viewport." % self.viewport)
+
+            return w.xadjustment
+
+        def get_style(self):
+            return "scrollbar", "vscrollbar"
+
+    class __YScrollValue(BarValue):
+        def __init__(self, viewport):
+            self.viewport = viewport
+
+        def get_adjustment(self):
+            w = renpy.get_widget(None, self.viewport)
+            if not isinstance(w, Viewport):
+                raise Exception("The displayable with id %r is not declared, or not a viewport." % self.viewport)
+
+            return w.yadjustment
+
+        def get_style(self):
+            return "scrollbar", "vscrollbar"
+
+    class __ErrorQuit(Action):
+        """
+        An action that quits with an error status.
+        """
+
+        def __call__(self):
+            renpy.quit(status=1)
+
+screen error_screen_confirm_remove(traceback_fn):
+    modal True
+    zorder 1090
+
+    frame:
+        style_group ""
+
+        has side "t c b":
+            spacing gui._scale(10)
+
+        label _("Uninstall mods")
+
+        viewport:
+            id "viewport"
+
+            has vbox
+
+            text "This will uninstall all mods that raised an error" substitute False
+            text "Are you sure you wish to continue?" substitute False
+            text "" substitute False
+            vbox:
+                spacing 50
+
+                textbutton _("Continue and Delete Mods"):
+                    action _RemoveMod(traceback_fn)
+
+                textbutton _("Quit Game"):
+                    action __ErrorQuit()
+
+# This screen can be customized to add additional actions to the exception
+# screen. It currently takes two positional parameters.
+#
+# * traceback_fn - a filename containing the exception text.
+# * tt - a tooltip used for help text.
+#
+# For forward-compatibility, custom implmentations should use *args to ignore
+# added arguments.
+screen _exception_actions(traceback_fn, tt, *args):
+
+    textbutton _("Remove Mod and Reload"):
+        action Show("error_screen_confirm_remove", traceback_fn=traceback_fn)
+        hovered tt.action(_("If the exception was caused by a mod, remove that mod and reload the game."))
+
+    textbutton _("Copy to Clipboard"):
+        action _CopyFile(traceback_fn)
+        hovered tt.action(_("Copies the traceback.txt file to the clipboard."))
+
+
+# The screen that is used for error handling.
+screen _exception:
+    modal True
+    zorder 1090
+
+    default tt = __Tooltip("")
+    default fmt_short = __format_traceback(short)
+    default fmt_full = __format_traceback(full)
+
+    frame:
+        style_group ""
+
+        has side "t c b":
+            spacing gui._scale(10)
+
+        label _("An exception has occurred.")
+
+        viewport:
+            id "viewport"
+            child_size (4000, None)
+            mousewheel True
+            scrollbars "both"
+
+            has vbox
+
+            text fmt_short substitute False
+            text fmt_full substitute False
+
+        vbox:
+            hbox:
+                spacing gui._scale(25)
+
+                if rollback_action:
+                    textbutton _("Rollback"):
+                        action rollback_action
+                        hovered tt.action(_("Attempts a roll back to a prior time, allowing you to save or choose a different choice."))
+
+                if ignore_action:
+                    textbutton _("Ignore"):
+                        action ignore_action
+                        hovered tt.action(_("Ignores the exception, allowing you to continue. This often leads to additional errors."))
+
+                if config.developer and not renpy.mobile:
+                    textbutton _("Reload"):
+                        action reload_action
+                        hovered tt.action(_("Reloads the game from disk, saving and restoring game state if possible."))
+
+
+                use _exception_actions(traceback_fn, tt)
+
+                vbox:
+                    xfill True
+
+                    textbutton _("Quit"):
+                        xalign 1.0
+                        action __ErrorQuit()
+                        hovered tt.action(_("Quits the game."))
+
+            # Tooltip.
+            text tt.value
+
+    if config.developer and reload_action:
+        key "R" action reload_action
+
+# The screen that is used for error handling.
+screen _parse_errors:
+    modal True
+    zorder 1090
+
+    default tt = __Tooltip("")
+    default fmt_errors = __format_parse_errors(errors)
+
+    frame:
+        style_group ""
+
+        has side "t c b":
+            spacing gui._scale(10)
+
+        label _("Parsing the script failed.")
+
+        viewport:
+            id "viewport"
+            child_size (4000, None)
+            mousewheel True
+            scrollbars "both"
+            xfill True
+            yfill True
+
+            has vbox
+
+            text fmt_errors substitute False
+
+        vbox:
+
+            hbox:
+                spacing gui._scale(25)
+
+                textbutton _("Reload"):
+                    action reload_action
+                    hovered tt.action(_("Reloads the game from disk, saving and restoring game state if possible."))
+
+                textbutton _("Open Parse Errors"):
+                    action _EditFile(error_fn)
+                    hovered tt.action(_("Opens the errors.txt file in a text editor."))
+
+                textbutton _("Copy to Clipboard"):
+                    action _CopyFile(error_fn)
+                    hovered tt.action(_("Copies the errors.txt file to the clipboard."))
+
+                textbutton _("Remove Mod and Reload"):
+                    action Show("error_screen_confirm_remove", traceback_fn=error_fn)
+                    hovered tt.action(_("If the exception was caused by a mod, remove that mod and reload the game."))
+
+                vbox:
+                    xfill True
+
+                    textbutton _("Quit"):
+                        action __ErrorQuit()
+                        hovered tt.action(_("Quits the game."))
+                        xalign 1.0
+
+            # Tooltip.
+            text tt.value
+
+    if config.developer and reload_action:
+        key "R" action reload_action
