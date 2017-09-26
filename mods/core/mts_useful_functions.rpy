@@ -1,6 +1,4 @@
 init -1 python:
-    from modloader import modinfo
-
     def mts_yes_no_prompt(string):
         ui.frame(xalign=0.5, yalign=0.5)
         ui.add("image/ui/menubg_options.png", at=popup_custom)
