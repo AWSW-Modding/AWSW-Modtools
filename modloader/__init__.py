@@ -5,6 +5,7 @@ import os
 import sys
 import importlib
 import renpy
+import argparse
 
 print 'AWSW Mod Loader Init'
 
@@ -46,6 +47,15 @@ def rreload(module, modules=None):
                     pass
 
 
+def test_command():
+    renpy.arguments.takes_no_arguments("Run internal modtools tests")
+
+    import testing.test as test
+    test.test_tests()
+
+    return False
+
+
 def main(reload_mods=False):
     """Load the mods"""
     # Don't want to do this at the top because it breaks initial parse error handling.
@@ -60,8 +70,10 @@ def main(reload_mods=False):
     # In most cases, that's fine, but when modinfo is reimported, we lose the
     # current list of mods.
 
-    import testing.test as test
-    test.test_tests()
+    # To run tests, do `python -O Angels with Scaly Wings.py . modtools_tests` in the AWSW root folder.
+    # Otherwise `.` has to be the path to the AWSW directory
+
+    renpy.arguments.register_command("modtools_tests", test_command)
 
     modinfo.reset_mods()
 
