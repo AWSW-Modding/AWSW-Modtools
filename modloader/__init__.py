@@ -56,6 +56,17 @@ def test_command():
     return False
 
 
+def update_command():
+    from modloader.modconfig import update_modtools
+    zip_default = "https://github.com/AWSW-Modding/AWSW-Modtools/archive/develop.zip"
+
+    ap = renpy.arguments.ArgumentParser(description="Update the modtools.")
+    ap.add_argument("url", help="The URL to get the new version from. Must be a zip file.", nargs='?', default=zip_default)
+    args = ap.parse_args()
+
+    update_modtools(args.url)
+
+
 def main(reload_mods=False):
     """Load the mods"""
     # Don't want to do this at the top because it breaks initial parse error handling.
@@ -74,6 +85,7 @@ def main(reload_mods=False):
     # Otherwise `.` has to be the path to the AWSW directory
 
     renpy.arguments.register_command("modtools_tests", test_command)
+    renpy.arguments.register_command("modtools_update", update_command)
 
     modinfo.reset_mods()
 

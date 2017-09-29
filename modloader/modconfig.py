@@ -5,6 +5,7 @@ import renpy
 sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 import ssl
 
+import subprocess
 import shutil
 from urllib2 import urlopen
 import json
@@ -107,3 +108,41 @@ def download_github_mod(name, download_link, show_download=True, reload_script=T
     if reload_script:
         show_message("Reloading Game...")
         renpy.exports.reload_script()
+
+
+def update_modtools(download_link):
+    print "Updating modtools..."
+    print "Saving new version..."
+    request = urlopen(download_link)
+    with open(os.path.join(renpy.config.gamedir, "modtools-update.zip"), "wb") as zip_f:
+        zip_f.write(request.read())
+    request.close()
+
+    with open(os.path.join(renpy.config.gamedir, "modloader", "modtools_files.json")) as json_f:
+        modtools_files = json.load(json_f)
+    for rel_path in modtools_files[0]:
+        fullpath = os.path.join(renpy.config.gamedir, rel_path)
+        if os.path.exists(fullpath):
+            if os.path.isdir(fullpath):
+                shutil.rmtree(fullpath)
+            else:
+                os.remove(fullpath)
+    print "Writing bootloader..."
+    zip_f = zipfile.ZipFile(os.path.join(renpy.config.gamedir, "modtools-updater.rpe"), 'w', zipfile.ZIP_DEFLATED)
+    zip_f.write(os.path.join(renpy.config.gamedir, "modloader", "modtools_update_script.py"), "autorun.py")
+    zip_f.close()
+    print "Restarting..."
+    with open("stdout.txt", "wb") as out, open("stderr.txt", "wb") as err:
+        if sys.platform.startswith('win'):
+            subprocess.Popen([sys.executable, "-O", sys.argv[0]],
+                             creationflags=0x00000200,
+                             stdout=out,
+                             stderr=err)
+        else:
+            subprocess.Popen([sys.executable, "-O", sys.argv[0]],
+                             preexec_fn=os.setpgrp,
+                             stdout=out,
+                             stderr=err)
+    print "Exiting"
+    os._exit(0)
+
