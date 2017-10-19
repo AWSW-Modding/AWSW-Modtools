@@ -1,0 +1,14 @@
+[
+  [
+    "modloader_error_handling.rpe"
+  ],
+  [
+    "docs",
+    "modloader",
+    "mods/core",
+    "testing",
+    "bootstrap.rpy",
+    "bootstrap.rpyc",
+    "modtools-updater.rpe"
+  ]
+]
