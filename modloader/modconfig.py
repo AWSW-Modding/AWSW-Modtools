@@ -131,6 +131,9 @@ def update_modtools(download_link):
     zip_f = zipfile.ZipFile(os.path.join(renpy.config.gamedir, "modtools-updater.rpe"), 'w', zipfile.ZIP_DEFLATED)
     zip_f.write(os.path.join(renpy.config.gamedir, "modloader", "modtools_update_script.py"), "autorun.py")
     zip_f.close()
+    restart_python()
+
+def restart_python():
     print "Restarting..."
     with open("stdout.txt", "wb") as out, open("stderr.txt", "wb") as err:
         if sys.platform.startswith('win'):
