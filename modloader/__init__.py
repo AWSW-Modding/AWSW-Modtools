@@ -1,11 +1,13 @@
 """This file is free software under the GPLv3 license."""
 
-from types import ModuleType
 import os
 import sys
-import importlib
 import renpy
+
+from types import ModuleType
+import importlib
 import argparse
+from script_grapher import create_graph
 
 print 'AWSW Mod Loader Init'
 
