@@ -7,7 +7,6 @@ sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 
 from types import ModuleType
 import importlib
-from script_grapher import create_graph
 
 print 'AWSW Mod Loader Init'
 
