@@ -3,7 +3,7 @@ screen modmenu tag smallscreen:
 
     window id "modmenu" at popup:
         style "smallwindow"
-        
+
         vbox xalign 0.5 yalign 0.5:
             spacing 10
             text "Mods loaded: [modsDesc]" style "menubutton2" # No strings attached. Ren'py uses KP linebreaking by default.

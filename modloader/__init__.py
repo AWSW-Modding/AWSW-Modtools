@@ -1,11 +1,12 @@
 """This file is free software under the GPLv3 license."""
 
-from types import ModuleType
 import os
 import sys
-import importlib
 import renpy
-import argparse
+sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
+
+from types import ModuleType
+import importlib
 
 print 'AWSW Mod Loader Init'
 

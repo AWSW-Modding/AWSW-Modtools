@@ -109,6 +109,13 @@ init python:
             except:
                 pass
 
+    class _ShowRemoveScreen(Action):
+        def __init__(self, error_fn):
+            self.error_fn = error_fn
+
+        def __call__(self):
+            renpy.exports.show_screen("error_screen_confirm_remove", traceback_fn=self.error_fn)
+
     class _CopyFile(Action):
         def __init__(self, filename):
             self.filename = filename
@@ -376,7 +383,7 @@ screen _parse_errors:
                     hovered tt.action(_("Copies the errors.txt file to the clipboard."))
 
                 textbutton _("Remove Mod and Reload"):
-                    action Show("error_screen_confirm_remove", traceback_fn=error_fn)
+                    action _ShowRemoveScreen(error_fn)
                     hovered tt.action(_("If the exception was caused by a mod, remove that mod and reload the game."))
 
                 vbox:

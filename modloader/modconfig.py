@@ -1,8 +1,6 @@
 """This file is free software under the GPLv3 license"""
 import sys
 import os
-import renpy
-sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 import ssl
 
 import subprocess
@@ -107,7 +105,7 @@ def download_github_mod(name, download_link, show_download=True, reload_script=T
               mod_folder)
     if reload_script:
         show_message("Reloading Game...")
-        renpy.exports.reload_script()
+        renpy.exports.utter_restart()
 
 
 def update_modtools(download_link):
