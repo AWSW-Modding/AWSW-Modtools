@@ -73,6 +73,10 @@ def main(reload_mods=False):
     # Don't want to do this at the top because it breaks initial parse error handling.
     from modloader import modinfo, modclass
 
+    if reload_mods:
+        import modgame
+        rreload(modgame)
+
     # By appending the mod folder to the import path we can do something like
     # `import test` to import the mod named test in the mod folder.
     sys.path.append(get_mod_path())
