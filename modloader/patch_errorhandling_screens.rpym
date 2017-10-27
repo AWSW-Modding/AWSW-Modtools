@@ -139,6 +139,12 @@ init python:
         def __call__(self):
             import shutil, os, sys
             from modloader.modconfig import show_message
+            from modloader import get_mod_path
+
+            for mod in os.listdir(get_mod_path()):
+                if not os.path.isdir(os.path.join(get_mod_path(), mod)):
+                    os.remove(os.path.join(get_mod_path(), mod))
+
             if renpy.parser.parse_errors:
                 for exception in renpy.parser.exceptions:
                     if exception.filename.startswith("game/mods/"):
@@ -149,6 +155,7 @@ init python:
                             path = os.path.join(renpy.config.gamedir, *mod_dir)
                             if os.path.exists(path):
                                 shutil.rmtree(path)
+
                 show_message("Reloading game")
                 renpy.exports.utter_restart()
             else:

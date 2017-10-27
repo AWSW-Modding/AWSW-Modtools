@@ -96,6 +96,12 @@ def main(reload_mods=False):
 
     modules = []
     for mod in os.listdir(get_mod_path()):
+        if not os.path.isdir(os.path.join(get_mod_path(), mod)):
+            raise EnvironmentError("The contents of the mods folder must all be folders.\n"
+                                   "Zip files should be extracted into their own directory as in the core mod.\n"
+                                   "{} is not a folder.\n"
+                                   "If you click Remove Mod and Reload, all files in the mods folder will be removed."
+                                   .format(mod))
         # Some mods require resources to be recognized by renpy.
         # If a folder exists, force renpy to load it
         resource_dir = os.path.join(get_mod_path(), mod, 'resource')
