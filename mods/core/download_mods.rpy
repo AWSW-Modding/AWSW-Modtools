@@ -65,6 +65,8 @@ screen modmenu_download:
 
     window id "close":
         style "download_mods"
+        xalign 0.95
+        yalign 0.15
         imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu_download", transition=dissolve), Play("audio", "se/sounds/close.ogg"), Show("modmenu")]
 
 
