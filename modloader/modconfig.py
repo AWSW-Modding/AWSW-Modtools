@@ -18,6 +18,7 @@ from renpy.audio.music import stop as _stop_music
 import renpy.game
 from renpy.text.text import Text
 from renpy.display.imagelike import Solid
+from renpy.ui import Action
 
 from modloader.modinfo import get_mods
 from modloader import get_mod_path
@@ -65,6 +66,7 @@ def remove_mod(mod_name):
     shutil.rmtree(os.path.join(renpy.config.gamedir, "mods", mod_folder))
     print "Sucessfully removed {}, reloading".format(mod_name)
     sys.stdout.flush()
+    show_message("Reloading game...")
 
     renpy.exports.reload_script()
 
@@ -105,8 +107,14 @@ def download_github_mod(name, download_link, show_download=True, reload_script=T
               mod_folder)
     if reload_script:
         show_message("Reloading Game...")
-        renpy.exports.utter_restart()
+        restart_python()
 
+class UpdateModtools(Action):
+    def __init__(self):
+        pass
+
+    def __call__(self):
+        update_modtools("https://github.com/AWSW-Modding/AWSW-Modtools/archive/develop.zip")
 
 def update_modtools(download_link):
     print "Updating modtools..."

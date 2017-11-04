@@ -1,6 +1,9 @@
 screen modmenu tag smallscreen:
     modal True
 
+    python:
+        from modloader.modconfig import UpdateModtools
+
     window id "modmenu" at popup:
         style "smallwindow"
 
@@ -9,6 +12,7 @@ screen modmenu tag smallscreen:
             text "Mods loaded: [modsDesc]" style "menubutton2" # No strings attached. Ren'py uses KP linebreaking by default.
             textbutton "Add mod from workshop" action [Show("modmenu_download", transition=dissolve), Play("audio", "se/sounds/open.ogg"), Hide("modmenu")] hovered Play("audio", "se/sounds/select.ogg") style "menubutton2"
             textbutton "Remove mods" action [Show("modmenu_remove"), Play("audio", "se/sounds/open.ogg"), Hide("modmenu")] hovered Play("audio", "se/sounds/select.ogg") style "menubutton2"
+            textbutton "Fetch most recent modtools" action [UpdateModtools()] style "menubutton2"
 
         imagebutton idle "image/ui/close_idle.png" hover "image/ui/close_hover.png" action [Hide("modmenu"), Hide("preferencesbg", transition=dissolve), ToggleVariable('navmenuopen', False), Play("audio", "se/sounds/close.ogg")] hovered Play("audio", "se/sounds/select.ogg") style "smallwindowclose" at nav_button
 

@@ -125,7 +125,7 @@ init python:
 
             with open(self.filename, "rb") as f:
                 f.read(3) # skip the BOM.
-                s = u"[code]\n{}[/code]\n".format(f.read().decode("utf-8"))
+                s = u"```\n{}```\n".format(f.read().decode("utf-8"))
 
             s = s.replace("\n", "\r\n")
             s = s.replace("\r\r", "\r")
@@ -144,7 +144,6 @@ init python:
             for mod in os.listdir(get_mod_path()):
                 if not os.path.isdir(os.path.join(get_mod_path(), mod)):
                     os.remove(os.path.join(get_mod_path(), mod))
-
             if renpy.parser.parse_errors:
                 for exception in renpy.parser.exceptions:
                     if exception.filename.startswith("game/mods/"):
@@ -236,6 +235,24 @@ screen error_screen_confirm_remove(traceback_fn):
     modal True
     zorder 1090
 
+    python:
+        crashed = set()
+        if renpy.parser.exceptions:
+            for exception in renpy.parser.exceptions:
+                if exception.filename.startswith("game/mods/"):
+                    # Get mods folder and mod folder names
+                    mod_dir = exception.filename.split("/", 3)[1:3]
+                    if mod_dir[-1] != "core":
+                        crashed.add(mod_dir[-1])
+        else:
+            for mod_dir in renpy.parser.mod_paths:
+                if mod_dir[-1] != "core":
+                    crashed.add(mod_dir[-1])
+        if crashed:
+            crashed = "\n"+"\n".join(crashed)+"\n"
+        else:
+            crashed = "\nNo mods.\n"
+
     frame:
         style_group ""
 
@@ -250,8 +267,11 @@ screen error_screen_confirm_remove(traceback_fn):
             has vbox
 
             text "This will uninstall all mods that raised an error" substitute False
+            text crashed substitute False
             text "Are you sure you wish to continue?" substitute False
             text "" substitute False
+
+
             vbox:
                 spacing 50
 
