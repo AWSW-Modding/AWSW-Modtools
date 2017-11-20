@@ -141,13 +141,11 @@ def update_modtools(download_link):
 
 def restart_python():
     print "Restarting..."
-    with open("stdout.txt", "wb") as out, open("stderr.txt", "wb") as err:
-        if sys.platform.startswith('win'):
-            subprocess.Popen([sys.executable, "-O", sys.argv[0]],
-                             creationflags=0x00000200,
-                             stdout=out,
-                             stderr=err)
-        else:
+    if sys.platform.startswith('win'):
+        subprocess.Popen([sys.executable, "-O", sys.argv[0]],
+                         creationflags=subprocess.CREATE_NEW_CONSOLE)
+    else:
+        with open("stdout.txt", "wb") as out, open("stderr.txt", "wb") as err:
             subprocess.Popen([sys.executable, "-O", sys.argv[0]],
                              preexec_fn=os.setpgrp,
                              stdout=out,
