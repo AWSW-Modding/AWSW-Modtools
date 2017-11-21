@@ -3,6 +3,7 @@ import json
 import shutil
 import renpy
 import zipfile
+import traceback
 
 with open(os.path.join(renpy.config.gamedir, "modloader", "modtools_files.json")) as json_f:
     modtools_files = json.load(json_f)
@@ -10,7 +11,17 @@ for rel_path in modtools_files[1]:
     fullpath = os.path.join(renpy.config.gamedir, rel_path)
     if os.path.exists(fullpath):
         if os.path.isdir(fullpath):
-            shutil.rmtree(fullpath)
+            done = False
+            while not done:
+                try:
+                    shutil.rmtree(fullpath)
+                except WindowsError:
+                    print("There was an error whilst removing {}".format(fullpath))
+                    traceback.print_exc()
+                    print("If this happens multiple times, please remove it manually or restart the game.")
+                    raw_input("Press enter to retry")
+                else:
+                    done = True
         else:
             os.remove(fullpath)
 
