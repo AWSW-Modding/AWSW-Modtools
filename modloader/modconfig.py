@@ -28,6 +28,15 @@ BRANCHES_API = "https://api.github.com/repos/AWSW-Modding/AWSW-Modtools/branches
 ZIP_LOCATION = "https://github.com/AWSW-Modding/AWSW-Modtools/archive/{mod_name}.zip"
 
 
+
+def cache(function):
+    def inner():
+        if not hasattr(function, "results"):
+            function.results = function()
+        return function.results
+    return inner
+
+
 class MessageDisplayable(Displayable):
     def __init__(self, message, bg, fg, *args, **kwargs):
         super(MessageDisplayable, self).__init__(*args, **kwargs)
@@ -54,23 +63,26 @@ def show_message(message, bg="#3485e7", fg="#fff", stop_music=True):
     renpy.game.interface.draw_screen(MessageDisplayable(message, bg, fg), False, True)
 
 
-def remove_mod(mod_name):
+def remove_mod(mod_name, filename):
     """Remove a mod from the game and reload.
 
     Args:
         mod_name (str): The internal name of the mod to be removed
     """
-    show_message("Removing mod...")
-    mod_class = get_mods()[mod_name]
-    mod_folder = mod_class.__module__
-    shutil.rmtree(os.path.join(renpy.config.gamedir, "mods", mod_folder))
+    show_message("Removing mod {}...".format(mod_name))
+    if not filename:
+        mod_class = get_mods()[mod_name]
+        mod_folder = mod_class.__module__
+    else:
+        mod_folder = mod_name
+    shutil.rmtree(os.path.join(os.path.normpath(renpy.config.gamedir), "mods", mod_folder))
     print "Sucessfully removed {}, reloading".format(mod_name)
     sys.stdout.flush()
     show_message("Reloading game...")
-
+    _stop_music("modmenu_music")
     renpy.exports.reload_script()
 
-
+@cache
 def github_downloadable_mods():
     url_f = urlopen(BRANCHES_API)
     branches = json.load(url_f)
@@ -90,7 +102,7 @@ def github_downloadable_mods():
                                  "DummyDescription",
                                  "http://s-media-cache-ak0.pinimg.com/originals/42/41/90/424190c7f88c514a1c26a79572d61191.png"
                                  ))
-    return data
+    return sorted(data, key=lambda s: s.mod_name)
 
 
 def download_github_mod(name, download_link, show_download=True, reload_script=True):
@@ -152,4 +164,3 @@ def restart_python():
                              stderr=err)
     print "Exiting"
     os._exit(0)
-
