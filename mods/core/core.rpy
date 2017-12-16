@@ -10,7 +10,16 @@ screen modmenu tag smallscreen:
         vbox xalign 0.5 yalign 0.5:
             spacing 10
             text "Mods loaded: [modsDesc]" style "menubutton2" # No strings attached. Ren'py uses KP linebreaking by default.
-            textbutton "Add mod from workshop" action [Show("modmenu_download", transition=dissolve), Play("audio", "se/sounds/open.ogg"), Hide("modmenu")] hovered Play("audio", "se/sounds/select.ogg") style "menubutton2"
+
+            textbutton "Add mod from workshop":
+                action [Show("check_internet_downloader"),
+                        Play("audio", "se/sounds/open.ogg"),
+                        Stop("music", fadeout=1.0),
+                        Play("modmenu_music", "mx/modmenu_music.opus", fadein=1.0),
+                        Hide("modmenu")]
+                hovered Play("audio", "se/sounds/select.ogg")
+                style "menubutton2"
+
             textbutton "Remove mods" action [Show("modmenu_remove"), Play("audio", "se/sounds/open.ogg"), Hide("modmenu")] hovered Play("audio", "se/sounds/select.ogg") style "menubutton2"
             textbutton "Fetch most recent modtools" action [UpdateModtools()] style "menubutton2"
 
@@ -20,7 +29,7 @@ label _mod_fixansw:
     if _return:
         $ playmessage = True
     return
-    
+
 label _core_updateChapter:
     call _mod_getchapter
     $ mod_currentChapter = _return
