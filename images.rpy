@@ -1,0 +1,110 @@
+# Diary page
+# http://www.brighthub.com/multimedia/publishing/articles/118470.aspx
+# Labeled as 'free'
+image remy_christmas diary = "cg/diary_paper.png"
+
+# An edit of an official sprite
+image remy normal no_tie = "cr/remy_normal_e.png"
+image remy normal no_tie gray = im.Grayscale("cr/remy_normal_e.png")
+
+# An edit of an official sprite
+image remy_christmas tie = "cg/remy_tie_black.png"
+
+# Greyscale
+
+image remy angry gray = im.Grayscale("cr/remy_angry.png")
+image remy angry gray flip = im.Grayscale(im.Flip("cr/remy_angry.png", horizontal=True))
+image remy look gray = im.Grayscale("cr/remy_look.png")
+image remy look gray flip = im.Grayscale(im.Flip("cr/remy_look.png", horizontal=True))
+image remy normal gray = im.Grayscale("cr/remy_normal.png")
+image remy normal gray flip = im.Grayscale(im.Flip("cr/remy_normal.png", horizontal=True))
+image remy sad gray = im.Grayscale("cr/remy_sad.png")
+image remy sad gray flip = im.Grayscale(im.Flip("cr/remy_sad.png", horizontal=True))
+image remy shy gray = im.Grayscale("cr/remy_shy.png")
+image remy shy gray flip = im.Grayscale(im.Flip("cr/remy_shy.png", horizontal=True))
+image remy smile gray = im.Grayscale("cr/remy_smile.png")
+image remy smile gray flip = im.Grayscale(im.Flip("cr/remy_smile.png", horizontal=True))
+image remy angry c gray = im.Grayscale("cr/remy_angry_c.png")
+image remy angry c gray flip = im.Grayscale(im.Flip("cr/remy_angry_c.png", horizontal=True))
+image remy look c gray = im.Grayscale("cr/remy_look_c.png")
+image remy look c gray flip = im.Grayscale(im.Flip("cr/remy_look_c.png", horizontal=True))
+image remy normal c gray = im.Grayscale("cr/remy_normal_c.png")
+image remy normal c gray flip = im.Grayscale(im.Flip("cr/remy_normal_c.png", horizontal=True))
+image remy sad c gray = im.Grayscale("cr/remy_sad_c.png")
+image remy sad c gray flip = im.Grayscale(im.Flip("cr/remy_sad_c.png", horizontal=True))
+image remy shy c gray = im.Grayscale("cr/remy_shy_c.png")
+image remy shy c gray flip = im.Grayscale(im.Flip("cr/remy_shy_c.png", horizontal=True))
+image remy smile c gray = im.Grayscale("cr/remy_smile_c.png")
+image remy smile c gray flip = im.Grayscale(im.Flip("cr/remy_smile_c.png", horizontal=True))
+image remy angry b gray = im.Grayscale("cr/remy_angry_b.png")
+image remy angry b gray flip = im.Grayscale(im.Flip("cr/remy_angry_b.png", horizontal=True))
+image remy look b gray = im.Grayscale("cr/remy_look_b.png")
+image remy look b gray flip = im.Grayscale(im.Flip("cr/remy_look_b.png", horizontal=True))
+image remy normal b gray = im.Grayscale("cr/remy_normal_b.png")
+image remy normal b gray flip = im.Grayscale(im.Flip("cr/remy_normal_b.png", horizontal=True))
+image remy sad b gray = im.Grayscale("cr/remy_sad_b.png")
+image remy sad b gray flip = im.Grayscale(im.Flip("cr/remy_sad_b.png", horizontal=True))
+image remy shy b gray = im.Grayscale("cr/remy_shy_b.png")
+image remy shy b gray flip = im.Grayscale(im.Flip("cr/remy_shy_b.png", horizontal=True))
+image remy smile b gray = im.Grayscale("cr/remy_smile_b.png")
+image remy smile b gray flip = im.Grayscale(im.Flip("cr/remy_smile_b.png", horizontal=True))
+
+image adine normal gray = im.Grayscale("cr/adine_normal.png")
+image adine normal b gray = im.Grayscale("cr/adine_normal_b.png")
+image adine giggle gray = im.Grayscale("cr/adine_giggle.png")
+image adine giggle b gray = im.Grayscale("cr/adine_giggle_b.png")
+image adine disappoint gray = im.Grayscale("cr/adine_disappoint.png")
+image adine disappoint b gray = im.Grayscale("cr/adine_disappoint_b.png")
+image adine annoyed gray = im.Grayscale("cr/adine_annoyed.png")
+image adine annoyed b gray = im.Grayscale("cr/adine_annoyed_b.png")
+image adine sad gray = im.Grayscale("cr/adine_sad.png")
+image adine sad b gray = im.Grayscale("cr/adine_sad_b.png")
+image adine think gray = im.Grayscale("cr/adine_think.png")
+image adine think b gray = im.Grayscale("cr/adine_think_b.png")
+image adine normal c gray = im.Grayscale("cr/adine_normal_c.png")
+image adine giggle c gray = im.Grayscale("cr/adine_giggle_c.png")
+image adine disappoint c gray = im.Grayscale("cr/adine_disappoint_c.png")
+image adine annoyed c gray = im.Grayscale("cr/adine_annoyed_c.png")
+image adine sad c gray = im.Grayscale("cr/adine_sad_c.png")
+image adine think c gray = im.Grayscale("cr/adine_think_c.png")
+image adine frustrated gray = im.Grayscale("cr/adine_frustrated.png")
+image adine frustrated b gray = im.Grayscale("cr/adine_frustrated_b.png")
+image adine frustrated c gray = im.Grayscale("cr/adine_frustrated_c.png")
+image adine sad d gray = im.Grayscale("cr/adine_sad_d.png")
+image adine sad e gray = im.Grayscale("cr/adine_sad_e.png")
+image adine sad f gray = im.Grayscale("cr/adine_sad_f.png")
+
+image adine normal gray flip = im.Grayscale(im.Flip("cr/adine_normal.png", horizontal=True))
+image adine normal b gray flip = im.Grayscale(im.Flip("cr/adine_normal_b.png", horizontal=True))
+image adine giggle gray flip = im.Grayscale(im.Flip("cr/adine_giggle.png", horizontal=True))
+image adine giggle b gray flip = im.Grayscale(im.Flip("cr/adine_giggle_b.png", horizontal=True))
+image adine disappoint gray flip = im.Grayscale(im.Flip("cr/adine_disappoint.png", horizontal=True))
+image adine disappoint b gray flip = im.Grayscale(im.Flip("cr/adine_disappoint_b.png", horizontal=True))
+image adine annoyed gray flip = im.Grayscale(im.Flip("cr/adine_annoyed.png", horizontal=True))
+image adine annoyed b gray flip = im.Grayscale(im.Flip("cr/adine_annoyed_b.png", horizontal=True))
+image adine sad gray flip = im.Grayscale(im.Flip("cr/adine_sad.png", horizontal=True))
+image adine sad b gray flip = im.Grayscale(im.Flip("cr/adine_sad_b.png", horizontal=True))
+image adine think gray flip = im.Grayscale(im.Flip("cr/adine_think.png", horizontal=True))
+image adine think b gray flip = im.Grayscale(im.Flip("cr/adine_think_b.png", horizontal=True))
+image adine normal c gray flip = im.Grayscale(im.Flip("cr/adine_normal_c.png", horizontal=True))
+image adine giggle c gray flip = im.Grayscale(im.Flip("cr/adine_giggle_c.png", horizontal=True))
+image adine disappoint c gray flip = im.Grayscale(im.Flip("cr/adine_disappoint_c.png", horizontal=True))
+image adine annoyed c gray flip = im.Grayscale(im.Flip("cr/adine_annoyed_c.png", horizontal=True))
+image adine sad c gray flip = im.Grayscale(im.Flip("cr/adine_sad_c.png", horizontal=True))
+image adine think c gray flip = im.Grayscale(im.Flip("cr/adine_think_c.png", horizontal=True))
+image adine frustrated gray flip = im.Grayscale(im.Flip("cr/adine_frustrated.png", horizontal=True))
+image adine frustrated b gray flip = im.Grayscale(im.Flip("cr/adine_frustrated_b.png", horizontal=True))
+image adine frustrated c gray flip = im.Grayscale(im.Flip("cr/adine_frustrated_c.png", horizontal=True))
+image adine sad d gray flip = im.Grayscale(im.Flip("cr/adine_sad_d.png", horizontal=True))
+image adine sad e gray flip = im.Grayscale(im.Flip("cr/adine_sad_e.png", horizontal=True))
+image adine sad f gray flip = im.Grayscale(im.Flip("cr/adine_sad_f.png", horizontal=True))
+
+
+
+#Greyscale for diary scene
+image whiteroom gray = im.Grayscale("bg/in/whiteroom.png")
+image cafe gray = im.Grayscale("bg/in/cafe.jpg")
+image remyapt gray = im.Grayscale("bg/in/remyapt.png")
+
+# Originally #e5B0Bf, going for greyscale though.
+define Amelia = Character(_("Amelia"), color="#bcbcbc")
