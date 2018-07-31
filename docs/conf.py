@@ -18,10 +18,10 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('F:\SteamLibrary\steamapps\common\Angels with Scaly Wings\game'))
 
 # Change this line to where ever your renpy folder is in the installation directory.
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('F:\SteamLibrary\steamapps\common\Angels with Scaly Wings'))
 
 import renpy.object
 
@@ -55,8 +55,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'AWSW-Modtools'
-copyright = u'2017, AWSWCommunity'
-author = u'AWSWCommunity'
+copyright = u'2017, AWSWCommunity, 2017-2018 Blue'
+author = u'AWSWCommunity, Blue'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
