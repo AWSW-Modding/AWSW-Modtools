@@ -47,6 +47,24 @@ def find_label(label):
     return renpy.game.script.lookup(label)
 
 
+def find_jump_target(target_label, one=True):
+    """Find a jump node (all if one is False) which is bound to the target_label
+
+    Args:
+        target_label (str): The target label's name
+
+    Returns:
+        Union[Node, List[Node]]
+    """
+    results = []
+    for node in renpy.game.script.all_stmts:
+        if isinstance(node, ast.Jump) and node.target == target_label:
+            if one:
+                return node
+            results.append(node)
+    return results
+
+
 def search_for_node_type(node, type_, max_depth=200):
     """Search for a specific type of node
 
@@ -238,19 +256,28 @@ def find_in_source_code(line_number, file_name):
     return None
 
 
-def find_python_statement(statement):
+def find_python_statement(statement, all=False):
     """Find a specific Python node in the entire AST
 
     Args:
         statement (str): The Python statement to look for
+        all (bool): If you want to return all such python statements or just one. Defaults to False.
 
     Returns:
         The Python node if found, None if not
+        Or a list of nodes which satisfy the conditions
     """
+    rtn = []
     for node in renpy.game.script.all_stmts:
         if isinstance(node, ast.Python) and node.code.source == statement:
-            return node
+            if all:
+                rtn.append(node)
+            else:
+                return node
+    if all:
+        return rtn
     return None
+
 
 ROT13 = string.maketrans(
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
@@ -413,6 +440,17 @@ class MenuHook(object):
             hook.chain(rv)
 
         hook.hook_func = call_func
+
+    def set_item(self, item, new_block):
+        """Change the statement for ``item``
+        Returns:
+            True if successful and False if not
+        """
+        for i, (label, condition, _) in enumerate(self.get_items()):
+            if label == item:
+                self.menu.items[i] = (label, condition, new_block)
+                return True
+        return False
 
 
 def hook_opcode(node, func):

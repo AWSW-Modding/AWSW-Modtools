@@ -74,6 +74,7 @@ init python:
 
     from renpy.display.im import Image
     from renpy.ui import Wrapper
+    import re
     import urllib2
 
     class ImageURL(Image):
@@ -125,29 +126,25 @@ init python:
             return False
         return True
 
-screen check_internet_downloader:
+
+screen check_internet_downloader(use_steam):
     modal True
 
     if internet_on():
         python:
-            # (modid, name, author, description, image)
-            from modloader.modconfig import github_downloadable_mods
-            contents = github_downloadable_mods()
+            # (modid, name, author, description, image) (for github)
+            # (id, name, author, desc, image) (for steam)
+            if use_steam:
+                from modloader.modconfig import steam_downloadable_mods as download_mods
+            else:
+                from modloader.modconfig import github_downloadable_mods as download_mods
 
-        # (modid, name, author, description, image)
-        #use modmenu_mod_content(modid=contents[0][0],
-        #                        name=contents[0][1],
-        #                        author=contents[0][2],
-        #                        description=contents[0][3],
-        #                        url=contents[0][4])
-        use modmenu_download()
-        #$ renpy.show_screen("modmenu_mod_content", modid=contents[0][0], name=contents[0][1], author=contents[0][2], description=contents[0][3], url=contents[0][4])
-
-
+            contents = download_mods()
+        use modmenu_download(contents=contents, use_steam=use_steam)
     else:
         use modmenu_nointernet()
 
-screen modmenu_download:
+screen modmenu_download(contents, use_steam):
     modal True
 
     frame id "modmenu_download" at alpha_dissolve:
@@ -206,7 +203,7 @@ screen modmenu_download:
 
                     if len(modname) <= 21:
                         #if mod is installed
-                        if name in modinfo.get_mod_folders():
+                        if str(modid) in modinfo.get_mod_folders():
                             $ modname = modname + "\n{size=-5}(Installed){/size}"
                         #if mod is not installed
                         else:
@@ -215,7 +212,7 @@ screen modmenu_download:
                     #if modname is greater than 21 characters, decrese size of font by 5
                     elif len(modname) <= 25:
                         #if mod is installed
-                        if name in modinfo.get_mod_folders():
+                        if str(modid) in modinfo.get_mod_folders():
                             $ modname = "{size=-5}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
                         #if mod is not installed
                         else:
@@ -228,7 +225,7 @@ screen modmenu_download:
                             $ modname = modname[:30]
 
                         #if mod is installed
-                        if name in modinfo.get_mod_folders():
+                        if str(modid) in modinfo.get_mod_folders():
                             $ modname = "{size=-10}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
                         #if mod is not installed
                         else:
@@ -240,9 +237,13 @@ screen modmenu_download:
 
                         action [Hide("modmenu_mod_content"),
                                 Show("modmenu_mod_content",
-                                    modid=modid,name=name,
-                                    author=author,description=description,
-                                    url=url,transition=dissolve),
+                                     modid=modid,
+                                     name=name,
+                                     author=author,
+                                     description=description,
+                                     url=url,
+                                     use_steam=use_steam,
+                                     transition=dissolve),
                                 Play("audio", "se/sounds/open.ogg")]
 
 
@@ -253,7 +254,7 @@ screen modmenu_download:
 
 
 
-screen modmenu_mod_content(modid, name, author, description, url):
+screen modmenu_mod_content(modid, name, author, description, url, use_steam):
     frame:
         add "ui/modcontent_frame.png":
             xoffset -10 yoffset 10 xpos 0.275 ypos 0.21
@@ -312,10 +313,10 @@ screen modmenu_mod_content(modid, name, author, description, url):
 
                 null width 350
 
-                if name in modinfo.get_mod_folders():
+                if str(modid) in modinfo.get_mod_folders():
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Show("modmenu_remove_confirm_2", modname=name, filename=True),
+                        action [Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -324,7 +325,7 @@ screen modmenu_mod_content(modid, name, author, description, url):
                 else:
                     textbutton "Install":
                         ycenter 0.5
-                        action [Show("modmenu_install_confirm", modid=modid, modname=name),
+                        action [Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -342,6 +343,10 @@ screen modmenu_mod_content(modid, name, author, description, url):
                 yminimum 355
                 ymaximum 355
 
+                python:
+                    description = re.sub(r'\[[^]]*\]', '', description)
+                    description = re.sub(r'\{[^}]*\}', '', description)
+                    description = [i for i in description if i not in "[]{}"]
                 text description
 
         bar value YScrollValue("modcontent_vp"):
@@ -351,10 +356,13 @@ screen modmenu_mod_content(modid, name, author, description, url):
             #yalign 0.95
 
 
-screen modmenu_install_confirm(modid, modname) tag smallscreen2:
+screen modmenu_install_confirm(modid, modname, use_steam) tag smallscreen2:
     modal True
     python:
-        from modloader.modconfig import download_github_mod
+        if use_steam:
+            from modloader.modconfig import download_steam_mod as download_mod
+        else:
+            from modloader.modconfig import download_github_mod as download_mod
 
     add "image/ui/nvlscreen.png" at zoom_fade_in:
         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
@@ -368,8 +376,7 @@ screen modmenu_install_confirm(modid, modname) tag smallscreen2:
             textbutton "Yes":
                 action [Hide("modmenu_install_confirm"),
                         Play("audio", "se/sounds/close.ogg"),
-                        lambda download_github_mod=download_github_mod, modname=modname, modid=modid: download_github_mod(modname, modid),
-                        Show("modmenu_download")]
+                        lambda download_mod=download_mod, modname=modname, modid=modid: download_mod(modid, modname)]
 
                 style "yesnobutton"
 
@@ -429,7 +436,8 @@ screen modmenu_remove_confirm_2(modname, filename) tag smallscreen2:
 screen modmenu_nointernet() tag smallscreen2:
     modal True
     python:
-        from modloader.modconfig import download_github_mod
+        #from modloader.modconfig import download_github_mod
+        pass
 
     add "image/ui/nvlscreen.png" at zoom_fade_in:
         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1

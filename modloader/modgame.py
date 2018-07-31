@@ -13,6 +13,7 @@ from renpy import ast
 import modloader
 from modloader import modast
 
+
 ROT13 = string.maketrans(
     "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm",
     "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz")
@@ -226,7 +227,6 @@ class AWSWHomeHook(object):
                                                return_site=modast.find_label('_mod_fixjmp').name)
                 hook.chain(rv)
             hook2.hook_func = call_func
-
 
     def hook_chapter_change(self, hook):
         """Hook a change of the chapters
