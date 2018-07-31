@@ -1,0 +1,84 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=cp1252" />
+    <title>modloader.modinfo</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modloader.modinfo</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file is free software under the MIT license&quot;&quot;&quot;</span>
+<span class="c1"># pylint: disable=invalid-name</span>
+
+<span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">listdir</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">renpy.config</span>
+<span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+    <span class="c1"># Building documentation</span>
+    <span class="k">pass</span>
+
+
+<span class="n">modlist</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">moddirnames</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<div class="viewcode-block" id="add_mod"><a class="viewcode-back" href="../../API.html#modloader.modinfo.add_mod">[docs]</a><span class="k">def</span> <span class="nf">add_mod</span><span class="p">(</span><span class="n">mod_name</span><span class="p">,</span> <span class="n">mod</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Add a mod in the registry&quot;&quot;&quot;</span>
+    <span class="nb">print</span> <span class="s2">&quot;Adding mod </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mod_name</span><span class="p">)</span>
+    <span class="n">modlist</span><span class="p">[</span><span class="n">mod_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">mod</span></div>
+
+
+<div class="viewcode-block" id="get_mods"><a class="viewcode-back" href="../../API.html#modloader.modinfo.get_mods">[docs]</a><span class="k">def</span> <span class="nf">get_mods</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Get the mods in the registry&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">modlist</span></div>
+
+
+<div class="viewcode-block" id="reset_mods"><a class="viewcode-back" href="../../API.html#modloader.modinfo.reset_mods">[docs]</a><span class="k">def</span> <span class="nf">reset_mods</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Remove all mods from the registry&quot;&quot;&quot;</span>
+    <span class="n">modlist</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">moddirnames</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">listdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">renpy</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">gamedir</span><span class="p">),</span> <span class="s2">&quot;mods&quot;</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_mod_folders</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">moddirnames</span>
+</pre></div>
+
+          </div>
+          
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, AWSWCommunity, 2017-2018 Blue.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

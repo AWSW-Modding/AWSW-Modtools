@@ -4,25 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Decompiling the game &#8212; AWSW-Modtools  documentation</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=cp1252" />
+    <title>Decompiling the game</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Writing Mods" href="writing_mods.html" />
     <link rel="prev" title="Installation" href="installation.html" />
    
@@ -31,51 +18,58 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
-  </head>
-  <body>
+  </head><body>
   
 
     <div class="document">
       <div class="documentwrapper">
-        <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="decompiling-the-game">
-<h1>Decompiling the game<a class="headerlink" href="#decompiling-the-game" title="Permalink to this headline">¶</a></h1>
-<p>Fortunately, this game can easily be extracted and decompiled. This makes modding much easier–if it was hard, there probably would be no modding framework.</p>
-<div class="section" id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<p>You will need a working Python 2 installation. To check, open up a Powershell, command prompt, terminal, or equivalent and execute <code class="docutils literal"><span class="pre">python</span> <span class="pre">--version</span></code>.</p>
-<p>If you get an error such as</p>
-<blockquote>
-<div>‘python’ is not recognized as an internal or external command, operable program or batch file</div></blockquote>
-<p>then you have improperly installed Python.</p>
-<p>If you get an output that starts with <code class="docutils literal"><span class="pre">Python</span> <span class="pre">3</span></code>, you have installed the incorrect version of Python.</p>
-<p>If you get an output that starts with <code class="docutils literal"><span class="pre">Python</span> <span class="pre">2</span></code>, you have installed the correct version of Python.</p>
-</div>
-</div>
-<div class="section" id="getting-media-and-compiled-source-code">
-<h1>Getting media and compiled source code<a class="headerlink" href="#getting-media-and-compiled-source-code" title="Permalink to this headline">¶</a></h1>
-<p>There are two ways you can get the media and compiled source code from the archive.</p>
+<h1>Decompiling the game</h1>
+<p>Fortunately, this game can easily be extracted and decompiled. This makes modding much easier�if it was hard, there probably would be no modding framework.</p>
 <div class="section" id="easy-way">
-<h2>Easy way<a class="headerlink" href="#easy-way" title="Permalink to this headline">¶</a></h2>
-<p>First, obtain a copy of <a class="reference external" href="http://aluigi.altervista.org/quickbms.htm">QuickBMS</a> and download two scripts (by right-clicking and clicking Save Page As…): <a class="reference external" href="http://aluigi.altervista.org/bms/pickle.bms">Python Pickle Parser</a> and <a class="reference external" href="http://aluigi.altervista.org/bms/rpa_renpy_nopython.bms">RPA Renpy No Python</a>,
-then make a new folder.</p>
-<p>Launch QuckBMS and select the RPA Renpy No Python script. It will ask you for the archive.rpa; give the archive.rpa from the game directory in the installation folder.
-After, it will ask for a folder; select the folder you have made.</p>
-<p><em>Credits to &#64;JeffMakesGames on the unofficial AwSW discord.</em></p>
+<h2>Easy way</h2>
+<p>A <a class="reference external" href="https://cdn.discordapp.com/attachments/283326469717884928/391692687063121930/AWSW_Extractor.exe" target="_blank">tool</a> for this has already been written for you that can do it for you automatically with little to no input.
+Just double click the program and it should automatically find the rpa file for the Steam installation.
+If you want to decompile the default Steam installation, the place it gives you by default should work fine but you can choose a different install if you want to.</p>
 </div>
 <div class="section" id="hard-way">
-<h2>Hard way<a class="headerlink" href="#hard-way" title="Permalink to this headline">¶</a></h2>
+<h2>Hard way</h2>
+<div class="section" id="prerequisites">
+<h3>Prerequisites</h3>
+<p>You will need a working Python 2 installation. To check, open up a Powershell, command prompt, terminal, or equivalent and execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">--version</span></code>.</p>
+<p>If you get an error such as</p>
+<blockquote>
+<div>�python� is not recognized as an internal or external command, operable program or batch file</div></blockquote>
+<p>then you have improperly installed Python.</p>
+<p>If you get an output that starts with <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3</span></code>, you have installed the incorrect version of Python.</p>
+<p>If you get an output that starts with <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">2</span></code>, you have installed the correct version of Python.</p>
+</div>
+<div class="section" id="getting-media-and-compiled-source-code">
+<h3>Getting media and compiled source code</h3>
 <p><em>This assumes you know the basics of command line, such as changing directories.</em></p>
 <ul class="simple">
 <li>Open up a Powershell, command prompt, terminal, or equivalent</li>
 <li>Make a new folder anywhere and change directories to the new folder</li>
 <li>Copy the archive.rpa from the game directory in the installation folder into the new folder</li>
-<li>Download <a class="reference external" href="https://github.com/Shizmob/rpatool/archive/master.zip">rpatool</a> and extract the file <code class="docutils literal"><span class="pre">rpatool</span></code> into the new folder</li>
-<li>Run <code class="docutils literal"><span class="pre">python</span> <span class="pre">rpatool</span> <span class="pre">-x</span> <span class="pre">archive.rpa</span></code>. It might take a while</li>
+<li>Download <a class="reference external" href="https://github.com/Shizmob/rpatool/archive/master.zip" target="_blank">rpatool</a> and extract the file <code class="docutils literal notranslate"><span class="pre">rpatool</span></code> into the new folder</li>
+<li>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">rpatool</span> <span class="pre">-x</span> <span class="pre">archive.rpa</span></code>. It might take a while</li>
 </ul>
 <p>After the command is executed, a whole plethora of files and folders are made in the new folder. For now, ignore all files with the .rpyc file extension.</p>
+</div>
+<div class="section" id="getting-the-source-code-only-required-for-hard-way">
+<h3>Getting the source code (Only required for hard way)</h3>
+<p>Source code is the human-readable version of the game. All dialog options, games, and spoilers are in these files.
+However, the code is compiled into Ren�Py compiled files. They have an extension of .rpyc.
+To get the source code, we need to decompile the game. The source code has an extension of .rpy</p>
+<ul class="simple">
+<li>Download _unrpyc and extract the zip file into the new folder</li>
+<li>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">unrpyc.py</span> <span class="pre">.</span></code></li>
+<li><em>Optional:</em> Remove the .rpyc files</li>
+</ul>
 <p>Some notable folders include:</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -116,7 +110,7 @@ After, it will ask for a folder; select the folder you have made.</p>
 <td>Contains backgrounds of various places in the town</td>
 </tr>
 <tr class="row-odd"><td>cg</td>
-<td>Contains all the characters’ CGs among other stuff</td>
+<td>Contains all the characters� CGs among other stuff</td>
 </tr>
 <tr class="row-even"><td>cg/extra</td>
 <td>Contains all the cards and image gallery photos</td>
@@ -143,73 +137,20 @@ After, it will ask for a folder; select the folder you have made.</p>
 </table>
 </div>
 </div>
-<div class="section" id="getting-the-source-code">
-<h1>Getting the source code<a class="headerlink" href="#getting-the-source-code" title="Permalink to this headline">¶</a></h1>
-<p>Source code is the human-readable version of the game. All dialog options, games, and spoilers are in these files.
-However, the code is compiled into Ren’Py compiled files. They have an extension of .rpyc.
-To get the source code, we need to decompile the game. The source code has an extension of .rpy</p>
-<ul class="simple">
-<li>Download _unrpyc and extract the zip file into the new folder</li>
-<li>Run <code class="docutils literal"><span class="pre">python</span> <span class="pre">unrpyc.py</span> <span class="pre">.</span></code></li>
-<li><em>Optional:</em> Remove the .rpyc files</li>
-</ul>
 </div>
 
 
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Decompiling the game</a><ul>
-<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#getting-media-and-compiled-source-code">Getting media and compiled source code</a><ul>
-<li><a class="reference internal" href="#easy-way">Easy way</a></li>
-<li><a class="reference internal" href="#hard-way">Hard way</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#getting-the-source-code">Getting the source code</a></li>
-</ul>
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
-      <li>Next: <a href="writing_mods.html" title="next chapter">Writing Mods</a></li>
-  </ul></li>
-</ul>
-</div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/decompiling.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
+          
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2017, AWSWCommunity.
+      &copy;2017, AWSWCommunity, 2017-2018 Blue.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |
       <a href="_sources/decompiling.rst.txt"
