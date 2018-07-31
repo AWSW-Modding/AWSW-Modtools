@@ -1,14 +1,17 @@
 Installation
 ============
 
-Download the mod tools here_.
-Extract the zip and copy-paste bootstrap.rpy, mods, and modloader folders to the game directory in your AWSW installation.
+This installation guide walks you through installing the Github version of the AwSW modtools - this should not be required by normal users as the Steam Workshop files are often more up to date.
 
-The DRM-free installation directory is wherever you extracted the game. The Steam installation directory can be found by right-clicking the entry in your Steam library, hitting 'Properties', clicking the 'Local Files' tab, and then clicking 'Browse Local Files'.
+Download the mod tools here_.
+Extract the zip and copy-paste the contents to the game directory in your AWSW installation.
+
+The DRM-free installation directory is wherever you extracted the game.
+The Steam installation directory can be found by right-clicking the entry in your Steam library, hitting 'Properties', clicking the 'Local Files' tab, and then clicking 'Browse Local Files'.
 
 The only mod required is the core mod. The core mod loads some crucial components of the mod framework.
 
-.. _here: https://github.com/AWSWCommunity/AWSW-Modtools/archive/develop.zip
+.. _here: https://github.com/AWSW-Modding/AWSW-Modtools/archive/develop.zip
 
 The resulting directory structure should look like the following:
 
@@ -21,7 +24,6 @@ The resulting directory structure should look like the following:
             |-- ...
         |-- modloader
             |-- ...
-        |-- bootstrap.rpy
         |-- archive.rpa
     |-- lib
         |-- ...
@@ -30,12 +32,6 @@ The resulting directory structure should look like the following:
     |-- Angels with Scaly Wings.exe
     |-- Angels with Scaly Wings.py
     |-- Angels with Scaly Wings.sh
-
-## Contributing
-
-You can contribute! Writers and drawers are needed to produce high-quality mods. Programmers are needed to ensure a stable and easy-to-use modding framework.
-
-If you need assistance, please make a Github account and [create an issue](https://help.github.com/articles/creating-an-issue/).
 
 ## Roadmap
 
@@ -46,15 +42,17 @@ If you need assistance, please make a Github account and [create an issue](https
 [.] In progress
 
 #### Level 1 (usability: barely*)
+
 *You are here. Good luck.*
 
 [\*] \# Modify Renpy screens
 
-[\*] \# Hook interpretted opcodes
+[\*] \# Hook interpreted opcodes
 
 [\*] \# Virtual file system for resources
 
 #### Level 2 (usability: better)
+
 [.] \# Hook Menus
 
 [.] \# Better menu finding algorithm
@@ -62,11 +60,12 @@ If you need assistance, please make a Github account and [create an issue](https
 \# Easy hooking for any instruction type
 
 \# Docs and easy hooking for screen lang objects
+
 #### Level 3 (usability: easy)
 
 [.] # Complete abstraction of apartment menu
 
-[!] # Debug overlay(menu option jump viewing, code peaking, on the fly decompilation)
+\# Debug overlay(menu option jump viewing, code peaking, on the fly decompilation)
 
 [*] \# Post true ending hook
 
