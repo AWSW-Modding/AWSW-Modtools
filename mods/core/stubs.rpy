@@ -34,3 +34,37 @@ label _mod_fixui:
     $ can_cont = True
     $ restore_ui()
     return
+
+screen message(text, bg, fg):
+    modal True
+    add bg
+    text text xalign 0.5 yalign 0.5 color fg
+
+screen _modloader_download_screen(mod_id):
+    add "#3485e7"
+    add DynamicDisplayable(_modloader_download_progress, mod_id):
+            xalign 0.5
+            yalign 0.5
+
+init python:
+    from modloader import workshop_enabled
+    if workshop_enabled:
+        from steam_workshop.steamhandler import convert_units, get_instance
+
+        def _modloader_download_progress(st, at, mod_id):
+            steammgr = get_instance()
+            bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
+            mod_name = steammgr.GetItemFromID(mod_id)[1]
+            if bytes_downloaded == bytes_total == 0:
+                return  Text("Installing {}...".format(mod_name,
+                                                       convert_units(bytes_downloaded),
+                                                       convert_units(bytes_total)),
+                             xalign=0.5,
+                             yalign=0.5,
+                             substitute=False), .1
+            return Text("Downloading {}: {}/{}".format(mod_name,
+                                                       convert_units(bytes_downloaded),
+                                                       convert_units(bytes_total)),
+                        xalign=0.5,
+                        yalign=0.5,
+                        substitute=False), .1

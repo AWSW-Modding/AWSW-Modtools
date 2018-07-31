@@ -58,8 +58,8 @@ init python:
                     return node
 
                 from_label_node = modast.find_label("splashscreen")
-                from_scene_node = skip_scenes_nsfw(from_label_node, 2)
-                from_scene_node = skip_nodes_nsfw(from_scene_node, 7)
+                from_scene_node = skip_scenes_nsfw(from_label_node, 1)
+                from_scene_node = skip_nodes_nsfw(from_scene_node, 1)
 
                 mod_label_node = modast.find_label("NSFW_warning")
 

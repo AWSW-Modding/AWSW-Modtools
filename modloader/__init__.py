@@ -1,8 +1,20 @@
 """This file is free software under the GPLv3 license."""
 
+#TODO - Modtools workshop item - fixed ID. Announcements to be made as metadata for that item. Show if changed?
+
 import os
 import sys
 import renpy
+try:
+    from steam_workshop.steam_config import has_steam
+    from steam_workshop.steamhandler import get_instance
+except ImportError:
+    workshop_enabled = False
+    def has_steam():
+        return False
+else:
+    workshop_enabled = True
+
 sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 
 from types import ModuleType
@@ -21,13 +33,11 @@ def get_mod_path():
 
 
 # Credit to Matthew for this code: https://stackoverflow.com/a/17194836/3398583
-# Modified by muddyfish
+# Modified by Blue
 def rreload(module, modules=None):
     """Recursively reloads a module.
 
     Ignores modules in ``modules`` and all modules not in the mods folder
-
-
     """
     print "RELOADING", module.__file__
     sys.stdout.flush()
@@ -46,6 +56,10 @@ def rreload(module, modules=None):
                 except AttributeError:
                     # Seems to happen to sys randomly
                     pass
+
+
+def is_github():
+    return renpy.loader.loadable("github.txt")
 
 
 def test_command():
@@ -72,10 +86,20 @@ def main(reload_mods=False):
     """Load the mods"""
     # Don't want to do this at the top because it breaks initial parse error handling.
     from modloader import modinfo, modclass
+    from modloader.modconfig import report_duplicate_labels
+
+    #from steam_workshop.steam_config import sign_mod
+    #sign_mod(1289643061)
 
     if reload_mods:
         import modgame
         rreload(modgame)
+
+    report_duplicate_labels()
+
+    if has_steam():
+        steammgr = get_instance()
+        steammgr.CachePersonas()
 
     # By appending the mod folder to the import path we can do something like
     # `import test` to import the mod named test in the mod folder.
@@ -88,6 +112,7 @@ def main(reload_mods=False):
 
     # To run tests, do `python -O Angels with Scaly Wings.py . modtools_tests` in the AWSW root folder.
     # Otherwise `.` has to be the path to the AWSW directory
+
 
     renpy.arguments.register_command("modtools_tests", test_command)
     renpy.arguments.register_command("modtools_update", update_command)

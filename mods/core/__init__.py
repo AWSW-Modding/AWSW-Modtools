@@ -5,6 +5,8 @@ import renpy.ast as ast
 from modloader import modinfo, modast
 from modloader.modgame import base as ml
 from modloader.modclass import Mod, loadable_mod
+from modloader.modinfo import get_mod_folders
+from modloader.modast import set_renpy_global
 
 @loadable_mod
 class AWSWMod(Mod):
@@ -46,16 +48,20 @@ class AWSWMod(Mod):
         tocompile = """
         screen dummy:
             imagebutton auto "ui/mods_%s.png" action [Show("preferencesbg"), Show('modmenu'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.955
-        """
+            """
+
+        steam_only = all(folder.isdigit() or folder == "core" for folder in get_mod_folders())
+
+        if not steam_only:
+            tocompile += """text "Non-Steam mods detected. The safety or appropriateness of these mods cannot be guaranteed." xalign 0.16 yalign -0.005"""
 
         compiled = parser.parse("FNDummy", tocompile)
-        target_display = None
         for node in compiled:
             if isinstance(node, ast.Init):
                 for child in node.block[0].screen.children:
-                    target_display = child
+                    modast.get_slscreen('main_menu').children.append(child)
 
-        modast.get_slscreen('main_menu').children.append(target_display)
+        set_renpy_global("show_workshop_downloader", False)
 
 
     @staticmethod

@@ -1,7 +1,6 @@
 """This file is free software under the GPLv3 license"""
 import sys
 import os
-import ssl
 
 import subprocess
 import shutil
@@ -11,22 +10,23 @@ from cStringIO import StringIO
 import zipfile
 from collections import namedtuple
 
-from renpy.display.core import Displayable
-from renpy.display.render import Render, render
 import renpy
 from renpy.audio.music import stop as _stop_music
 import renpy.game
-from renpy.text.text import Text
-from renpy.display.imagelike import Solid
 from renpy.ui import Action
+from renpy.exports import show_screen
 
 from modloader.modinfo import get_mods
-from modloader import get_mod_path
+from modloader import get_mod_path, workshop_enabled
+if workshop_enabled:
+    from steam_workshop.steam_config import has_valid_signature
+    import steam_workshop.steamhandler as steamhandler
 
 
 BRANCHES_API = "https://api.github.com/repos/AWSW-Modding/AWSW-Modtools/branches"
 ZIP_LOCATION = "https://github.com/AWSW-Modding/AWSW-Modtools/archive/{mod_name}.zip"
 
+#steammgr = steamhandler.get_instance()
 
 
 def cache(function):
@@ -37,30 +37,21 @@ def cache(function):
     return inner
 
 
-class MessageDisplayable(Displayable):
-    def __init__(self, message, bg, fg, *args, **kwargs):
-        super(MessageDisplayable, self).__init__(*args, **kwargs)
-        self.message = message
-        self.bg = bg
-        self.fg = fg
-
-    def render(self, width, height, st, at):
-        rv = Render(width, height)
-
-        sr = render(Solid(self.bg), width, height, st, at)
-        rv.blit(sr, (0, 0))
-
-        td = Text(self.message, size=32, xalign=0.5, yalign=0.5, color=self.fg, style="_text")
-        tr = render(td, width, height, st, at)
-
-        rv.blit(tr, (width/2 - tr.width/2, height/2 - tr.height/2))
-        return rv
-
-
 def show_message(message, bg="#3485e7", fg="#fff", stop_music=True):
     if stop_music:
         _stop_music()
-    renpy.game.interface.draw_screen(MessageDisplayable(message, bg, fg), False, True)
+    for i in renpy.config.layers:
+        renpy.game.context().scene_lists.clear(i)
+    show_screen("message", message, bg, fg, _layer="screens")
+
+
+def report_exception(overview, error_str):
+    if workshop_enabled:
+        print "Reporting exception"
+        steammgr = steamhandler.get_instance()
+        if steammgr.InitSuccess:
+            exception_str = "{}\n{}".format(overview, error_str)
+            #steammgr.HandleException(exception_str)
 
 
 def remove_mod(mod_name, filename):
@@ -70,11 +61,16 @@ def remove_mod(mod_name, filename):
         mod_name (str): The internal name of the mod to be removed
     """
     show_message("Removing mod {}...".format(mod_name))
-    if not filename:
+    if filename is False:
         mod_class = get_mods()[mod_name]
         mod_folder = mod_class.__module__
-    else:
+    elif filename is True:
         mod_folder = mod_name
+    else:
+        mod_folder = filename
+    if mod_folder.isdigit():
+        steammgr = steamhandler.get_instance()
+        steammgr.Unsubscribe(int(mod_folder))
     shutil.rmtree(os.path.join(os.path.normpath(renpy.config.gamedir), "mods", mod_folder))
     print "Sucessfully removed {}, reloading".format(mod_name)
     sys.stdout.flush()
@@ -106,7 +102,24 @@ def github_downloadable_mods():
     return sorted(data, key=lambda mod: mod.mod_name.lower())
 
 
-def download_github_mod(name, download_link, show_download=True, reload_script=True):
+@cache
+def steam_downloadable_mods():
+    # A different format,
+    # (id, mod_name, author, desc, image_url)
+    mods = []
+    for mod in sorted(steamhandler.get_instance().GetAllItems(), key=lambda mod: mod[1]):
+        file_id = mod[0]
+        create_time, modify_time, signature = mod[5:8]
+        is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
+        if is_valid:
+            mods.append(list(mod[:5]))
+            mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+        else:
+            print "NOT VALID SIG", mod
+    return mods
+
+
+def download_github_mod(download_link, name, show_download=True, reload_script=True):
     if show_download:
         show_message("Downloading {}".format(name))
     mod_folder = os.path.join(get_mod_path(), name)
@@ -121,6 +134,28 @@ def download_github_mod(name, download_link, show_download=True, reload_script=T
     if reload_script:
         show_message("Reloading Game...")
         restart_python()
+    
+
+def download_steam_mod(id, name, reload_script=True):
+    steammgr = steamhandler.get_instance()
+    # (id, mod_name, author, desc, image_url)
+    for i in renpy.config.layers:
+        renpy.game.context().scene_lists.clear(i)
+    show_screen("_modloader_download_screen", id, _layer="screens")
+    
+    def cb(item, success):
+        # Copy the folder
+        src = item[0].filepath
+        dest = os.path.join(os.getcwd(), "game", "mods", str(item[0].itemID))
+        shutil.copytree(src, dest)
+
+        steammgr.unregister_callback(steamhandler.PyCallback.Download, cb)
+        if reload_script:
+            restart_python()
+    
+    steammgr.register_callback(steamhandler.PyCallback.Download, cb)
+    steammgr.Subscribe(id)
+
 
 class UpdateModtools(Action):
     def __init__(self):
@@ -128,6 +163,7 @@ class UpdateModtools(Action):
 
     def __call__(self):
         update_modtools("https://github.com/AWSW-Modding/AWSW-Modtools/archive/develop.zip")
+
 
 def update_modtools(download_link):
     print "Updating modtools..."
@@ -152,6 +188,7 @@ def update_modtools(download_link):
     zip_f.close()
     restart_python()
 
+
 def restart_python():
     print "Restarting..."
     if sys.platform.startswith('win'):
@@ -165,3 +202,20 @@ def restart_python():
                              stderr=err)
     print "Exiting"
     os._exit(0)
+
+
+def report_duplicate_labels():
+    renpy.parser.parse_errors = renpy.game.script.duplicate_labels
+    if renpy.parser.report_parse_errors():
+        raise SystemExit(-1)
+
+try:
+    import ssl
+except ImportError:
+    start_callbacks = renpy.python.store_dicts["store"]["config"].start_callbacks
+    installing_mods = next((func for func in start_callbacks if func.__name__ == "steam_callback"), None)
+    if not installing_mods:
+        # If there are download callbacks, we're in the middle of updating
+        from modloader.fix_ssl import fix_ssl
+        fix_ssl()
+        restart_python()
