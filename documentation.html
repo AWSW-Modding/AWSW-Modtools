@@ -4,25 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Documentation &#8212; AWSW-Modtools  documentation</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=cp1252" />
+    <title>Documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API" href="API.html" />
     <link rel="prev" title="Writing Mods" href="writing_mods.html" />
    
@@ -31,34 +18,34 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
-  </head>
-  <body>
+  </head><body>
   
 
     <div class="document">
       <div class="documentwrapper">
-        <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="documentation">
-<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">Â¶</a></h1>
-<p>Documenting the code, especially the API, is critical to ensure that the modding tools isnâ€™t abandoned.</p>
+<h1>Documentation</h1>
+<p>Documenting the code, especially the API, is critical to ensure that the modding tools isn’t abandoned.</p>
 <div class="section" id="style-guide">
-<h2>Style Guide<a class="headerlink" href="#style-guide" title="Permalink to this headline">Â¶</a></h2>
-<p>All the Python code must follow <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">PEP 8</a>. The docstrings must follow Napoleon, Googleâ€™s docstring style. You can find more information in <a class="reference external" href="https://google.github.io/styleguide/pyguide.html#Comments">Googleâ€™s style guide</a> and <a class="reference external" href="http://www.sphinx-doc.org/en/stable/ext/napoleon.html">Sphinx documentation</a>
+<h2>Style Guide</h2>
+<p>All the Python code must follow <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/" target="_blank">PEP 8</a>. The docstrings must follow Napoleon, Google’s docstring style. You can find more information in <a class="reference external" href="https://google.github.io/styleguide/pyguide.html#Comments" target="_blank">Google’s style guide</a> and <a class="reference external" href="http://www.sphinx-doc.org/en/stable/ext/napoleon.html" target="_blank">Sphinx documentation</a>
 Before merging into any major branch, ensure that pylint returns no problems.</p>
 <p>To execute pylint under a Unix environment:</p>
 <ul class="simple">
-<li>Install normally through Python 2â€™s pip</li>
+<li>Install normally through Python 2’s pip</li>
 <li>Enter the game/ folder in the installation directory</li>
-<li>Run <code class="docutils literal"><span class="pre">pylint</span> <span class="pre">modloader</span></code></li>
+<li>Run <code class="docutils literal notranslate"><span class="pre">pylint</span> <span class="pre">modloader</span></code></li>
 </ul>
-<p>To run pylint for mods, run <code class="docutils literal"><span class="pre">pylint</span> <span class="pre">mods/modname</span></code> where modname is the modâ€™s name.</p>
+<p>To run pylint for mods, run <code class="docutils literal notranslate"><span class="pre">pylint</span> <span class="pre">mods/modname</span></code> where modname is the mod’s name.</p>
 </div>
 <div class="section" id="building-documentation">
-<h2>Building Documentation<a class="headerlink" href="#building-documentation" title="Permalink to this headline">Â¶</a></h2>
+<h2>Building Documentation</h2>
 <p>The documentation framework used is Sphinx. To build the documentation, switch the current branch to gh-pages and merge documentation into gh-pages.
-After, execute <code class="docutils literal"><span class="pre">sphinx-build</span> <span class="pre">.</span> <span class="pre">..</span></code> in the docs/ directory. This would cause all the documentation to be built.
+After, execute <code class="docutils literal notranslate"><span class="pre">sphinx-build</span> <span class="pre">.</span> <span class="pre">..</span></code> in the docs/ directory. This would cause all the documentation to be built.
 The resulting files are now in the root project and can be viewed by Github pages.</p>
 <p><em>TODO: Make building documentation simpler</em></p>
 </div>
@@ -66,54 +53,16 @@ The resulting files are now in the root project and can be viewed by Github page
 
 
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Documentation</a><ul>
-<li><a class="reference internal" href="#style-guide">Style Guide</a></li>
-<li><a class="reference internal" href="#building-documentation">Building Documentation</a></li>
-</ul>
-</li>
-</ul>
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="writing_mods.html" title="previous chapter">Writing Mods</a></li>
-      <li>Next: <a href="API.html" title="next chapter">API</a></li>
-  </ul></li>
-</ul>
-</div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/documentation.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
+          
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2017, AWSWCommunity.
+      &copy;2017, AWSWCommunity, 2017-2018 Blue.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |
       <a href="_sources/documentation.rst.txt"

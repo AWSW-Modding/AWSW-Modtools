@@ -1,0 +1,102 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=cp1252" />
+    <title>modloader.modclass</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for modloader.modclass</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This file is free software under the MIT license&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">modloader</span> <span class="k">import</span> <span class="n">modinfo</span>
+
+
+<div class="viewcode-block" id="Mod"><a class="viewcode-back" href="../../API.html#modloader.modclass.Mod">[docs]</a><span class="k">class</span> <span class="nc">Mod</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The Mod class</span>
+
+<span class="sd">    This is supposed to act like a superclass for mods.</span>
+<span class="sd">    Execution order is as follows:</span>
+<span class="sd">    :meth:`mod_load` -&gt; :meth:`mod_complete`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Mod.mod_info"><a class="viewcode-back" href="../../API.html#modloader.modclass.Mod.mod_info">[docs]</a>    <span class="k">def</span> <span class="nf">mod_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the mod info</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple with the name, version, author, and (optionally) if the mod is NSFW</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Mod info isn&#39;t overriden&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mod.mod_load"><a class="viewcode-back" href="../../API.html#modloader.modclass.Mod.mod_load">[docs]</a>    <span class="k">def</span> <span class="nf">mod_load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Executes when the mod is loaded</span>
+
+<span class="sd">        This is where you put patcher code.</span>
+
+<span class="sd">        See Also:</span>
+<span class="sd">            :meth:`mod_complete`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Mod load isn&#39;t overriden&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mod.mod_complete"><a class="viewcode-back" href="../../API.html#modloader.modclass.Mod.mod_complete">[docs]</a>    <span class="k">def</span> <span class="nf">mod_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Executes when all mods are loaded</span>
+
+<span class="sd">        This method is useful for dependency loading but can be left empty otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Mod complete isn&#39;t overriden&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="loadable_mod"><a class="viewcode-back" href="../../API.html#modloader.modclass.loadable_mod">[docs]</a><span class="k">def</span> <span class="nf">loadable_mod</span><span class="p">(</span><span class="n">modclass</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Annotation to add a Mod subclass to the mod list</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        modclass (Mod): The Mod class, not an instance of the Mod class</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the given class is not a subclass of Mod</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">modclass</span><span class="p">,</span> <span class="n">Mod</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Class must be a subclass of Mod&quot;</span><span class="p">)</span>
+
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">modclass</span><span class="p">()</span>
+    <span class="n">mod</span><span class="o">.</span><span class="n">mod_load</span><span class="p">()</span>
+
+    <span class="n">modinfo</span><span class="o">.</span><span class="n">add_mod</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">mod_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">mod</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, AWSWCommunity, 2017-2018 Blue.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
