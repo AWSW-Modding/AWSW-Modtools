@@ -1,9 +1,14 @@
-"""This file is free software under the GPLv3 license"""
+"""This file is free software under the MIT license"""
 # pylint: disable=invalid-name
 
 import os.path
 from os import listdir
-import renpy.config
+try:
+    import renpy.config
+except AttributeError:
+    # Building documentation
+    pass
+
 
 modlist = {}
 moddirnames = []

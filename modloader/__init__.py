@@ -1,4 +1,4 @@
-"""This file is free software under the GPLv3 license."""
+"""This file is free software under the MIT license."""
 
 #TODO - Modtools workshop item - fixed ID. Announcements to be made as metadata for that item. Show if changed?
 
@@ -14,8 +14,6 @@ except ImportError:
         return False
 else:
     workshop_enabled = True
-
-sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 
 from types import ModuleType
 import importlib
@@ -157,6 +155,7 @@ def main(reload_mods=False):
 try:
     _ = renpy.config.gamedir
     BUILDING_DOCUMENTATION = False
+    sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
 except AttributeError:
     BUILDING_DOCUMENTATION = True
 

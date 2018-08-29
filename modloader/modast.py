@@ -1,6 +1,6 @@
 """Get and modify nodes in the AST tree
 
-This file is free software under the GPLv3 license
+This file is free software under the MIT license
 """
 import os
 import string
@@ -352,7 +352,8 @@ class MenuHook(object):
         self.old_items = menu_.items[:]
 
     def delete_item(self, label):
-        """Delete a choice from the menu
+        """
+        Delete a choice from the menu
 
         Args:
             label (str): The label to search for
@@ -365,6 +366,10 @@ class MenuHook(object):
 
         Args:
             label (str): The label to search for
+
+        Returns:
+            A three-element tuple where the format is (label, condition, block).
+            Label is the visible label given to the user, condition is a Python statement that determines whether or not to show the choice, and block is SL code
         """
         # obj[0] is the choice's label
         for choice in self.get_items():
@@ -443,6 +448,7 @@ class MenuHook(object):
 
     def set_item(self, item, new_block):
         """Change the statement for ``item``
+
         Returns:
             True if successful and False if not
         """
@@ -500,7 +506,9 @@ def call_hook(node, dest_node, func=None, return_node=None):
     def call_function(hook):
         # pylint: disable=missing-docstring
         if func:
-            func(hook)
+            rtn = func(hook)
+            if rtn:
+                return rtn
 
         #TODO: Better understand this line
         label = renpy.game.context().call(dest_node.name,
@@ -597,6 +605,27 @@ def jump_ret(node, dest_node, return_node, func=None):
         An :class:`ASTHook` object
     """
     return call_hook(node, dest_node, func, return_node)
+
+
+def jump_if_ret(node, dest_node, condition, return_node=None):
+    """If ``condition`` is true, just from ``node`` to ``dest_node``.
+    Regardless of ``condition``, then jump to ``return_node``.
+
+    Args:
+        node (Node): The node to hook
+        dest_node (Node): The node to go after ``node`` is executed
+        condition (str): The condition to jump to ``dest_node``
+        return_node (Node): The node that is executed after ``dest_node`` returns
+
+    Returns:
+        An :class:`ASTHook` object
+    """
+    def func(hook):
+        rtn = renpy.python.py_eval(condition)
+        if rtn:
+            ast.next_node(hook.old_next)
+        return rtn
+    return jump_ret(node, dest_node, return_node, func)
 
 
 def hook_label(label, func):

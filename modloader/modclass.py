@@ -1,4 +1,4 @@
-"""This file is free software under the GPLv3 license"""
+"""This file is free software under the MIT license"""
 from modloader import modinfo
 
 
@@ -30,7 +30,7 @@ class Mod(object):
     def mod_complete(self):
         """Executes when all mods are loaded
 
-        This method is useful for dependency loading
+        This method is useful for dependency loading but can be left empty otherwise
         """
         raise NotImplementedError("Mod complete isn't overriden")
 
