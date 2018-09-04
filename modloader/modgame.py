@@ -1,8 +1,9 @@
 """The modding library.
 
 This file contains all the functions needed to modify and extend AwSW.
+Please note that it contains minor spoilers
 
-This file is free software under the GPLv3 license.
+This file is free software under the MIT license.
 """
 import string
 
@@ -22,8 +23,8 @@ ROT13 = string.maketrans(
 def sprnt(str_):
     """Print an encoded string to stdout
 
-    Encode the string in UTF-8 before printing it out to stdout
-    This helps avoid Unicode errors
+    Encode the string in UTF-8 before printing it out to stdout.
+    This helps avoid Unicode errors though should not be required post v1.7
 
     Args:
         string (str): The string to be printed
@@ -168,6 +169,8 @@ class AWSWHomeHook(object):
 
         Args:
             dest_node: Can be either a :class:`renpy.ast.Node` or a function.
+
+        TODO: Program this
         """
         #TODO: Figure out what the variable names mean
         # pylint: disable=invalid-name
