@@ -92,7 +92,7 @@ class AWSWEndingHooks(object):
             An instance of :class:`AWSWMenuHooks`
         """
         ch5 = modast.find_label("chapter5")
-        menu_node = self.base.searchPostNode(ch5, ast.Menu, 500)
+        menu_node = modast.search_for_node_type(ch5, ast.Menu, 500)
         menu_hooks = self.base.get_menu_hook(menu_node)
 
         return menu_hooks
