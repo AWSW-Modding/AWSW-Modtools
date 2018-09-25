@@ -125,7 +125,7 @@ class AWSWHomeHook(object):
         for lab in alt_menu_labels:
             self.alt_menus.append(modast.find_label(lab).next)
 
-        #TODO: Understand what chapter_menus_ does that alt_menus doesn't
+        # chapter_menus_ collects all the regular menus but *not* the alt menus without Bryce
         chapter_menus_ = modast.find_menu(["Meet with Bryce."]) # Choice was 100% unbiased thanks
         chapter_menus_[:] = [node for node in chapter_menus_ if node not in self.alt_menus]
         self.chapter_menus = chapter_menus_
@@ -153,7 +153,6 @@ class AWSWHomeHook(object):
             labNode = modast.find_label(lab)
 
             hkPt = modast.search_for_node_with_criteria(labNode, nodeCB)
-            print type(hkPt)
 
             # New mods will be inserted BEFORE this node, so we'll be alright.
             modast.call_hook(hkPt, modast.find_label('_mod_fixansw'))
@@ -218,7 +217,7 @@ class AWSWHomeHook(object):
             route_hook (Node): The :class:`renpy.ast.Node` object to change to
             condition (str): The Python string to evaluate if the option should appear
         """
-        for menu in self.chapter_menus:
+        for menu in self.chapter_menus + self.alt_menus:
             hook = self.base.get_menu_hook(menu)
             self.hooks.append(hook)
             hook2 = hook.add_item(title, None, condition)
