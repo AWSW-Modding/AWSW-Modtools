@@ -8,7 +8,7 @@ import renpy
 try:
     from steam_workshop.steam_config import has_steam
     from steam_workshop.steamhandler import get_instance
-except ImportError:
+except (ImportError, OSError):
     workshop_enabled = False
     def has_steam():
         return False
@@ -29,6 +29,21 @@ def get_mod_path():
     """
     return os.path.join(renpy.config.gamedir, "mods")
 
+
+def report_exception(error):
+    if has_steam():
+        manager = get_instance()
+        # Steam only uploads minidumps after 10 exceptions for some reason
+        for i in range(11):
+            manager.HandleException(error)
+
+
+def get_platform_name():
+    valid_paths = {"linux-i686", "linux-x86_64", "windows-i686", "darwin-x86_64"}
+    for path in valid_paths:
+        if any(path in i for i in sys.path):
+            return path
+    raise OSError("Modtools can't detect OS")
 
 # Credit to Matthew for this code: https://stackoverflow.com/a/17194836/3398583
 # Modified by Blue
@@ -87,7 +102,7 @@ def main(reload_mods=False):
     from modloader.modconfig import report_duplicate_labels
 
     #from steam_workshop.steam_config import sign_mod
-    #sign_mod(1289643061)
+    #sign_mod(1289694884)
 
     if reload_mods:
         import modgame
@@ -155,7 +170,7 @@ def main(reload_mods=False):
 try:
     _ = renpy.config.gamedir
     BUILDING_DOCUMENTATION = False
-    sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll"))
+    sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll", get_platform_name()))
 except AttributeError:
     BUILDING_DOCUMENTATION = True
 
