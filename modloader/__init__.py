@@ -8,6 +8,7 @@ import renpy
 try:
     from steam_workshop.steam_config import has_steam
     from steam_workshop.steamhandler import get_instance
+    get_instance()
 except (ImportError, OSError):
     workshop_enabled = False
     def has_steam():
@@ -102,7 +103,7 @@ def main(reload_mods=False):
     from modloader.modconfig import report_duplicate_labels
 
     #from steam_workshop.steam_config import sign_mod
-    #sign_mod(1289694884)
+    #sign_mod(1597292073)
 
     if reload_mods:
         import modgame
@@ -168,11 +169,10 @@ def main(reload_mods=False):
 # However, when the game is ran, it will exist. We take abuse of that
 
 try:
-    _ = renpy.config.gamedir
+    game_dir = renpy.config.gamedir
     BUILDING_DOCUMENTATION = False
-    sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll", get_platform_name()))
 except AttributeError:
     BUILDING_DOCUMENTATION = True
-
-
-
+else:
+    sys.path.append(os.path.join(renpy.config.gamedir, "modloader", "dll", get_platform_name()))
+    os.environ["SSL_CERT_FILE"] = os.path.join(game_dir, "modloader", "cacert.pem")
