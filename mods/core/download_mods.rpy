@@ -2,9 +2,13 @@ init python:
     renpy.music.register_channel("modmenu_music", "music", True)
 
     def modmenu_name_cleaner(name):
+        try:
+            name = unicode(name, "utf8")
+        except TypeError:
+            pass
         name = name.replace("-", " ")
         name = name.replace("_", " ")
-        return ''.join(val.upper() if i == 0 or name[i-1] == ' ' else val for i, val in enumerate(name))
+        return u''.join(val.upper() if i == 0 or name[i-1] == u' ' else val for i, val in enumerate(name))
 
 
     style.modmenu_select_btn = Style(style.default)
@@ -238,9 +242,9 @@ screen modmenu_download(contents, use_steam):
                         action [Hide("modmenu_mod_content"),
                                 Show("modmenu_mod_content",
                                      modid=modid,
-                                     name=name,
-                                     author=author,
-                                     description=description,
+                                     name=unicode(name, "utf8"),
+                                     author=unicode(author, "utf8"),
+                                     description=unicode(description, "utf8"),
                                      url=url,
                                      use_steam=use_steam,
                                      transition=dissolve),
