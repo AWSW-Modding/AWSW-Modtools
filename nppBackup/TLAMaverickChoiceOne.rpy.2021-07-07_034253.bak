@@ -125,7 +125,7 @@ show blackbg with dissolvemed
 
 $ renpy.pause (1.0)
 
-if not persistent.playedTLAMaverick:
+if persistent.playedTLAMaverick == False:
 
     $ persistent.playedTLAMaverick = True
 
