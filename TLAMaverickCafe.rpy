@@ -55,14 +55,14 @@ c "Yes, thank you."
 
 hide adine with easeoutleft
 
-show maverick at center with ease
-
 if steak == "raw":
+      show maverick blush at center with ease
       Mv blush "I..love raw steak..."
       c "We humans don't eat them raw usually, but i want to give it a try this time."
       show maverick nice with dissolve
 
 else:
+  show maverick at center with ease
   Mv normal "Also steak, huh?"
   c "Yeah, i thought i will give it a try."
 
