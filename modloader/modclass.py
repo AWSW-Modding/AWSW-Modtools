@@ -48,6 +48,5 @@ def loadable_mod(modclass):
         raise Exception("Class must be a subclass of Mod")
 
     mod = modclass()
-    mod.mod_load()
 
     modinfo.add_mod(mod.mod_info()[0], mod)

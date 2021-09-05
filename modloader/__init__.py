@@ -147,7 +147,7 @@ def main(reload_mods=False):
         if os.path.isdir(resource_dir):
             renpy.config.searchpath.append(resource_dir)
 
-        print "Begin mod load: {}".format(mod)
+        print "Begin mod import: {}".format(mod)
 
         # Try importing the mod.
         # Note: This doesn't give my mod functionality. To give the mod
@@ -155,7 +155,12 @@ def main(reload_mods=False):
         mod_object = importlib.import_module(mod)
         if reload_mods:
             rreload(mod_object, modules)
-
+    
+    # After all mods are imported, call their respective mod_load functions
+    for mod_name, mod in modinfo.get_mods().iteritems():
+        print "Loading mod {}".format(mod_name)
+        mod.mod_load()
+    
     # After all mods are loaded, call their respective mod_complete functions
     for mod_name, mod in modinfo.get_mods().iteritems():
         print "Completing mod {}".format(mod_name)
