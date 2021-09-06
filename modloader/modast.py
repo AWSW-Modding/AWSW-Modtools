@@ -479,7 +479,10 @@ def hook_opcode(node, func):
     # The tuple is in the format (filename, filenumber)
     # This is used by the renpy stacktrace
     hook = ASTHook(("AWSWMod", 1), func, node)
-    node.chain(hook)
+    if isinstance(node, ast.Label):
+        node.next = hook
+    else:
+        node.chain(hook)
 
     # Put the original next node to the hook node
     # Also keep a copy of the original next node in the hook node, allowing us to unhook it
