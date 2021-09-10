@@ -25,6 +25,19 @@ def get_mods():
     return modlist
 
 
+def get_mod(mod_name):
+    """Get a mod in the registry"""
+    if mod_name in modlist:
+        return modlist[mod_name]
+    else:
+        raise KeyError("Mod \"{}\" not found.".format(mod_name))
+
+
+def has_mod(mod_name):
+    """Check if a mod is loaded"""
+    return mod_name in modlist
+
+
 def reset_mods():
     """Remove all mods from the registry"""
     modlist.clear()
@@ -33,3 +46,13 @@ def reset_mods():
 
 def get_mod_folders():
     return moddirnames
+
+
+def get_mod_folder(mod_name):
+    """Get a name of the folder of a mod"""
+    return get_mod(mod_name).__module__
+
+
+def get_mod_path(mod_name):
+    """Get a full path of a mod"""
+    return os.path.join(os.path.normpath(renpy.config.gamedir), "mods", get_mod(mod_name).__module__)
