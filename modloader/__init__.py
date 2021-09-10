@@ -134,7 +134,10 @@ def main(reload_mods=False):
     modinfo.reset_mods()
 
     modules = []
+    valid_files = ['.DS_Store']
     for mod in os.listdir(get_mod_path()):
+        if mod in valid_files:
+            continue
         if not os.path.isdir(os.path.join(get_mod_path(), mod)):
             raise EnvironmentError("The contents of the mods folder must all be folders.\n"
                                    "Zip files should be extracted into their own directory as in the core mod.\n"
