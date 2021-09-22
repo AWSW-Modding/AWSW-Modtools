@@ -96,6 +96,55 @@ def update_command():
     update_modtools(args.url)
 
 
+def resolve_dependencies():
+    """Resolve mod dependecies and create mod load order"""
+    from modloader import modinfo
+    mod_load_order = []
+    load_later = []
+    
+    # loop through all imported mods
+    for mod_name, mod in modinfo.get_mods().iteritems():
+        mod_deps = mod.mod_info()[-1]
+        
+        # if no dependecies are specified we can just add the mod to mod_load_order
+        if not isinstance(mod_deps, (list, tuple)):
+            mod_load_order.append(mod_name)
+            continue
+        
+        # check if all dependecies are imported
+        for mod_dep in mod_deps:
+            if not modinfo.has_mod(mod_dep):
+                raise EnvironmentError("Failed resolving dependecies of the mod \"{}\": Cannot find a mod \"{}\".".format(mod_name, mod_dep))
+        
+        # put all mods with dependecies to load_later 
+        load_later.append((mod_name, mod_deps))
+    
+    # repeat until there's no mod left in load_later
+    while len(load_later) > 0:
+        new_load_later = []
+        
+        # loop through mods which aren't in mod_load_order yet
+        for mod_name, mod_deps in load_later:
+            # get dependecies which still aren't in mod_load_order
+            later_deps = [mod_dep for mod_dep in mod_deps if mod_dep not in mod_load_order]
+            
+            # if all dependecies are in mod_load_order, we append the mod to it as well
+            # otherwise we keep it in load_later and shrink the list of dependecies to only the ones which aren't in mod_load_order
+            if len(later_deps) > 0:
+                # the new load_later list is in reversed order to (hopefully) reduce the amount of loops needed
+                new_load_later.insert(0, (mod_name, later_deps))
+            else:
+                mod_load_order.append(mod_name)
+        
+        # if no mod was moved from load_later to mod_load_order, we raise an error to prevent infinite loop
+        if len(new_load_later) == len(load_later):
+            raise EnvironmentError("Failed resolving mod dependecies.\nThis may be caused by an occurance of cyclic dependency, which isn't allowed.")
+        
+        load_later[:] = new_load_later
+    
+    modinfo.mod_load_order[:] = mod_load_order
+
+
 def main(reload_mods=False):
     """Load the mods"""
     # Don't want to do this at the top because it breaks initial parse error handling.
@@ -144,11 +193,6 @@ def main(reload_mods=False):
                                    "{} is not a folder.\n"
                                    "If you click Remove Mod and Reload, all files in the mods folder will be removed."
                                    .format(mod))
-        # Some mods require resources to be recognized by renpy.
-        # If a folder exists, force renpy to load it
-        resource_dir = os.path.join(get_mod_path(), mod, 'resource')
-        if os.path.isdir(resource_dir):
-            renpy.config.searchpath.append(resource_dir)
 
         print "Begin mod import: {}".format(mod)
 
@@ -159,15 +203,26 @@ def main(reload_mods=False):
         if reload_mods:
             rreload(mod_object, modules)
     
-    # After all mods are imported, call their respective mod_load functions
-    for mod_name, mod in modinfo.get_mods().iteritems():
+    # After all mods are imported, resolve their dependecies and create mod load order
+    resolve_dependencies()
+    
+    # After load order is created, loop through the mods in the reverse order and add their resource folder to search path
+    for mod_name in modinfo.mod_load_order[::-1]:
+        # Some mods require resources to be recognized by renpy.
+        # If a folder exists, force renpy to load it
+        resource_dir = os.path.join(modinfo.get_mod_path(mod_name), 'resource')
+        if os.path.isdir(resource_dir):
+            renpy.config.searchpath.append(resource_dir)
+    
+    # Then loop through the mods in their load order and call their respective mod_load functions
+    for mod_name in modinfo.mod_load_order:
         print "Loading mod {}".format(mod_name)
-        mod.mod_load()
+        modinfo.get_mod(mod_name).mod_load()
     
     # After all mods are loaded, call their respective mod_complete functions
-    for mod_name, mod in modinfo.get_mods().iteritems():
+    for mod_name in modinfo.mod_load_order:
         print "Completing mod {}".format(mod_name)
-        mod.mod_complete()
+        modinfo.get_mod(mod_name).mod_complete()
 
     # Force renpy to reindex all game files
     renpy.loader.old_config_archives = None
