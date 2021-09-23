@@ -14,13 +14,9 @@ class AWSWMod(Mod):
 
     This mod is responsible for being a proxy between renpy code and modlib
     """
-
-    @staticmethod
-    def mod_info():
-        """Get the mod info
-        Returns: a three element tuple containing the mod name, version and description
-        """
-        return ("Core", "v0.1", "")
+    name = "Core"
+    version = "v0.1"
+    author = ""
 
     @staticmethod
     def mod_load():

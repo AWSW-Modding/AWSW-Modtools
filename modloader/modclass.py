@@ -9,13 +9,48 @@ class Mod(object):
     Execution order is as follows:
     :meth:`mod_load` -> :meth:`mod_complete`
     """
+    
+    def __init__(self):
+        """Forwards compatibity between mod_info function and class attributes"""
+        
+        cls = self.__class__
+        
+        # check if the class doesn't override mod_info
+        if cls.mod_info == Mod.mod_info:
+            # check mandatory attributes
+            if not hasattr(cls, "name"):
+                raise Exception("Mod must specify the class attribute `name`.")
+            if not hasattr(cls, "version"):
+                raise Exception("Mod must specify the class attribute `version`.")
+            if not hasattr(cls, "author"):
+                raise Exception("Mod must specify the class attribute `author`.")
+        else:
+            # cannot have both mod_info and class attributes
+            if hasattr(cls, "name"):
+                raise Exception("Mod name can only be defined either by class attribute or mod_info function, not both.")
+            if hasattr(cls, "version"):
+                raise Exception("Mod version can only be defined either by class attribute or mod_info function, not both.")
+            if hasattr(cls, "author"):
+                raise Exception("Mod author can only be defined either by class attribute or mod_info function, not both.")
+            if hasattr(cls, "nsfw"):
+                raise Exception("Mod nsfw tag can only be defined either by class attribute or mod_info function, not both.")
+            
+            # set class attributes from mod_info
+            mi = self.mod_info()
+            cls.name = mi[0]
+            cls.version = mi[1]
+            cls.author = mi[2]
+            cls.nsfw = mi[3] if len(mi) >= 4 else False
+    
     def mod_info(self):
         """Get the mod info
+        
+        Mod class has to either override this function or contain class attributes `name`, `version`, `author` and optionally `nsfw`.
 
         Returns:
             A tuple with the name, version, author, and (optionally) if the mod is NSFW
         """
-        raise NotImplementedError("Mod info isn't overriden")
+        return (self.name, self.version, self.author, getattr(self.__class__, "nsfw", False))
 
     def mod_load(self):
         """Executes when the mod is loaded

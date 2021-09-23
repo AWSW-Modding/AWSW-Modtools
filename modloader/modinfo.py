@@ -12,6 +12,7 @@ except AttributeError:
 
 modlist = {}
 moddirnames = []
+mod_load_order = []
 
 
 def add_mod(mod_name, mod):
