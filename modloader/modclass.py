@@ -11,6 +11,8 @@ class Mod(object):
     """
     def mod_info(self):
         """Get the mod info
+        
+        Mod class has to either override this function or contain class attributes `name`, `version`, `author` and optionally `nsfw`.
 
         Returns:
             A tuple with the name, version, author, and (optionally) if the mod is NSFW

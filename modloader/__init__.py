@@ -105,11 +105,11 @@ def resolve_dependencies():
     # loop through all imported mods
     for mod_name, mod in modinfo.get_mods().iteritems():        
         # if no dependencies are specified we can just add the mod to mod_load_order
-        if not hasattr(mod, "dependencies"):
+        if not hasattr(mod.__class__, "dependencies"):
             mod_load_order.append(mod_name)
             continue
         
-        # check if all dependecies are imported
+        # check if all dependencies are imported
         for mod_dep in mod.dependencies:
             if not modinfo.has_mod(mod_dep):
                 raise EnvironmentError("Failed resolving dependencies of the mod \"{}\": Cannot find a mod \"{}\".".format(mod_name, mod_dep))
