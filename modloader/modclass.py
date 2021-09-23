@@ -17,7 +17,7 @@ class Mod(object):
         Returns:
             A tuple with the name, version, author, and (optionally) if the mod is NSFW
         """
-        return (self.name, self.version, self.author, self.nsfw if hasattr(self.__class__, "nsfw") else False)
+        return (self.name, self.version, self.author, getattr(self.__class__, "nsfw", False))
 
     def mod_load(self):
         """Executes when the mod is loaded
