@@ -105,7 +105,7 @@ def resolve_dependencies():
     # loop through all imported mods
     for mod_name, mod in modinfo.get_mods().iteritems():        
         # if no dependencies are specified we can just add the mod to mod_load_order
-        if len(mod.dependencies) == 0:
+        if not mod.dependencies:
             mod_load_order.append(mod_name)
             continue
         
@@ -201,7 +201,7 @@ def main(reload_mods=False):
         if reload_mods:
             rreload(mod_object, modules)
     
-    # After all mods are imported, resolve their dependecies and create mod load order
+    # After all mods are imported, resolve their dependencies and create mod load order
     resolve_dependencies()
     
     # After load order is created, loop through the mods in the reverse order and add their resource folder to search path
