@@ -24,6 +24,10 @@ class Mod(object):
                 raise Exception("Mod must specify the class attribute `version`.")
             if not hasattr(cls, "author"):
                 raise Exception("Mod must specify the class attribute `author`.")
+            if not hasattr(cls, "nsfw"):
+                cls.nsfw = False
+            if not hasattr(cls, "dependencies"):
+                cls.dependencies = []
         else:
             # cannot have both mod_info and class attributes
             if hasattr(cls, "name"):
@@ -41,7 +45,15 @@ class Mod(object):
             cls.version = mi[1]
             cls.author = mi[2]
             cls.nsfw = mi[3] if len(mi) >= 4 else False
-    
+            cls.dependencies = []
+        
+        # check if class attributes have valid types
+        assert isinstance(cls.name, (str, unicode))
+        assert isinstance(cls.version, (str, unicode))
+        assert isinstance(cls.author, (str, unicode))
+        assert isinstance(cls.nsfw, bool)
+        assert isinstance(cls.dependencies, (list, tuple))
+        
     def mod_info(self):
         """Get the mod info
         

@@ -105,7 +105,7 @@ def resolve_dependencies():
     # loop through all imported mods
     for mod_name, mod in modinfo.get_mods().iteritems():        
         # if no dependencies are specified we can just add the mod to mod_load_order
-        if not hasattr(mod.__class__, "dependencies"):
+        if not mod.dependencies:
             mod_load_order.append(mod_name)
             continue
         
@@ -126,7 +126,7 @@ def resolve_dependencies():
             # get dependencies which still aren't in mod_load_order
             later_deps = [mod_dep for mod_dep in mod_deps if mod_dep not in mod_load_order]
             
-            # if all dependecies are in mod_load_order, we append the mod to it as well
+            # if all dependencies are in mod_load_order, we append the mod to it as well
             # otherwise we keep it in load_later and shrink the list of dependencies to only the ones which aren't in mod_load_order
             if len(later_deps) > 0:
                 # the new load_later list is in reversed order to (hopefully) reduce the amount of loops needed
@@ -201,7 +201,7 @@ def main(reload_mods=False):
         if reload_mods:
             rreload(mod_object, modules)
     
-    # After all mods are imported, resolve their dependecies and create mod load order
+    # After all mods are imported, resolve their dependencies and create mod load order
     resolve_dependencies()
     
     # After load order is created, loop through the mods in the reverse order and add their resource folder to search path
