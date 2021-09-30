@@ -109,13 +109,23 @@ def resolve_dependencies():
             mod_load_order.append(mod_name)
             continue
         
-        # check if all dependencies are imported
+        raw_mod_deps = []
+        
+        # check if all dependencies are imported and incompatible mods aren't
         for mod_dep in mod.dependencies:
-            if not modinfo.has_mod(mod_dep):
-                raise EnvironmentError("Failed resolving dependencies of the mod \"{}\": Cannot find a mod \"{}\".".format(mod_name, mod_dep))
+            if mod_dep[0] == "!":
+                if modinfo.has_mod(mod_dep[1:]):
+                    raise EnvironmentError("Failed resolving dependencies of the mod \"{}\":\n This mod is in conflict with the mod \"{}\", please remove one of them.".format(mod_name, mod_dep[1:]))
+            elif mod_dep[0] == "?":
+                if modinfo.has_mod(mod_dep[1:]):
+                    raw_mod_deps.append(mod_dep[1:])
+            elif modinfo.has_mod(mod_dep):
+                raw_mod_deps.append(mod_dep)
+            else:
+                raise EnvironmentError("Failed resolving dependencies of the mod \"{}\":\n Cannot find a mod \"{}\".".format(mod_name, mod_dep))
         
         # put all mods with dependencies to load_later 
-        load_later.append((mod_name, mod.dependencies))
+        load_later.append((mod_name, raw_mod_deps))
     
     # repeat until there's no mod left in load_later
     while len(load_later) > 0:
