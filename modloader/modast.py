@@ -299,10 +299,14 @@ class ASTHook(ast.Node):
                 node will be skipped.
         from_op: The original node before hooking
         old_next: The original next node before hooking was done
+        tag: Unique tag appended to the name of the node. 
+                Use in situation, when it's possible for the player to save
+                the game during the execution of the hook function to ensure 
+                name consistency between saves.
     """
     _serial = 1
 
-    def __init__(self, loc, hook_func_=None, from_op_=None):
+    def __init__(self, loc, hook_func_=None, from_op_=None, tag=None):
         super(ASTHook, self).__init__(loc)
 
         self.hook_func = hook_func_
@@ -310,8 +314,11 @@ class ASTHook(ast.Node):
         self.old_next = None
 
         # Create a unique name
-        self.name = "AWSWModOp_" + str(ASTHook._serial)
-        ASTHook._serial += 1
+        if tag:
+            self.name = "AWSWModOp_" + tag
+        else:
+            self.name = "AWSWModOp_" + str(ASTHook._serial)
+            ASTHook._serial += 1
         renpy.game.script.namemap[self.name] = self
 
     def execute(self):
@@ -459,12 +466,13 @@ class MenuHook(object):
         return False
 
 
-def hook_opcode(node, func):
+def hook_opcode(node, func, tag=None):
     """Hook ``func`` to ``node``
 
     Args:
         node (Node): The node object for the function to hook
         func (function): The function to be executed when the node is executed
+        tag (string): Unique tag of the hook. (See attributes of ASTHook for more details.)
 
     Todo:
         Check if a hook already exists and make the code more cohesive
@@ -478,7 +486,7 @@ def hook_opcode(node, func):
     # Make a new ASTHook and hook it to the node
     # The tuple is in the format (filename, filenumber)
     # This is used by the renpy stacktrace
-    hook = ASTHook(("AWSWMod", 1), func, node)
+    hook = ASTHook(("AWSWMod", 1), func, node, tag)
     if isinstance(node, ast.Label):
         node.next = hook
     else:
@@ -492,7 +500,7 @@ def hook_opcode(node, func):
     return hook
 
 
-def call_hook(node, dest_node, func=None, return_node=None):
+def call_hook(node, dest_node, func=None, return_node=None, tag=None):
     """Hook ``func`` to ``node`` and once executed, redirect execution to
         ``dest_node``
 
@@ -500,11 +508,12 @@ def call_hook(node, dest_node, func=None, return_node=None):
         node (Node): The node to hook
         dest_node (Node): the node to go after ``node`` is executed
         func (function): The function to call
+        tag (string): Unique tag of the hook. (See attributes of ASTHook for more details.)
 
     Returns:
         An :class:`ASTHook` object
     """
-    hook = hook_opcode(node, None)
+    hook = hook_opcode(node, None, tag)
 
     def call_function(hook):
         # pylint: disable=missing-docstring
