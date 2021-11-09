@@ -214,13 +214,13 @@ def main(reload_mods=False):
     # After all mods are imported, resolve their dependencies and create mod load order
     resolve_dependencies()
     
-    # After load order is created, loop through the mods in the reverse order and add their resource folder to search path
-    for mod_name in modinfo.mod_load_order[::-1]:
+    # After load order is created, loop through the mods and add their resource folder to the front of search path list
+    for mod_name in modinfo.mod_load_order:
         # Some mods require resources to be recognized by renpy.
         # If a folder exists, force renpy to load it
         resource_dir = os.path.join(modinfo.get_mod_path(mod_name), 'resource')
         if os.path.isdir(resource_dir):
-            renpy.config.searchpath.append(resource_dir)
+            renpy.config.searchpath.insert(0, resource_dir)
     
     # Then loop through the mods in their load order and call their respective mod_load functions
     for mod_name in modinfo.mod_load_order:
