@@ -192,8 +192,9 @@ def main(reload_mods=False):
 
     modules = []
     valid_files = ['.DS_Store']
-    for mod in os.listdir(get_mod_path()):
+    for mod in modinfo.get_mod_folders():
         if mod in valid_files:
+            modinfo.get_mod_folders().remove(mod)
             continue
         if not os.path.isdir(os.path.join(get_mod_path(), mod)):
             raise EnvironmentError("The contents of the mods folder must all be folders.\n"
@@ -201,7 +202,13 @@ def main(reload_mods=False):
                                    "{} is not a folder.\n"
                                    "If you click Remove Mod and Reload, all files in the mods folder will be removed."
                                    .format(mod))
-
+        
+        # if the mod contains a "modules" folder add this folder to system path
+        modules_path = os.path.join(get_mod_path(), mod, "modules")
+        if os.path.isdir(modules_path):
+            sys.path.append(modules_path)
+    
+    for mod in modinfo.get_mod_folders():
         print "Begin mod import: {}".format(mod)
 
         # Try importing the mod.
