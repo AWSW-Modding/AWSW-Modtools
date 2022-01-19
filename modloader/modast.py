@@ -77,8 +77,12 @@ def search_for_node_type(node, type_, max_depth=200):
     Returns:
         A :class:`renpy.ast.Node` object if a match occurs or None if no match occurs
     """
-    for _ in range(1, max_depth):
-        node = node.next
+    while max_depth >= 1:
+        if isinstance(node, ASTHook):
+            node = node.old_next
+        else:
+            node = node.next
+            max_depth -= 1
         if node:
             if isinstance(node, type_):
                 return node
@@ -102,10 +106,12 @@ def search_for_node_with_criteria(node, func, max_depth=200):
     Returns:
         A :class:`renpy.ast.Node` object if a match occurs or None if no match occurs
     """
-    for _ in range(1, max_depth):
-        node = node.next
-
-        #TODO: Figure out why ``if node and func(node):`` doesn't work
+    while max_depth >= 1:
+        if isinstance(node, ASTHook):
+            node = node.old_next
+        else:
+            node = node.next
+            max_depth -= 1
         if node:
             if func(node):
                 return node
