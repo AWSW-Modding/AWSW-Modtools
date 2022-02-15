@@ -16,7 +16,10 @@ init python:
             rpyCode =  'screen mainmenunsfw:\n'\
                         '    imagebutton: \n'\
                         '        xpos 1521 \n'\
-                        '        ypos 223 \n'\
+                        '        if persistent.anygoodending:\n'\
+                        '            ypos 332\n'\
+                        '        else:\n'\
+                        '            ypos 223 \n'\
                         '        auto "ui/nsfwButton_%s.png" \n'\
                         '        action [Show("nsfw_toggle_screen", None, False), Play("audio", "se/sounds/open.wav")] \n'\
                         '        hovered Play("audio", "se/sounds/select.ogg") \n'
