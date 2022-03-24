@@ -318,6 +318,10 @@ class ASTHook(ast.Node):
         self.hook_func = hook_func_
         self.from_op = from_op_
         self.old_next = None
+        
+        # Node which is expected to come next if the hook function runs successfully
+        # This value doesn't change the behaviour, only provides information about the hook
+        self.expected_next = None
 
         # Create a unique name
         if tag:
@@ -336,6 +340,11 @@ class ASTHook(ast.Node):
 
         if not ret:
             self.exec_continue()
+    
+    # Sets the expected next node when chaining
+    def chain(self, next):
+        self.next = next
+        self.expected_next = next
 
     def exec_continue(self):
         """Continue"""
@@ -535,6 +544,7 @@ def call_hook(node, dest_node, func=None, return_node=None, tag=None):
         hook.chain(label)
 
     hook.hook_func = call_function
+    hook.expected_next = dest_node
     return hook
 
 
