@@ -148,6 +148,22 @@ screen check_internet_downloader(use_steam):
     else:
         use modmenu_nointernet()
 
+
+init -1 python:
+    def _mod_check_internet_downloader(use_steam):
+        if internet_on():
+            # (modid, name, author, description, image) (for github)
+            # (id, name, author, desc, image) (for steam)
+            if use_steam:
+                from modloader.modconfig import steam_downloadable_mods as download_mods
+            else:
+                from modloader.modconfig import github_downloadable_mods as download_mods
+
+            contents = download_mods()
+            renpy.show_screen('modmenu_download', contents=contents, use_steam=use_steam)
+        else:
+            renpy.show_screen('modmenu_nointernet')
+
 screen modmenu_download(contents, use_steam):
     modal True
 
