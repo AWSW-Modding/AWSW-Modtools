@@ -131,24 +131,6 @@ init python:
         return True
 
 
-screen check_internet_downloader(use_steam):
-    modal True
-
-    if internet_on():
-        python:
-            # (modid, name, author, description, image) (for github)
-            # (id, name, author, desc, image) (for steam)
-            if use_steam:
-                from modloader.modconfig import steam_downloadable_mods as download_mods
-            else:
-                from modloader.modconfig import github_downloadable_mods as download_mods
-
-            contents = download_mods()
-        use modmenu_download(contents=contents, use_steam=use_steam)
-    else:
-        use modmenu_nointernet()
-
-
 init -1 python:
     def _mod_check_internet_downloader(use_steam):
         if internet_on():
@@ -186,7 +168,6 @@ screen modmenu_download(contents, use_steam):
             idle "image/ui/close_idle.png"
             hover "image/ui/close_hover.png"
             action [Show("modmenu", transition=dissolve),
-                    Hide("check_internet_downloader", transition=dissolve),
                     Hide("modmenu_mod_content", transition=dissolve),
                     Hide("modmenu_download", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
@@ -468,7 +449,6 @@ screen modmenu_nointernet() tag smallscreen2:
         hbox xalign 0.5 yalign 0.8:
             textbutton "OK.":
                 action [Show("modmenu", transition=dissolve),
-                        Hide("check_internet_downloader", transition=dissolve),
                         Play("audio", "se/sounds/close.ogg")]
                 style "yesnobutton"
 
