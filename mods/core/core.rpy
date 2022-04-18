@@ -47,7 +47,7 @@ screen modmenu tag smallscreen:
             vbox xalign 0.5 yalign 0.5:
                 if has_steam():
                     textbutton "Add mod from workshop":
-                        action [Show("check_internet_downloader", use_steam=True),
+                        action [Function(_mod_check_internet_downloader, use_steam=True),
                                 Play("audio", "se/sounds/open.ogg"),
                                 Stop("music", fadeout=1.0),
                                 Play("modmenu_music", "mx/modmenu_music.opus", fadein=1.0),
@@ -57,7 +57,7 @@ screen modmenu tag smallscreen:
 
                 if is_github():
                     textbutton "Add mod from Github":
-                        action [Show("check_internet_downloader", use_steam=False),
+                        action [Function(_mod_check_internet_downloader, use_steam=False),
                                 Play("audio", "se/sounds/open.ogg"),
                                 Stop("music", fadeout=1.0),
                                 Play("modmenu_music", "mx/modmenu_music.opus", fadein=1.0),
