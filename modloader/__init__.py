@@ -96,6 +96,16 @@ def update_command():
     update_modtools(args.url)
 
 
+def mod_error_check(func, mod_name, phase):
+    """Reraise an exception with a name of the mod and its original traceback"""
+    try:
+        return func(mod_name)
+    except Exception as e:
+        original_msg = "    " + type(e).__name__ + ": " + "\n    ".join(e.message.split("\n"))
+        msg = "\nAn error occured while " + phase + " the mod \"" + mod_name + "\":\n\n"  + original_msg + "\n\nPlease report this issue to the author of this mod."
+        raise Exception, Exception(msg), sys.exc_info()[2]
+
+
 def resolve_dependencies():
     """Resolve mod dependencies and create mod load order"""
     from modloader import modinfo
@@ -214,7 +224,7 @@ def main(reload_mods=False):
         # Try importing the mod.
         # Note: This doesn't give my mod functionality. To give the mod
         # function, make a Mod class and apply the loadable_mod decorator
-        mod_object = importlib.import_module(mod)
+        mod_object = mod_error_check(importlib.import_module, mod, "importing")
         if reload_mods:
             rreload(mod_object, modules)
     
@@ -232,12 +242,12 @@ def main(reload_mods=False):
     # Then loop through the mods in their load order and call their respective mod_load functions
     for mod_name in modinfo.mod_load_order:
         print "Loading mod {}".format(mod_name)
-        modinfo.get_mod(mod_name).mod_load()
+        mod_error_check(lambda n: modinfo.get_mod(n).mod_load(), mod_name, "loading")
     
     # After all mods are loaded, call their respective mod_complete functions
     for mod_name in modinfo.mod_load_order:
         print "Completing mod {}".format(mod_name)
-        modinfo.get_mod(mod_name).mod_complete()
+        mod_error_check(lambda n: modinfo.get_mod(n).mod_complete(), mod_name, "completing")
 
     # Force renpy to reindex all game files
     renpy.loader.old_config_archives = None
