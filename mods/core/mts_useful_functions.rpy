@@ -88,6 +88,11 @@ init -100 python:
         def __init__(self, name):
             self.name = name
 
+        def __eq__(self, other):
+            if not isinstance(other, MTSTogglePersistentBool):
+                return False
+            return self.name == other.name
+
         def __call__(self):
             #if it's true
             if getattr(persistent, self.name):
