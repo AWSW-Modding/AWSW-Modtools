@@ -106,12 +106,49 @@ def mod_error_check(func, mod_name, phase):
         raise Exception, Exception(msg), sys.exc_info()[2]
 
 
+def report_mod_errors(errors): # NoReturn
+    """
+    Reports a mod error to the user by displaying the modloader
+    error screen.
+
+    As the only actions available on the modloader error screen
+    are to "Reload" and "Quit", this function is guaranteed
+    not to return to the caller (except through Ren'Py's
+    control exceptions' unwinding.)
+
+    The structure of this function is taken from
+    renpy.display.error.report_parse_errors
+    """
+    if not renpy.exports.has_screen("_modloader_errors"):
+        return True
+
+    renpy.display.error.init_display()
+
+    reload_action = renpy.exports.utter_restart
+
+    try:
+        renpy.game.invoke_in_new_context(
+            renpy.display.error.call_exception_screen,
+            "_modloader_errors",
+            reload_action=reload_action,
+            errors=errors,
+            )
+    except renpy.game.CONTROL_EXCEPTIONS:
+        raise
+    except:
+        renpy.display.log.write("While handling exception:")
+        renpy.display.log.exception()
+        raise
+
+
 def resolve_dependencies():
     """Resolve mod dependencies and create mod load order"""
     from modloader import modinfo
     mod_load_order = []
     load_later = []
-    
+    incompatibilities = []
+    missing_dependencies = []
+
     # loop through all imported mods
     for mod_name, mod in modinfo.get_mods().iteritems():        
         # if no dependencies are specified we can just add the mod to mod_load_order
@@ -125,18 +162,35 @@ def resolve_dependencies():
         for mod_dep in mod.dependencies:
             if mod_dep[0] == "!":
                 if modinfo.has_mod(mod_dep[1:]):
-                    raise EnvironmentError("Failed resolving dependencies of the mod \"{}\":\n This mod is in conflict with the mod \"{}\", please remove one of them.".format(mod_name, mod_dep[1:]))
+                    incompatibilities.append((mod_name, mod_dep[1:]))
             elif mod_dep[0] == "?":
                 if modinfo.has_mod(mod_dep[1:]):
                     raw_mod_deps.append(mod_dep[1:])
             elif modinfo.has_mod(mod_dep):
                 raw_mod_deps.append(mod_dep)
             else:
-                raise EnvironmentError("Failed resolving dependencies of the mod \"{}\":\n Cannot find a mod \"{}\".".format(mod_name, mod_dep))
-        
+                missing_dependencies.append((mod_name, mod_dep))
+
         # put all mods with dependencies to load_later 
         load_later.append((mod_name, raw_mod_deps))
-    
+
+    if incompatibilities or missing_dependencies:
+        message = []
+        if incompatibilities:
+            message.append(
+                "Some of the mods installed conflict with each other and cannot be used together.\n"
+                "The following mods are incompatible:\n\n"
+                + "".join("  {0!r} conflicts with {1!r}. Please remove one of them.\n".format(mod[0], mod[1]) for mod in incompatibilities)
+            )
+        if missing_dependencies:
+            message.append(
+                "Some of the mods installed require other mods which are not installed.\n"
+                "The following mods need to be installed:\n\n"
+                + "".join("  {0!r} requires {1!r}. Please install {1!r}.\n".format(mod[0], mod[1]) for mod in missing_dependencies)
+            )
+        report_mod_errors("\n\n".join(message))
+        # NoReturn
+
     # repeat until there's no mod left in load_later
     while len(load_later) > 0:
         new_load_later = []
@@ -156,7 +210,13 @@ def resolve_dependencies():
         
         # if no mod was moved from load_later to mod_load_order, we raise an error to prevent infinite loop
         if len(new_load_later) == len(load_later):
-            raise EnvironmentError("Failed resolving mod dependencies.\nThis may be caused by an occurance of cyclic dependency, which isn't allowed.")
+            #raise EnvironmentError("Failed resolving mod dependencies.\nThis may be caused by an occurance of cyclic dependency, which isn't allowed.")
+            report_mod_errors(
+                "I ran into an infinite loop while trying to figure out which mods need which other mods.\n"
+                "This is likely caused by a mod depending on itself or another mod which depends on it.\n"
+                "The following mods were affected. Please report this to their authors:\n\n"
+                + "".join("  {0!r}\n".format(mod[0]) for mod in load_later)
+            )
         
         load_later[:] = new_load_later
     
@@ -202,21 +262,29 @@ def main(reload_mods=False):
 
     modules = []
     valid_files = ['.DS_Store']
+    non_folders = []
     for mod in modinfo.get_mod_folders():
         if mod in valid_files:
             modinfo.get_mod_folders().remove(mod)
             continue
         if not os.path.isdir(os.path.join(get_mod_path(), mod)):
-            raise EnvironmentError("The contents of the mods folder must all be folders.\n"
-                                   "Zip files should be extracted into their own directory as in the core mod.\n"
-                                   "{} is not a folder.\n"
-                                   "If you click Remove Mod and Reload, all files in the mods folder will be removed."
-                                   .format(mod))
-        
+            non_folders.append(mod)
+            continue
+
         # if the mod contains a "modules" folder add this folder to system path
         modules_path = os.path.join(get_mod_path(), mod, "modules")
         if os.path.isdir(modules_path):
             sys.path.append(modules_path)
+
+    if non_folders:
+        report_mod_errors(
+            "The contents of the mods folder must all be themselves folders.\n"
+            "Zip files should be extracted into their own directory (like the core mod.)\n"
+            "The following items in your game/mods/ directory are not folders:\n\n"
+            + "\n".join("  game/mods/{}".format(item) for item in non_folders)
+        )
+        # NoReturn
+
     
     for mod in modinfo.get_mod_folders():
         print "Begin mod import: {}".format(mod)
