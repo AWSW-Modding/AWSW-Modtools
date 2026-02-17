@@ -7,29 +7,20 @@ import threading
 from itertools import islice
 import copy
 
+import renpy.config
+
 from steam_workshop.steamhandler import SteamMgr, PyCallback, cache
 from steam_workshop import steamhandler
-
-
-def _get_mod_resource_dir(filename=__file__):
-    """For a given filename which is contained in a mod's modules directory,
-        Returns that mod's resource dir path.
-        Raises ValueError if filename is not contained in a modules dir."""
-    dirpath = os.path.dirname(filename)
-    subdir_pos = dirpath.rfind("modules")
-    if subdir_pos == -1:
-        raise ValueError("filename \"{}\" seems to not be a mod module!".format(filename))
-    return os.path.realpath(os.path.join(dirpath[:subdir_pos], "resource"))
-    
 
 
 class CachedSteamMgr:
     """Holds a SteamMgr instance, and caches results of problematic actions (QueryApi, which gets workshop data as a whole, not parts),
     So that calls to them will not fail when done repeatedly.
     In QueryApi's case, This is done to bypass an existing cache which causes failures.
+    It is highly recommended to use this whenever one needs lists of steam mods (for example, the mod browser).
     """
     
-    __PAGE_CACHE_DIR = os.path.join(_get_mod_resource_dir(__file__), "page_cache")
+    __PAGE_CACHE_DIR = os.path.join(renpy.config.gamedir, "page_cache")
     
     def __init__(self, steam_manager):
         if not isinstance(steam_manager, SteamMgr):
