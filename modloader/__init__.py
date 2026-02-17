@@ -238,9 +238,9 @@ def main(reload_mods=False):
 
     report_duplicate_labels()
 
-    if has_steam():
-        steammgr = get_instance()
-        steammgr.CachePersonas()
+    # if has_steam():
+    #     steammgr = get_instance()
+    #     steammgr.CachePersonas() #TODO: Change to call the new thing...
 
     # By appending the mod folder to the import path we can do something like
     # `import test` to import the mod named test in the mod folder.
