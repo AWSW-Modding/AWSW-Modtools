@@ -132,6 +132,16 @@ init python:
 
 
 init -1 python:
+    import math
+    import threading
+
+    from modloader import modconfig
+
+    # Cache mod validity to expedite mod browser startup
+    valid_modlist_thread = threading.Thread(target=modconfig.steam_downloadable_mods)
+    valid_modlist_thread.start()
+
+
     def _mod_check_internet_downloader(use_steam):
         if internet_on():
             # (modid, name, author, description, image) (for github)
@@ -142,14 +152,140 @@ init -1 python:
                 from modloader.modconfig import github_downloadable_mods as download_mods
 
             contents = download_mods()
-            renpy.show_screen('modmenu_download', contents=contents, use_steam=use_steam)
+            renpy.show_screen('modmenu_paged', contents=contents, use_steam=use_steam)
         else:
             renpy.show_screen('modmenu_nointernet')
 
-screen modmenu_download(contents, use_steam):
+
+    # Paging methods
+    def _get_slice_lims_from_page(page, page_size):
+        return page_size * (page - 1), page_size * page # Pages are 1-indexed but lists are 0-indexed, so 1 is subtracted from page# to match them
+
+    def _refresh_modlist_page(page, page_size, modlist, use_steam):
+        start, end = _get_slice_lims_from_page(page, page_size)
+        renpy.hide_screen('modmenu_paged_modlist')
+        renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
+        return
+
+# Previous implementation kept, as the scrolling may be useful in the future
+# screen modmenu_download(contents, use_steam):
+#     modal True
+#
+#     frame id "modmenu_download" at alpha_dissolve:
+#         add "image/ui/ingame_menu_bg3.png"
+#
+#         add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
+#
+#         #Title
+#         text "MOD MENU":
+#             size 65
+#             xpos 0.5
+#             ypos 0.05
+#             xcenter 0.5
+#             yanchor 0.5
+#             font "Ardnas.otf"
+#
+#         #Close Button
+#         imagebutton:
+#             idle "image/ui/close_idle.png"
+#             hover "image/ui/close_hover.png"
+#             action [Show("modmenu", transition=dissolve),
+#                     Hide("modmenu_mod_content", transition=dissolve),
+#                     Hide("modmenu_download", transition=dissolve),
+#                     Stop("modmenu_music", fadeout=1.0),
+#                     Play("music", "mx/menu.ogg", fadein=1.0),
+#                     Play("audio", "se/sounds/close.ogg")]
+#
+#             xpos 0.94
+#             ypos 0.02
+#
+#         frame:
+#             background None
+#             yminimum 900
+#             ymaximum 900
+#             xmaximum 425
+#             xminimum 425
+#             xpos 65
+#             ypos 90
+#
+#             #button hieght 125
+#             vpgrid id "modselect_vp":
+#
+#                 yminimum 900
+#                 ymaximum 900
+#                 xmaximum 425
+#                 xminimum 425
+#
+#                 cols 1
+#                 spacing 30
+#                 draggable True
+#                 mousewheel True
+#
+#                 for modid, name, author, description, url in contents:
+#                     $ modname = modmenu_name_cleaner(name)
+#
+#                     if len(modname) <= 21:
+#                         #if mod is installed
+#                         if str(modid) in modinfo.get_mod_folders():
+#                             $ modname = modname + "\n{size=-5}(Installed){/size}"
+#                         #if mod is not installed
+#                         else:
+#                             $ modname = modname
+#
+#                     #if modname is greater than 21 characters, decrese size of font by 5
+#                     elif len(modname) <= 25:
+#                         #if mod is installed
+#                         if str(modid) in modinfo.get_mod_folders():
+#                             $ modname = "{size=-5}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
+#                         #if mod is not installed
+#                         else:
+#                             $ modname = "{size=-5}" + modname + "{/size}"
+#
+#                     #if modname is greater than 25 characters, decrese size of font by 10
+#                     else:
+#                         #if modname is greater than 30 characters, decrese size of font by 10 and cut all text after 30 places
+#                         if len(modname) > 30:
+#                             $ modname = modname[:30]
+#
+#                         #if mod is installed
+#                         if str(modid) in modinfo.get_mod_folders():
+#                             $ modname = "{size=-10}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
+#                         #if mod is not installed
+#                         else:
+#                             $ modname = "{size=-10}" + modname + "{/size}"
+#
+#
+#                     textbutton "[modname]":
+#                         style "modmenu_select_btn"
+#
+#                         action [Hide("modmenu_mod_content"),
+#                                 Show("modmenu_mod_content",
+#                                      modid=modid,
+#                                      name=unicode(name, "utf8"),
+#                                      author=unicode(author, "utf8"),
+#                                      description=unicode(description, "utf8"),
+#                                      url=url,
+#                                      use_steam=use_steam,
+#                                      transition=dissolve),
+#                                 Play("audio", "se/sounds/open.ogg")]
+#
+#
+#         bar value YScrollValue("modselect_vp"):
+#             style "modmenu_select_slider"
+#             #yalign 0.95
+
+
+screen modmenu_paged(contents, use_steam):
     modal True
 
-    frame id "modmenu_download" at alpha_dissolve:
+    $ valid_modlist_thread.join()
+
+    default current_page = 1
+    default PAGE_SIZE = 6
+    $ MIN_PAGE = 1 # Do note, modpage numbers are 1-indexed
+    $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
+
+    frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
 
         add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
@@ -168,8 +304,9 @@ screen modmenu_download(contents, use_steam):
             idle "image/ui/close_idle.png"
             hover "image/ui/close_hover.png"
             action [Show("modmenu", transition=dissolve),
+                    Hide("modmenu_paged_modlist", transition=dissolve),
                     Hide("modmenu_mod_content", transition=dissolve),
-                    Hide("modmenu_download", transition=dissolve),
+                    Hide("modmenu_paged", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
                     Play("audio", "se/sounds/close.ogg")]
@@ -177,80 +314,120 @@ screen modmenu_download(contents, use_steam):
             xpos 0.94
             ypos 0.02
 
-        frame:
-            background None
+
+        hbox id "page_number_hb":
+            yminimum 425
+            ymaximum 425
+            xmaximum 900
+            xminimum 900
+
+            ypos 913
+            xcenter 960
+            yanchor 0.5
+
+
+            textbutton "-5":
+                xalign 0.2
+                ycenter 0.5
+                # Tried to bind this to shift+scroll, but it didn't work...
+                action [SetScreenVariable("current_page", max(current_page-5, MIN_PAGE)),
+                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                       ]
+                sensitive (current_page > 1)
+
+            textbutton "-":
+                xalign 0.4
+                ycenter 0.5
+                keysym "mousedown_4"
+                action [SetScreenVariable("current_page", current_page-1),
+                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, contents, use_steam=use_steam)
+                       ]
+                sensitive (current_page > 1)
+
+            label "Page #[current_page]/[MAX_PAGE]":
+                xalign 0.5
+                ycenter 0.5
+
+                text_size 40
+
+
+            textbutton "+":
+                xalign 0.6
+                ycenter 0.5
+                keysym "mousedown_5"
+                action [SetScreenVariable("current_page", current_page+1),
+                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, contents, use_steam=use_steam)
+                        ]
+                sensitive (current_page < MAX_PAGE)
+
+            textbutton "+5":
+                xalign 0.8
+                ycenter 0.5
+                # Also tried to bind this to shift+scroll, but it didn't work...
+                action [SetScreenVariable("current_page", min(current_page+5, MAX_PAGE)),
+                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                        ]
+                sensitive (current_page < MAX_PAGE)
+
+    on "show" action Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam)
+
+
+
+screen modmenu_paged_modlist(contents, use_steam):
+    frame:
+        background None
+        yminimum 900
+        ymaximum 900
+        xmaximum 425
+        xminimum 425
+        xpos 65
+        ypos 90
+
+        #button hieght 125
+        vpgrid id "modselect_vp":
+
             yminimum 900
             ymaximum 900
             xmaximum 425
             xminimum 425
-            xpos 65
-            ypos 90
 
-            #button hieght 125
-            vpgrid id "modselect_vp":
+            cols 1
+            spacing 30
 
-                yminimum 900
-                ymaximum 900
-                xmaximum 425
-                xminimum 425
+            for modid, name, author, description, url in contents:
+                $ modname = modmenu_name_cleaner(name)
 
-                cols 1
-                spacing 30
-                draggable True
-                mousewheel True
-
-                for modid, name, author, description, url in contents:
-                    $ modname = modmenu_name_cleaner(name)
-
-                    if len(modname) <= 21:
-                        #if mod is installed
-                        if str(modid) in modinfo.get_mod_folders():
-                            $ modname = modname + "\n{size=-5}(Installed){/size}"
-                        #if mod is not installed
-                        else:
-                            $ modname = modname
-
+                if len(modname) > 21:
                     #if modname is greater than 21 characters, decrese size of font by 5
-                    elif len(modname) <= 25:
-                        #if mod is installed
-                        if str(modid) in modinfo.get_mod_folders():
-                            $ modname = "{size=-5}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
-                        #if mod is not installed
-                        else:
-                            $ modname = "{size=-5}" + modname + "{/size}"
+                    if len(modname) <= 25:
+                        $ modname = "{size=-5}" + modname + "{/size}"
 
                     #if modname is greater than 25 characters, decrese size of font by 10
                     else:
                         #if modname is greater than 30 characters, decrese size of font by 10 and cut all text after 30 places
-                        if len(modname) > 30:
-                            $ modname = modname[:30]
+#                         if len(modname) > 30:
+                        $ modname = modname[:30]
+                        $ modname = "{size=-10}" + modname + "{/size}"
 
-                        #if mod is installed
-                        if str(modid) in modinfo.get_mod_folders():
-                            $ modname = "{size=-10}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
-                        #if mod is not installed
-                        else:
-                            $ modname = "{size=-10}" + modname + "{/size}"
+                if str(modid) in modinfo.get_mod_folders():
+                    $ modname = modname + "\n{size=-5}(Installed){/size}"
 
 
-                    textbutton "[modname]":
-                        style "modmenu_select_btn"
+                textbutton "[modname]":
+                    style "modmenu_select_btn"
 
-                        action [Hide("modmenu_mod_content"),
-                                Show("modmenu_mod_content",
-                                     modid=modid,
-                                     name=unicode(name, "utf8"),
-                                     author=unicode(author, "utf8"),
-                                     description=unicode(description, "utf8"),
-                                     url=url,
-                                     use_steam=use_steam,
-                                     transition=dissolve),
-                                Play("audio", "se/sounds/open.ogg")]
+                    action [Hide("modmenu_mod_content"),
+                            Show("modmenu_mod_content",
+                                 modid=modid,
+                                 name=unicode(name, "utf8"),
+                                 author=unicode(author, "utf8"),
+                                 description=unicode(description, "utf8"),
+                                 url=url,
+                                 use_steam=use_steam,
+                                 ),
+                            Play("audio", "se/sounds/open.ogg")]
 
 
-        bar value YScrollValue("modselect_vp"):
-            style "modmenu_select_slider"
-            #yalign 0.95
 
 
 
