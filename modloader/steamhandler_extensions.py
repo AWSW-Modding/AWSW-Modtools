@@ -2,15 +2,28 @@ import os
 import shutil
 import time
 import errno
-import cPickle
+import json
 import threading
-from itertools import islice
 import copy
 
 import renpy.config
 
-from steam_workshop.steamhandler import SteamMgr, PyCallback, cache
+from steam_workshop.steamhandler import SteamMgr, PyCallback, WorkshopData, cache
 from steam_workshop import steamhandler
+
+
+class AttributeDict(dict, object):
+    """This class allows dict members to be accessed via __getattr__, which mimics the usage of array entries in Query callbacks"""
+    def __getattr__(self, item):
+        try:
+            return super(AttributeDict, self).__getattr__(item)
+        except AttributeError:
+            pass #
+        try:
+            return self[item]
+        except KeyError:
+            raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__, item))
+
 
 
 class CachedSteamMgr:
@@ -52,7 +65,7 @@ class CachedSteamMgr:
             raise TypeError("Page number must an integer!")
         if page <= 0:
             raise ValueError("Page number must be positive!")
-        return os.path.join(self.__PAGE_CACHE_DIR, "page_{:02}.pkl".format(page))
+        return os.path.join(self.__PAGE_CACHE_DIR, "page_{:02}.json".format(page))
     
     
     def _CallQueryApi(self, page):
@@ -65,6 +78,11 @@ class CachedSteamMgr:
         def fill_cache_query_cb(array, arr_len):
             try:
                 print "Cache callback called with: (len={0}), array={1}".format(arr_len, array)
+                
+                # Prepare data to write: convert it to json compatible dicts
+                field_names = [name for name, _ in WorkshopData._fields_]
+                array_data = [{name: getattr(array[i], name) for name in field_names} for i in range(arr_len)]
+                to_write = {"len": arr_len, "data": array_data}
                 
                 # Get cache file name
                 cache_file_name = self.get_cache_filename(page)
@@ -79,14 +97,14 @@ class CachedSteamMgr:
                 # else: already done
                 
                 # Write cache file
-                with open(cache_file_name, "wb") as cache_file:
-                    cPickle.dump(arr_len, cache_file)
-                    cPickle.dump(tuple(islice(array, arr_len)), cache_file)
-            
+                with open(cache_file_name, "w") as cache_file:
+                    json.dump(to_write, cache_file, encoding="utf-8") # While not strictly necessary, I'd rather be explicit with the encoding.
+                
             except Exception as e:
-                print "Cache callback raised Exception:", str(e)
+                print "Cache file write callback raised Exception:", str(e) # We would really like to know if there's an issue in the cache file write...
+                raise e
             finally:
-                print "Cache callback done."
+                print "Cache file write callback done."
                 fill_cache_query_cb.done = True
                 return
         
@@ -138,12 +156,29 @@ class CachedSteamMgr:
         
         if is_cache_availbable:
             print "Using cache file"
+            
+            # There are 2 things that need to be ensured so that the json load will work like it should:
+            #   1. Fields of the steamhandler.WorkshopData should be accessible via attribute name.
+            #   2. Strings need to be utf-8 encoded string objects, and not unicode objects like json wishes.
+            # Both of these things are ensured by workshop_data_hook:
+            #   1. Values are put into an AttributeDict, which makes __getattr__ call __getitem__.
+            #       This is preferred over, say, the WorkshopData, allows us to use key: value pairs for storing and retrieving data,
+            #       Which avoids possible issues with data getting mixed up in order.
+            #   2. Both keys and values are encoded into utf-8 str's, which makes them behave appropriately.
+            #       This is needed as json (as is logical) creates unicode objects.
+            
+            def workshop_data_hook(obj):
+                return AttributeDict({k.encode('utf-8') if isinstance(k, unicode) else k:
+                                      v.encode('utf-8') if isinstance(v, unicode) else v
+                                        for k, v in obj})
+            
             # Read cache file
-            print "Reading cahce file \"{}\"".format(cache_file_name)
-            with open(cache_file_name, "rb") as cache_file:
-                arr_len = cPickle.load(cache_file)
-                array = cPickle.load(cache_file)
-                print arr_len
+            print "Reading cache file \"{}\"".format(cache_file_name)
+            with open(cache_file_name, "r") as cache_file:
+                file_data = json.load(cache_file, encoding="utf-8", object_pairs_hook=workshop_data_hook)
+            arr_len = file_data["len"]
+            array = file_data["data"]
+            print arr_len
             
             # Thread is used to match the behaviour of QueryApi, where the function returns quickly and before the callbacks are called
             qapi_thread = threading.Thread(target=self._steam_manager.query_callback, kwargs={"array": array, "arr_len": arr_len})
@@ -253,5 +288,4 @@ def get_instance():
     if "_cached_instance" not in globals():
         _cached_instance = CachedSteamMgr(steamhandler.get_instance())
     
-    print "steamhandler_extentions id={}".format(id(_cached_instance))
     return _cached_instance
