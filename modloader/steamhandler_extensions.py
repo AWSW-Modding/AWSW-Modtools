@@ -253,5 +253,5 @@ def get_instance():
     if "_cached_instance" not in globals():
         _cached_instance = CachedSteamMgr(steamhandler.get_instance())
     
-    print "steamhandler_ex id={}".format(id(_cached_instance))
+    print "steamhandler_extentions id={}".format(id(_cached_instance))
     return _cached_instance

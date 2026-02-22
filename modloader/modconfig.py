@@ -21,7 +21,7 @@ from modloader import get_mod_path, workshop_enabled
 if workshop_enabled:
     from steam_workshop.steam_config import has_valid_signature
     import steam_workshop.steamhandler as steamhandler
-    import steamhandler_ex
+    import steamhandler_extensions
 
 
 BRANCHES_API = "https://api.github.com/repos/AWSW-Modding/AWSW-Modtools/branches"
@@ -105,10 +105,10 @@ def steam_downloadable_mods():
     # (id, mod_name, author, desc, image_url)
     
     # This uses GetAllItems(), Which is affected by the QueryApi crash.
-    #   therefore, steamhandler_ex is preferred
+    #   therefore, steamhandler_extensions are preferred
     
     mods = []
-    for mod in sorted(steamhandler_ex.get_instance().GetAllItems(), key=lambda mod: mod[1]):
+    for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
         file_id = mod[0]
         create_time, modify_time, signature = mod[5:8]
         is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
