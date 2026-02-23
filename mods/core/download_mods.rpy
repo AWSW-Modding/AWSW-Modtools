@@ -165,112 +165,6 @@ init -1 python:
         renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
         return
 
-# Previous implementation kept, as the scrolling may be useful in the future
-# screen modmenu_download(contents, use_steam):
-#     modal True
-#
-#     frame id "modmenu_download" at alpha_dissolve:
-#         add "image/ui/ingame_menu_bg3.png"
-#
-#         add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
-#
-#         #Title
-#         text "MOD MENU":
-#             size 65
-#             xpos 0.5
-#             ypos 0.05
-#             xcenter 0.5
-#             yanchor 0.5
-#             font "Ardnas.otf"
-#
-#         #Close Button
-#         imagebutton:
-#             idle "image/ui/close_idle.png"
-#             hover "image/ui/close_hover.png"
-#             action [Show("modmenu", transition=dissolve),
-#                     Hide("modmenu_mod_content", transition=dissolve),
-#                     Hide("modmenu_download", transition=dissolve),
-#                     Stop("modmenu_music", fadeout=1.0),
-#                     Play("music", "mx/menu.ogg", fadein=1.0),
-#                     Play("audio", "se/sounds/close.ogg")]
-#
-#             xpos 0.94
-#             ypos 0.02
-#
-#         frame:
-#             background None
-#             yminimum 900
-#             ymaximum 900
-#             xmaximum 425
-#             xminimum 425
-#             xpos 65
-#             ypos 90
-#
-#             #button hieght 125
-#             vpgrid id "modselect_vp":
-#
-#                 yminimum 900
-#                 ymaximum 900
-#                 xmaximum 425
-#                 xminimum 425
-#
-#                 cols 1
-#                 spacing 30
-#                 draggable True
-#                 mousewheel True
-#
-#                 for modid, name, author, description, url in contents:
-#                     $ modname = modmenu_name_cleaner(name)
-#
-#                     if len(modname) <= 21:
-#                         #if mod is installed
-#                         if str(modid) in modinfo.get_mod_folders():
-#                             $ modname = modname + "\n{size=-5}(Installed){/size}"
-#                         #if mod is not installed
-#                         else:
-#                             $ modname = modname
-#
-#                     #if modname is greater than 21 characters, decrese size of font by 5
-#                     elif len(modname) <= 25:
-#                         #if mod is installed
-#                         if str(modid) in modinfo.get_mod_folders():
-#                             $ modname = "{size=-5}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
-#                         #if mod is not installed
-#                         else:
-#                             $ modname = "{size=-5}" + modname + "{/size}"
-#
-#                     #if modname is greater than 25 characters, decrese size of font by 10
-#                     else:
-#                         #if modname is greater than 30 characters, decrese size of font by 10 and cut all text after 30 places
-#                         if len(modname) > 30:
-#                             $ modname = modname[:30]
-#
-#                         #if mod is installed
-#                         if str(modid) in modinfo.get_mod_folders():
-#                             $ modname = "{size=-10}" + modname + "{/size}" + "\n{size=-5}(Installed){/size}"
-#                         #if mod is not installed
-#                         else:
-#                             $ modname = "{size=-10}" + modname + "{/size}"
-#
-#
-#                     textbutton "[modname]":
-#                         style "modmenu_select_btn"
-#
-#                         action [Hide("modmenu_mod_content"),
-#                                 Show("modmenu_mod_content",
-#                                      modid=modid,
-#                                      name=unicode(name, "utf8"),
-#                                      author=unicode(author, "utf8"),
-#                                      description=unicode(description, "utf8"),
-#                                      url=url,
-#                                      use_steam=use_steam,
-#                                      transition=dissolve),
-#                                 Play("audio", "se/sounds/open.ogg")]
-#
-#
-#         bar value YScrollValue("modselect_vp"):
-#             style "modmenu_select_slider"
-#             #yalign 0.95
 
 
 screen modmenu_paged(contents, use_steam):
@@ -300,8 +194,8 @@ screen modmenu_paged(contents, use_steam):
             idle "image/ui/close_idle.png"
             hover "image/ui/close_hover.png"
             action [Show("modmenu", transition=dissolve),
-                    Hide("modmenu_paged_modlist", transition=dissolve),
                     Hide("modmenu_mod_content", transition=dissolve),
+                    Hide("modmenu_paged_modlist", transition=dissolve),
                     Hide("modmenu_paged", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
@@ -345,7 +239,6 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
 
                 text_size 40
-
 
             textbutton "+":
                 xalign 0.6
@@ -394,13 +287,12 @@ screen modmenu_paged_modlist(contents, use_steam):
                 $ modname = modmenu_name_cleaner(name)
 
                 if len(modname) > 21:
-                    #if modname is greater than 21 characters, decrese size of font by 5
+                    #if modname is greater than 21 characters, decrease size of font by 5
                     if len(modname) <= 25:
                         $ modname = "{size=-5}" + modname + "{/size}"
-
-                    #if modname is greater than 25 characters, decrese size of font by 10
                     else:
-                        #if modname is greater than 30 characters, decrese size of font by 10 and cut all text after 30 places
+                        #if modname is greater than 25 characters, decrease size of font by 10
+                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
 #                         if len(modname) > 30:
                         $ modname = modname[:30]
                         $ modname = "{size=-10}" + modname + "{/size}"

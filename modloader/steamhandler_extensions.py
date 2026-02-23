@@ -18,7 +18,7 @@ class AttributeDict(dict, object):
         try:
             return super(AttributeDict, self).__getattr__(item)
         except AttributeError:
-            pass #
+            pass # Checking super's __getattr__ is mostly a just-in-case thing, as it generally wouldn't return anything. of course, if it fails, we want to actually add the __get_item__ call, so errors are ignored.
         try:
             return self[item]
         except KeyError:
@@ -29,7 +29,7 @@ class ManagedThread(threading.Thread, object):
     """A threading.Thread which has a holding list.
     When this thread starts, it adds itself to the list,
     And when it finishes it removes itself from that list.
-    Coherence is kept by lock, which is a threading.Lock. it is used on all accesses to holder."""
+    Coherence is ensured by lock, which is a threading.Lock. it is used on all accesses to holder."""
     
     def __init__(self, holder, lock, group=None, target=None, name=None, args=(), kwargs={}):
         super(ManagedThread, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
@@ -62,8 +62,8 @@ class CachedSteamMgr:
             raise TypeError("steam_manager must be a steam_workshop.steamhandler.SteamMgr instance!")
         self._steam_manager = steam_manager
         
-        # When the cache is used, We need to create a thread in order to behave like QueryApi works.
-        # While these are internal, we should at least keep track of which ones are active at any time.
+        # When the cache is used, We need to create a thread in order to behave like QueryApi.
+        # As these threads are internal, we should at least keep track of which ones are active at any time.
         # This is done using ManagedThread instances, which use self._active_threads as their holder.
         self._active_threads = []
         self._active_threads_lock = threading.Lock()
@@ -120,7 +120,7 @@ class CachedSteamMgr:
                     os.makedirs(os.path.dirname(cache_file_name))
                 elif not os.path.isdir(to_ensure):  # If exists and not dir: problem
                     raise OSError(errno.ENOTDIR, "The attempted directory \"{}\" exists and is not a directory.".format(to_ensure))
-                # else: already done
+                # else: exists and is dir: no need to do anything
                 
                 # Write cache file
                 with open(cache_file_name, "w") as cache_file:
@@ -156,7 +156,8 @@ class CachedSteamMgr:
     
     def QueryApi(self, page):
         """Gets super's QueryApi(page), using the cache if available and not stale.
-                Cache is not stale for about 15 minutes, after which the problematic one should also be stale and not fail the program."""
+                Cache becomes stale after 15 minutes from being written (see self.is_file_stale()),
+                After which the problematic one should also be stale and not fail the program."""
         
         print "Called cached queryAPI with page={}".format(page)
         
@@ -188,10 +189,10 @@ class CachedSteamMgr:
             #   2. Strings need to be utf-8 encoded string objects, and not unicode objects like json wishes.
             # Both of these things are ensured by workshop_data_hook:
             #   1. Values are put into an AttributeDict, which makes __getattr__ call __getitem__.
-            #       This is preferred over, say, the WorkshopData, allows us to use key: value pairs for storing and retrieving data,
-            #       Which avoids possible issues with data getting mixed up in order.
+            #       This is preferred over, say, the WorkshopData, as it allows us to easily store and retrieve data using key: value pairs,
+            #       Which avoids any and all issues with data getting mixed up in order.
             #   2. Both keys and values are encoded into utf-8 str's, which makes them behave appropriately.
-            #       This is needed as json (as is logical) creates unicode objects.
+            #       This is needed as json (as is logical) creates unicode objects, while Ren'py expects str's.
             
             def workshop_data_hook(obj):
                 return AttributeDict({k.encode('utf-8') if isinstance(k, unicode) else k:
@@ -223,6 +224,7 @@ class CachedSteamMgr:
         
         # Implemented here with a performance boost (see commented out print of item),
         #  And with fix to overzealous repeat calls
+        #  Implementation is also needed as this uses QueryApi, so we need to ensure that the fixed one is used.
         
         # It seems the only way the callback can access these variables is through global variables
         # Be careful!
@@ -274,9 +276,6 @@ class CachedSteamMgr:
             # Block
             while not cb.complete:
                 pass
-        
-        # # Remove duplicates
-        # results = {item[0]: item for item in results}.values()
         
         if not get_all:
             adj_results = []
