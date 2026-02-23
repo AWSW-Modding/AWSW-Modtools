@@ -133,13 +133,11 @@ init python:
 
 init -1 python:
     import math
-    import threading
 
     from modloader import modconfig
 
-    # Cache mod validity to expedite mod browser startup
-    valid_modlist_thread = threading.Thread(target=modconfig.steam_downloadable_mods)
-    valid_modlist_thread.start()
+    # Preload steam modlist, so we don't wait for it when we try to open the mod browser
+    modconfig.steam_mod_list.load()
 
 
     def _mod_check_internet_downloader(use_steam):
@@ -277,8 +275,6 @@ init -1 python:
 
 screen modmenu_paged(contents, use_steam):
     modal True
-
-    $ valid_modlist_thread.join()
 
     default current_page = 1
     default PAGE_SIZE = 6

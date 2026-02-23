@@ -9,6 +9,7 @@ import json
 from cStringIO import StringIO
 import zipfile
 from collections import namedtuple
+import threading
 
 import renpy
 from renpy.audio.music import stop as _stop_music
@@ -99,25 +100,87 @@ def github_downloadable_mods():
     return sorted(data, key=lambda mod: mod[1].lower())
 
 
-@cache
-def steam_downloadable_mods():
-    # A different format,
-    # (id, mod_name, author, desc, image_url)
+
+class SteamModlist:
+    """Manages the steam modlist, as is gotten by the steam_downloadable_mods method.
+    It supports loading the modlist in a separate thread via the load method,
+    And caching such results.
+    This is needed as loading the modlist takes quite a while,
+      And is an operation we would much rather do at startup, without delaying anything else."""
     
-    # This uses GetAllItems(), Which is affected by the QueryApi crash.
-    #   therefore, steamhandler_extensions are preferred
+    def __init__(self):
+        self._loading_thread = None
+        self._loading_thread_lock = threading.Lock()
+        self._loaded_data = None
+        self._is_done = threading.Event()
+        return
     
-    mods = []
-    for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
-        file_id = mod[0]
-        create_time, modify_time, signature = mod[5:8]
-        is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
-        if is_valid:
-            mods.append(list(mod[:5]))
-            mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+    def _load_and_set(self):
+        """Loads and verifies the steam modlist data."""
+        
+        # A different format,
+        # (id, mod_name, author, desc, image_url)
+        
+        # This uses GetAllItems(), Which is affected by the QueryApi crash.
+        #   therefore, steamhandler_extensions are preferred
+        mods = []
+        for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
+            if mod[1] == "Modtools":
+                continue  # The modtools themselves need not be here (as they're already present and can't be removed using themselves), nor should the signing system complain about them...
+            file_id = mod[0]
+            create_time, modify_time, signature = mod[5:8]
+            is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
+            if is_valid:
+                mods.append(list(mod[:5]))
+                mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+            else:
+                print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whole thing SIGNIFICANTLY speeds up this call
+        
+        self._loaded_data = mods
+        self._is_done.set()
+        print "Done loading steam modlist"
+        return
+    
+    def load(self):
+        """Starts loading the steam modlist data if it is not already being loaded.
+        This method starts a thread which loads the modlist data.
+        It guarantees that for any number of repeated calls to it from any number of threads, only one loading thread will be started.
+        Once the data is loaded, it is available through the get method.
+        """
+        with self._loading_thread_lock:
+            if self._loading_thread is None:
+                print "Steam modlist thread not present, Starting..."
+                self._loading_thread = threading.Thread(target=self._load_and_set, name=u"Thread-load-{}".format(self._load_and_set.__name__))
+                self._loading_thread.start()
+            else:
+                print "Steam modlist thread already present"
+        return self._loading_thread
+    
+    def get(self):
+        """Get the steam modlist data.
+        If the data has already loaded, this method returns with it immediately,
+        Otherwise, load() is called, and this method blocks until the completion of the data loading thread.
+        """
+        if self._is_done.is_set():
+            # Note: while the value of is_set can change between checking it here and referring to _loaded_data,
+            #  It can only change from False to True.
+            #  In that case the load() method has been called before and is currently finishing,
+            #  And it'll be called again here, ignored, and _is_done will be waited upon, which will finish only once _loaded_data is available.
+            
+            print "Steam modlist data already present"
         else:
-            print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whi=ole thing SIGNIFICANTLY speeds up this call
-    return mods
+            print "Steam modlist data not present, calling load"
+            self.load()
+            self._is_done.wait()
+            print "Loading done, fetching data"
+        return self._loaded_data
+
+
+steam_mod_list = SteamModlist()
+
+
+def steam_downloadable_mods():
+    return steam_mod_list.get()
 
 
 def download_github_mod(download_link, name, show_download=True, reload_script=True):
