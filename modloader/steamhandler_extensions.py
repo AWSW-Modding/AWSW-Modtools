@@ -25,6 +25,28 @@ class AttributeDict(dict, object):
             raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__, item))
 
 
+class ManagedThread(threading.Thread, object):
+    """A threading.Thread which has a holding list.
+    When this thread starts, it adds itself to the list,
+    And when it finishes it removes itself from that list.
+    Coherence is kept by lock, which is a threading.Lock. it is used on all accesses to holder."""
+    
+    def __init__(self, holder, lock, group=None, target=None, name=None, args=(), kwargs={}):
+        super(ManagedThread, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
+        self.holder = holder
+        self.lock = lock
+        return
+    
+    def run(self):
+        with self.lock:
+            self.holder.append(self)
+        
+        try:
+            return super(ManagedThread, self).run()
+        finally:
+            with self.lock:
+                self.holder.remove(self)
+    
 
 class CachedSteamMgr:
     """Holds a SteamMgr instance, and caches results of problematic actions (QueryApi, which gets workshop data as a whole, not parts),
@@ -39,8 +61,12 @@ class CachedSteamMgr:
         if not isinstance(steam_manager, SteamMgr):
             raise TypeError("steam_manager must be a steam_workshop.steamhandler.SteamMgr instance!")
         self._steam_manager = steam_manager
-        self.threads = [] # This can create threads in QueryApi, which will persist after the call returns (as is required).
-        # We at least keep track of them, so that the dillagent programmer can ensure they're handled properly.
+        
+        # When the cache is used, We need to create a thread in order to behave like QueryApi works.
+        # While these are internal, we should at least keep track of which ones are active at any time.
+        # This is done using ManagedThread instances, which use self._active_threads as their holder.
+        self._active_threads = []
+        self._active_threads_lock = threading.Lock()
         return
     
     
@@ -181,8 +207,7 @@ class CachedSteamMgr:
             print arr_len
             
             # Thread is used to match the behaviour of QueryApi, where the function returns quickly and before the callbacks are called
-            qapi_thread = threading.Thread(target=self._steam_manager.query_callback, kwargs={"array": array, "arr_len": arr_len})
-            self.threads.append(qapi_thread)
+            qapi_thread = ManagedThread(holder=self._active_threads, lock=self._active_threads_lock, target=self._steam_manager.query_callback, kwargs={"array": array, "arr_len": arr_len})
             qapi_thread.start()
         else:
             print "Not using cache file"
