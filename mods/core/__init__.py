@@ -2,7 +2,7 @@
 import renpy.parser as parser
 import renpy.ast as ast
 
-from modloader import modinfo, modast
+from modloader import modinfo, modast, has_steam
 from modloader.modgame import base as ml
 from modloader.modclass import Mod, loadable_mod
 from modloader.modinfo import get_mod_folders
@@ -45,12 +45,23 @@ class AWSWMod(Mod):
         screen dummy:
             imagebutton auto "ui/mods_%s.png" action [Show("preferencesbg"), Show('modmenu'), Play("audio", "se/sounds/open.wav")] hovered Play("audio", "se/sounds/select.ogg") xalign 0.03 yalign 0.955
             """
-
+        
+        # Figure out at which indentation level do we want to add new stuff
+        tocompile = tocompile.rstrip(" ") # Ensure that tocompile ends with a new line, so that anyone adding additional things to it can align properly using the bas_indent
+        indented_line = tocompile.rstrip().rsplit("\n", 1)[-1] # Get a properly indented line (A line with text which is contained in the dummy screen)
+        base_indent = " " * (len(indented_line) - len(indented_line.lstrip(" ")))
+        
         steam_only = all(folder.isdigit() or folder == "core" for folder in get_mod_folders())
 
         if not steam_only:
-            tocompile += """text "Non-Steam mods detected. The safety or appropriateness of these mods cannot be guaranteed." xalign 0.16 yalign -0.005"""
-
+            tocompile += base_indent + """text "Non-Steam mods detected. The safety or appropriateness of these mods cannot be guaranteed." xalign 0.16 yalign -0.005\n"""
+        
+        
+        # Added timer to check if preload failed once it's finished. a timer is used so the main thread doesn't wait on the preload...
+        if has_steam():
+            tocompile += base_indent + 'default timer_active = True\n'
+            tocompile += base_indent + 'timer 1.0 repeat timer_active action If(timer_active and _is_modlist_done(), true=[SetScreenVariable("timer_active", False), Function(_ensure_modlist_okay)], false=[])\n' # If requires both the true and false arguments to be not None (or else Ren'py complains that the timer doesn't have an action?!), so I put an empty list to convince it that it's fine...
+        
         compiled = parser.parse("FNDummy", tocompile)
         for node in compiled:
             if isinstance(node, ast.Init):

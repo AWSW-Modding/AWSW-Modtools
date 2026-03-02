@@ -141,6 +141,41 @@ def report_mod_errors(errors): # NoReturn
         raise
 
 
+def report_modlist_errors(errors): # NoReturn
+    """
+    Reports a modlist error to the user by displaying the modlist
+    error screen.
+
+    As the only actions available on the modlist error screen
+    are to "Reload" and "Quit", this function is guaranteed
+    not to return to the caller (except through Ren'Py's
+    control exceptions' unwinding.)
+
+    The structure of this function is taken from
+    report_mod_errors
+    """
+    if not renpy.exports.has_screen("_modlist_errors"):
+        return True
+
+    renpy.display.error.init_display()
+
+    reload_action = renpy.exports.utter_restart
+
+    try:
+        renpy.game.invoke_in_new_context(
+            renpy.display.error.call_exception_screen,
+            "_modlist_errors",
+            reload_action=reload_action,
+            errors=errors,
+            )
+    except renpy.game.CONTROL_EXCEPTIONS:
+        raise
+    except:
+        renpy.display.log.write("While handling exception:")
+        renpy.display.log.exception()
+        raise
+
+
 def resolve_dependencies():
     """Resolve mod dependencies and create mod load order"""
     from modloader import modinfo

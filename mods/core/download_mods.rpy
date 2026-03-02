@@ -133,14 +133,43 @@ init python:
 
 init -1 python:
     import math
+    import traceback
 
     import modloader
-    from modloader import modconfig
+    from modloader import modconfig, steamhandler_extensions
 
     # Preload steam modlist, so we don't wait for it when we try to open the mod browser
     if modloader.has_steam():
         modconfig.steam_mod_list.load()
 
+    def _is_modlist_done():
+        return modconfig.steam_mod_list.is_done()
+
+    def _ensure_modlist_okay():
+        # This should only be called once the modlist has finished
+        exception = modconfig.steam_mod_list.get_exception()
+        if exception is None:
+            return # Everything is good!
+
+
+        if isinstance(exception, steamhandler_extensions.CacheWriteError):
+            # CacheWriteError have a special error screen, as they're more severe
+            modloader.report_modlist_errors("The steam modlist cache file write has failed.\n"
+                                        "This should never happen under normal circumstances, and may cause the game to crash or not open.\n"
+                                        "If you're seeing this, please report it to the developers of the Modtools, or on the fan discord,\n"
+                                        "    preferably with a screenshot.\n"
+                                        "\nError raised:\n"
+                                        + "".join(traceback.format_exception(type(exception), exception, exception.cause_traceback))
+            )
+        else:
+            modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
+                                        "\nError raised:\n"
+                                        + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
+            )
+        return
+
+    # Ensure error screens are available, as we may need them
+    renpy.load_module("modloader/patch_errorhandling_screens")
 
     def _mod_check_internet_downloader(use_steam):
         if internet_on():
@@ -148,6 +177,7 @@ init -1 python:
             # (id, name, author, desc, image) (for steam)
             if use_steam:
                 from modloader.modconfig import steam_downloadable_mods as download_mods
+                _ensure_modlist_okay()
             else:
                 from modloader.modconfig import github_downloadable_mods as download_mods
 
