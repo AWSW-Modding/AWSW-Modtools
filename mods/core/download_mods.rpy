@@ -134,10 +134,12 @@ init python:
 init -1 python:
     import math
 
+    import modloader
     from modloader import modconfig
 
     # Preload steam modlist, so we don't wait for it when we try to open the mod browser
-    modconfig.steam_mod_list.load()
+    if modloader.has_steam():
+        modconfig.steam_mod_list.load()
 
 
     def _mod_check_internet_downloader(use_steam):
@@ -290,8 +292,9 @@ screen modmenu_paged_modlist(contents, use_steam):
                     #if modname is greater than 21 characters, decrease size of font by 5
                     if len(modname) <= 25:
                         $ modname = "{size=-5}" + modname + "{/size}"
+
+                    #if modname is greater than 25 characters, decrease size of font by 10
                     else:
-                        #if modname is greater than 25 characters, decrease size of font by 10
                         #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
 #                         if len(modname) > 30:
                         $ modname = modname[:30]

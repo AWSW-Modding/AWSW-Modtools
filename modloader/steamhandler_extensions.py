@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 import time
@@ -46,6 +47,26 @@ class ManagedThread(threading.Thread, object):
         finally:
             with self.lock:
                 self.holder.remove(self)
+
+
+class CacheWriteError(RuntimeError, object):
+    """Represents an exception that was raised in the cache write callback."""
+    
+    def __init__(self, cause, cause_traceback = None, *args):
+        super(CacheWriteError, self).__init__(*args)
+        self.cause = cause
+        self.cause_traceback = cause_traceback
+    
+    @classmethod
+    def from_exc(cls, *args):
+        """Construct this exception using sys.exc_info() for the cause and traceback."""
+        _, cause, cause_traceback = sys.exc_info()
+        return cls(cause, cause_traceback, *args)
+    
+    def __str__(self):
+        if not self.message.strip():
+            return "{}Caused by: {}: {}".format(self.message, type(self.cause).__name__, str(self.cause))
+        return "{}\n    Caused by: {}: {}".format(self.message, type(self.cause).__name__, str(self.cause))
     
 
 class CachedSteamMgr:
@@ -96,7 +117,9 @@ class CachedSteamMgr:
     
     def _CallQueryApi(self, page):
         """Gets super's QueryApi(page), strictly by calling QueryApi.
-        Fills the cache as well, and keeps python thread trapped until cache has been filled."""
+        Fills the cache as well, and keeps python thread trapped until cache has been filled.
+        :raises CacheWriteError If the cache callback raises an exception, containing the exception raised and it's traceback.
+        """
         print "Cache callback: Current query callbacks:", "\n".join(str(func) for func in self._steam_manager.Callbacks[PyCallback.Query])
         print "Cache callback: Current persona callbacks:", "\n".join(str(func) for func in self._steam_manager.Callbacks[PyCallback.Persona])
         
@@ -127,14 +150,14 @@ class CachedSteamMgr:
                     json.dump(to_write, cache_file, encoding="utf-8") # While not strictly necessary, I'd rather be explicit with the encoding.
                 
             except Exception as e:
-                print "Cache file write callback raised Exception:", str(e) # We would really like to know if there's an issue in the cache file write...
+                fill_cache_query_cb.error = CacheWriteError.from_exc("Error in cache file write.")
                 raise e
             finally:
                 print "Cache file write callback done."
                 fill_cache_query_cb.done = True
                 return
         
-        
+        fill_cache_query_cb.error = None
         self.register_callback(PyCallback.Query, fill_cache_query_cb)
         try:
             fill_cache_query_cb.done = False
@@ -148,16 +171,23 @@ class CachedSteamMgr:
                 reps += 1
                 time.sleep(1)
             print "Done cache callback"
+            
+            if fill_cache_query_cb.error is not None:
+                raise fill_cache_query_cb.error
+            
             return
         
         finally:
             self.unregister_callback(PyCallback.Query, fill_cache_query_cb)
-            return
     
     def QueryApi(self, page):
-        """Gets super's QueryApi(page), using the cache if available and not stale.
+        """Gets steam_manager's QueryApi(page), using the cache if available and not stale.
                 Cache becomes stale after 15 minutes from being written (see self.is_file_stale()),
-                After which the problematic one should also be stale and not fail the program."""
+                After which the problematic one should also be stale and not fail the program.
+           :raises CacheWriteError If the cache write callback raises an exception, containing the exception raised and it's traceback.
+                        Note that this is the only difference in interface between this and steam_manager's version,
+                        As errors in the cache callback prevent the much-needed caching, and are therefore severe.
+        """
         
         print "Called cached queryAPI with page={}".format(page)
         
@@ -268,14 +298,16 @@ class CachedSteamMgr:
         cb.complete = False
         
         self.register_callback(PyCallback.Query, cb)
-        
-        while cb.should_run_next:
-            cb.complete = False # Important! make sure that consecutive runs don't claim that the function is already finished!
-            self.QueryApi(cb.i)
-            
-            # Block
-            while not cb.complete:
-                pass
+        try:
+            while cb.should_run_next:
+                cb.complete = False # Important! make sure that consecutive runs don't claim that the function is already finished!
+                self.QueryApi(cb.i)
+                
+                # Block
+                while not cb.complete:
+                    pass
+        finally: # Ensure that the callback will be unregistered
+            self.unregister_callback(PyCallback.Query, cb)
         
         if not get_all:
             adj_results = []
@@ -285,8 +317,6 @@ class CachedSteamMgr:
                 item[2] = self.GetPersona(item[2])
                 adj_results.append(tuple(item))
             results = adj_results
-        
-        self.unregister_callback(PyCallback.Query, cb)
         
         return results
     
