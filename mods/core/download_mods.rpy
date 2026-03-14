@@ -81,18 +81,36 @@ init python:
     import re
     import urllib2
 
+    from modloader.preload import PreloadBase
+
+    class ImageURLPreloader(PreloadBase):
+        def loading_function(self, url):
+            """
+            Loads the image data from given url. The resulting data is a str containing the image data
+            """
+            return urllib2.urlopen(url).read()
+
+    image_url_preloader = ImageURLPreloader()
+
+    import time
+    def _preload_mod_images(contents):
+        s_time = time.time()
+        image_urls = [entry[4] for entry in contents]
+        for url in image_urls:
+            image_url_preloader.load(url)
+        print "Preload load calls took: {}".format(time.time() - s_time)
+
     class ImageURL(Image):
         """
         This image manipulator loads an image from a url.
         """
         def load(self, unscaled=False):
-            import pygame
+#             import pygame
             from cStringIO import StringIO
-            from urllib2 import urlopen
+#             from urllib2 import urlopen
             from renpy.display.im import cache
 
-            url_f = urlopen(self.filename)
-            virtual_f = StringIO(url_f.read())
+            virtual_f = StringIO(image_url_preloader.get(self.filename))
 
             cache.add_load_log(self.filename)
             if unscaled:
@@ -304,7 +322,11 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    on "show" action Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam)
+    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+#                       Function(_preload_mod_images, contents)
+                      # Starting to preload ~60 mods caused a half-second delay in screen enter along with about 2 seconds of lag,
+                      #   Which is why preload images has been changed to by-page.
+                     ]
 
 
 
@@ -361,6 +383,8 @@ screen modmenu_paged_modlist(contents, use_steam):
                                  use_steam=use_steam,
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
+    on "show" action [Function(_preload_mod_images, contents),
+                     ]
 
 
 
