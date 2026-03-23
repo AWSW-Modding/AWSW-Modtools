@@ -169,7 +169,8 @@ init -1 python:
         return
 
     # Ensure error screens are available, as we may need them
-    renpy.load_module("modloader/patch_errorhandling_screens")
+    if not renpy.exports.has_screen("_modlist_errors"):
+        renpy.load_module("modloader/patch_errorhandling_screens")
 
     def _mod_check_internet_downloader(use_steam):
         if internet_on():
