@@ -550,6 +550,9 @@ screen modmenu_nointernet() tag smallscreen2:
         hbox xalign 0.5 yalign 0.8:
             textbutton "OK.":
                 action [Show("modmenu", transition=dissolve),
+                        Hide("modmenu_nointernet", transition=dissolve),
+                        Stop("modmenu_music", fadeout=1.0),
+                        Play("music", "mx/menu.ogg", fadein=1.0),
                         Play("audio", "se/sounds/close.ogg")]
                 style "yesnobutton"
 
