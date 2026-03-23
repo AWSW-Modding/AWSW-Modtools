@@ -131,6 +131,11 @@ init python:
         return True
 
 
+    # Preload steam modlist, so we don't wait for it when we try to open the mod browser
+    if internet_on() and modloader.has_steam():
+        modconfig.steam_mod_list.load()
+
+
 init -1 python:
     import math
     import traceback
@@ -138,9 +143,6 @@ init -1 python:
     import modloader
     from modloader import modconfig, steamhandler_extensions
 
-    # Preload steam modlist, so we don't wait for it when we try to open the mod browser
-    if modloader.has_steam():
-        modconfig.steam_mod_list.load()
 
     def _is_modlist_done():
         return modconfig.steam_mod_list.is_done()
