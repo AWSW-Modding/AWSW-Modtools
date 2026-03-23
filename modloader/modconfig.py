@@ -20,7 +20,7 @@ from renpy.exports import show_screen
 from modloader.modinfo import get_mods
 from modloader import get_mod_path, workshop_enabled
 if workshop_enabled:
-    from steam_workshop.steam_config import has_valid_signature
+    from steam_workshop.steam_config import has_valid_signature, MODTOOLS_ID
     import steam_workshop.steamhandler as steamhandler
     import steamhandler_extensions
 
@@ -133,7 +133,7 @@ class SteamModlist:
         #   therefore, steamhandler_extensions are preferred
         mods = []
         for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
-            if mod[1] == "Modtools":
+            if mod[0] == MODTOOLS_ID:
                 continue  # The modtools themselves need not be here (as they're already present and can't be removed using themselves), nor should the signing system complain about them...
             file_id = mod[0]
             create_time, modify_time, signature = mod[5:8]
