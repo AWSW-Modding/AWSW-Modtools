@@ -496,7 +496,7 @@ screen _modlist_errors(errors,reload_action):
 
         viewport:
             id "viewport"
-            child_size (4000, None)
+            child_size (1400, None)
             mousewheel True
             scrollbars "both"
             xfill True
@@ -504,7 +504,7 @@ screen _modlist_errors(errors,reload_action):
 
             has vbox
 
-            text errors substitute False
+            text __format_traceback(errors) substitute False
 
         vbox:
 

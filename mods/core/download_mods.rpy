@@ -154,10 +154,10 @@ init -1 python:
 
         if isinstance(exception, steamhandler_extensions.CacheWriteError):
             # CacheWriteError have a special error screen, as they're more severe
-            modloader.report_modlist_errors("The steam modlist cache file write has failed.\n"
-                                        "This should never happen under normal circumstances, and may cause the game to crash or not open.\n"
-                                        "If you're seeing this, please report it to the developers of the Modtools, or on the fan discord,\n"
-                                        "    preferably with a screenshot.\n"
+            modloader.report_modlist_errors("The steam modlist cache file write has failed.  "
+                                        "This should never happen under normal circumstances, and may cause the game to crash or not open.  "
+                                        "If you're seeing this, please report it to the developers of the Modtools, or on the fan discord, "
+                                        "preferably with a screenshot.  "
                                         "\nError raised:\n"
                                         + "".join(traceback.format_exception(type(exception), exception, exception.cause_traceback))
             )
