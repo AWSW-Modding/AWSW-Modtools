@@ -57,10 +57,11 @@ class AWSWMod(Mod):
             tocompile += base_indent + """text "Non-Steam mods detected. The safety or appropriateness of these mods cannot be guaranteed." xalign 0.16 yalign -0.005\n"""
         
         
-        # Added timer to check if preload failed once it's finished. a timer is used so the main thread doesn't wait on the preload...
+        # Added timer to check if preload failed once it's finished, and report a load error if one occurred. a timer is used so the main thread doesn't wait on the preload...
+        #  As error reporting must occur on the main thread, we need such mechanisms to properly report errors raised on preload threads.
         if has_steam():
             tocompile += base_indent + 'default timer_active = True\n'
-            tocompile += base_indent + 'timer 1.0 repeat timer_active action If(timer_active and _is_modlist_done(), true=[SetScreenVariable("timer_active", False), Function(_ensure_modlist_okay)], false=[])\n' # If requires both the true and false arguments to be not None (or else Ren'py complains that the timer doesn't have an action?!), so I put an empty list to convince it that it's fine...
+            tocompile += base_indent + 'timer 1.0 repeat timer_active action If(timer_active and is_modlist_loaded(), true=[SetScreenVariable("timer_active", False), Function(_ensure_modlist_okay)], false=[])\n'
         
         compiled = parser.parse("FNDummy", tocompile)
         for node in compiled:

@@ -100,6 +100,9 @@ def github_downloadable_mods():
     return sorted(data, key=lambda mod: mod[1].lower())
 
 
+class TimeoutError(Exception):
+    """Represents a timeout for waiting for a load. mostly allows the timeout parameter in the get() method, to differentiate between a timeout and a failure."""
+    pass
 
 class SteamModlist:
     """Manages the steam modlist, as is gotten by the steam_downloadable_mods method.
@@ -107,9 +110,8 @@ class SteamModlist:
     And caching such results.
     This is needed as loading the modlist takes quite a while,
       And is an operation we would much rather do at startup, without delaying anything else.
-    Any exceptions raised in the loading process will be available through the get_exception() method.
-    Once the load finishes, Only one of the get() and get_exception() methods will return a value, while the other will return None.
-      If the load is successful, then get() will return a value. if the load raised an exception, then get_exception() will return a value.
+    Any exceptions raised in the loading process will be available through the get() method.
+    Once the load finishes, get() will either return a value (if no exception was raised during loading), or raise the exception raised during loading.
     """
     
     def __init__(self):
@@ -117,7 +119,7 @@ class SteamModlist:
         self._loading_thread_lock = threading.Lock()
         self._loaded_data = None
         self._exception = None
-        self._is_done = threading.Event()
+        self._is_loaded = threading.Event()
         return
     
     def _loading_function(self):
@@ -146,7 +148,7 @@ class SteamModlist:
         return mods
     
     def _load_and_set(self):
-        """Calls the _loading_function and sets the internal values based on it's results."""
+        """Calls the _loading_function and sets the internal values based on its results."""
         try:
             mods = self._loading_function()
             self._loaded_data = mods
@@ -156,7 +158,7 @@ class SteamModlist:
             self._exception = e
             self._exception.traceback = sys.exc_info()[2]
         
-        self._is_done.set()
+        self._is_loaded.set()
         print "Done loading steam modlist"
         return
     
@@ -169,52 +171,48 @@ class SteamModlist:
         with self._loading_thread_lock:
             if self._loading_thread is None:
                 print "Steam modlist thread not present, Starting..."
-                self._loading_thread = threading.Thread(target=self._load_and_set, name=u"Thread-load-{}".format(self._load_and_set.__name__))
+                self._loading_thread = threading.Thread(target=self._load_and_set, name=u"Thread-load-SteamModlist")
                 self._loading_thread.start()
             else:
                 print "Steam modlist thread already present"
         return self._loading_thread
     
-    def get(self):
+    def get(self, timeout=None):
         """Get the steam modlist data.
         If the data has already loaded, this method returns with it immediately,
-        Otherwise, load() is called, and this method blocks until the completion of the data loading thread.
+        Otherwise, load() is called, and this method blocks using self.wait(timeout).
+        :returns steam modlist data, If timeout has not been reached and the loading thread has not raised an error.
+        :raises Exception, If timeout has not been reached and the loading thread has raised an error. this raises that very exception.
+        :raises TimeoutError, If timeout has been reached.
         """
-        if self._is_done.is_set():
-            # Note: while the value of is_set can change between checking it here and referring to _loaded_data,
+        if self.is_loaded():
+            # Note: while the value of is_done can change between checking it here and referring to _loaded_data,
             #  It can only change from False to True.
             #  In that case the load() method has been called before and is currently finishing,
-            #  And it'll be called again here, ignored, and _is_done will be waited upon, which will finish only once _loaded_data is available.
+            #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
             
             print "Steam modlist data already available"
         else:
             print "Steam modlist data not available, calling load"
             self.load()
-            self._is_done.wait()
+            self.wait(timeout)
             print "Loading done, fetching data"
+        
+        if self._exception is not None:
+            raise self._exception
+        
         return self._loaded_data
     
-    def get_exception(self):
-        """Get the raised exception, If the load raised an exception.
-        If the data has already loaded, this method returns with it immediately,
-        Otherwise, load() is called, and this method blocks until the completion of the data loading thread.
-        """
-        if self._is_done.is_set():
-            # Identical logic to self.get()
-            
-            print "Steam modlist exception already available"
-        else:
-            print "Steam modlist data not available, calling load"
-            self.load()
-            self._is_done.wait()
-            print "Loading done, fetching exception"
-        return self._exception
-    
-    def is_done(self):
-        return self._is_done.is_set()
+    def is_loaded(self):
+        return self._is_loaded.is_set()
     
     def wait(self, timeout=None):
-        return self._is_done.wait(timeout)
+        """Waits for timeout seconds until loading is finished. if timeout is None (default), waits indefinitely until loading is finished.
+        :returns None if loading is finished before timeout elapsed.
+        :raises TimeoutError if timeout has expired before loading is finished."""
+        if not self._is_loaded.wait(timeout):
+            raise TimeoutError(type(self).__name__)
+        return
 
 
 steam_mod_list = SteamModlist()

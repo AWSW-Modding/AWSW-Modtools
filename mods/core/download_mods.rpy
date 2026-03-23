@@ -144,17 +144,15 @@ init -1 python:
     from modloader import modconfig, steamhandler_extensions
 
 
-    def _is_modlist_done():
-        return modconfig.steam_mod_list.is_done()
+    def is_modlist_loaded():
+        return modconfig.steam_mod_list.is_loaded()
 
     def _ensure_modlist_okay():
-        # This should only be called once the modlist has finished
-        exception = modconfig.steam_mod_list.get_exception()
-        if exception is None:
-            return # Everything is good!
-
-
-        if isinstance(exception, steamhandler_extensions.CacheWriteError):
+        # This should only be called once the modlist has finished, As it blocks until then.
+        try:
+            modconfig.steam_mod_list.get()
+            return
+        except steamhandler_extensions.CacheWriteError as exception:
             # CacheWriteError have a special error screen, as they're more severe
             modloader.report_modlist_errors("The steam modlist cache file write has failed.  "
                                         "This should never happen under normal circumstances, and may cause the game to crash or not open.  "
@@ -163,7 +161,7 @@ init -1 python:
                                         "\nError raised:\n"
                                         + "".join(traceback.format_exception(type(exception), exception, exception.cause_traceback))
             )
-        else:
+        except Exception as exception:
             modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
                                         "\nError raised:\n"
                                         + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
