@@ -128,11 +128,6 @@ class CachedSteamMgr:
             try:
                 print "Cache callback called with: (len={0}), array={1}".format(arr_len, array)
                 
-                # Prepare data to write: convert it to json compatible dicts
-                field_names = [name for name, _ in WorkshopData._fields_]
-                array_data = [{name: getattr(array[i], name) for name in field_names} for i in range(arr_len)]
-                to_write = {"len": arr_len, "data": array_data}
-                
                 # Get cache file name
                 cache_file_name = self.get_cache_filename(page)
                 print "Cache file target: \"{}\"\n".format(cache_file_name)
@@ -144,6 +139,11 @@ class CachedSteamMgr:
                 elif not os.path.isdir(to_ensure):  # If exists and not dir: problem
                     raise OSError(errno.ENOTDIR, "The attempted directory \"{}\" exists and is not a directory.".format(to_ensure))
                 # else: exists and is dir: no need to do anything
+                
+                
+                # Prepare data to write: convert it to json compatible dicts
+                field_names = [name for name, _ in WorkshopData._fields_]
+                to_write = [{name: getattr(array[i], name) for name in field_names} for i in range(arr_len)]
                 
                 # Write cache file
                 with open(cache_file_name, "w") as cache_file:
@@ -234,8 +234,8 @@ class CachedSteamMgr:
             print "Reading cache file \"{}\"".format(cache_file_name)
             with open(cache_file_name, "r") as cache_file:
                 file_data = json.load(cache_file, encoding="utf-8", object_pairs_hook=workshop_data_hook)
-            arr_len = file_data["len"]
-            array = file_data["data"]
+            arr_len = len(file_data)
+            array = file_data
             print arr_len
             
             # Thread is used to match the behaviour of QueryApi, where the function returns quickly and before the callbacks are called
