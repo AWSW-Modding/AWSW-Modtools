@@ -155,7 +155,8 @@ class CachedSteamMgr:
             finally:
                 print "Cache file write callback done."
                 fill_cache_query_cb.done = True
-                return
+            
+            return
         
         fill_cache_query_cb.error = None
         self.register_callback(PyCallback.Query, fill_cache_query_cb)
