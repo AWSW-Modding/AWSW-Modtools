@@ -137,7 +137,7 @@ class CachedSteamMgr:
                 if not os.path.exists(to_ensure):  # If not exists: create
                     os.makedirs(os.path.dirname(cache_file_name))
                 elif not os.path.isdir(to_ensure):  # If exists and not dir: problem
-                    raise OSError(errno.ENOTDIR, "The attempted directory \"{}\" exists and is not a directory.".format(to_ensure))
+                    raise OSError(errno.ENOTDIR, "The directory \"{}\" to create already exists and is not a directory.".format(to_ensure))
                 # else: exists and is dir: no need to do anything
                 
                 
@@ -301,7 +301,7 @@ class CachedSteamMgr:
         self.register_callback(PyCallback.Query, cb)
         try:
             while cb.should_run_next:
-                cb.complete = False # Important! make sure that consecutive runs don't claim that the function is already finished!
+                cb.complete = False # reset complete flag from previous run.
                 self.QueryApi(cb.i)
                 
                 # Block
