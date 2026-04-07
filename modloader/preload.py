@@ -5,7 +5,6 @@ import time
 import os
 import re
 import subprocess
-from abc import ABCMeta, abstractmethod
 
 
 class TimeoutError(Exception):
@@ -173,26 +172,30 @@ def available_cpu_count():
 
 
 
-class PreloadBase:
-    """A base class for preloading of resources via threads.
-    Calls to loading_function() are preloaded by load(), their results are cached, and are accessed via get().
+class Preload:
+    """A class for preloading of resources via threads.
+    Calls to loading_function are grouped by parameter list and preloaded by load(). their results are cached, and are accessible via get().
     this is useful for resources, where their loading is IO-bound and may hang the main thread, and which are not expected to change during the course of the program.
     
-    To load a resource, call load() with the parameters to send to loading_function().
+    To load a resource, call load() with the parameters to send to loading_function.
         multiple separate resources may be loaded at once, identified by their parameter lists.
-    To retrieve a resource, call get() with the same parameters. only positional parameters are supported.
+        only positional parameters are supported.
+    To retrieve a resource, call get() with the same parameters.
     To wait upon a resource load without retrieving it, call wait().
     Callbacks are also supported, as per register_callback().
     
     Preloading is done by a threadpool, and as such, many calls to load can be done in short succession without significant performance costs.
     """
     
-    __metaclass__ = ABCMeta
-    
-    def __init__(self, max_workers=None):
+    def __init__(self, loading_function, max_workers=None):
         """
+        :parameter loading_function: The function used to load the resource.
         :parameter max_workers: (default None) The maximum number of preloading threads. default is min(32, available_cpu_count() + 4), taken from concurrent.futures.ThreadPoolExecutor
         """
+        
+        self._loading_function = loading_function
+        self._name = self._loading_function.__name__ # Used for debugging
+        
         if max_workers is None: # ensure worker count is valid
             try:
                 max_workers = min(32, available_cpu_count() + 4) # taken from concurrent.futures.ThreadPoolExecutor
@@ -238,19 +241,10 @@ class PreloadBase:
                 raise ValueError("Unrecogised job of type: \"{}\"".format(job_type))
     
     
-    @abstractmethod
-    def loading_function(self, *args):
-        """Actually loads the required data.
-        It may only take positional arguments, and return a single value: the loaded data, which will be accessible via the get() method.
-        It may raise an exception, in which case it'll be stored, and reraised by calls to the get() method.
-        This way, the result of the get() method will always be identical to the results of this method.
-        """
-        pass
-    
     def _load_and_set(self, *args):
         """Calls the _loading_function and stores it results for get()."""
         try:
-            data = self.loading_function(*args)
+            data = self._loading_function(*args)
             exception = None
             print "Finished preload without errors"
         except Exception as e:
@@ -271,18 +265,18 @@ class PreloadBase:
         return
     
     def load(self, *args):
-        """Starts preloading the result of self.loading_function(*args) if it is not already being loaded.
-        It guarantees that for any number of repeated calls to it from any number of threads, self.loading_function() will only be called once for each distinct args.
+        """Starts preloading the result of loading_function(*args) if it is not already being loaded.
+        It guarantees that for any number of repeated calls to it from any number of threads, loading_function() will only be called once for each distinct args.
         Once the data is loaded, it is available through the get() method.
         """
         with self._is_loaded_lock:
             if args in self._is_loaded:
-                print "({}) Preload already present: {}".format(type(self).__name__, args)
+                print "({}) Preload already present: {}".format(self._name, args)
                 return
             
             self._is_loaded[args] = threading.Event()
         
-        print "({}) Preload not present, Starting... {}".format(type(self).__name__, args)
+        print "({}) Preload not present, Starting... {}".format(self._name, args)
         self._job_queue.put(("load", args))
         return
     
@@ -291,7 +285,7 @@ class PreloadBase:
         If the data has already loaded, this method returns with it immediately,
         Otherwise, load(*args) is called, and this method blocks using self.wait(*args, timeout=timeout).
         :parameter timeout - name only (default None) - identical to self.wait() timeout parameter.
-        :returns preloaded result of self.loading_function(*args), If timeout has not been reached and the loading thread has not raised an error.
+        :returns preloaded result of loading_function(*args), If timeout has not been reached and the loading thread has not raised an error.
         :raises Exception, If timeout has not been reached and the loading thread has raised an error. this raises that very exception.
         :raises TimeoutError, If timeout has been reached.
         """
@@ -306,9 +300,9 @@ class PreloadBase:
             #  In that case the load() method has been called before and is currently finishing,
             #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
             
-            print "({}) Preload data already available: {}".format(type(self).__name__, args)
+            print "({}) Preload data already available: {}".format(self._name, args)
         else:
-            print "({}) Preload data not available, calling load: {}".format(type(self).__name__, args)
+            print "({}) Preload data not available, calling load: {}".format(self._name, args)
             self.load(*args)
             self.wait(*args, timeout=timeout)
         

@@ -81,16 +81,15 @@ init python:
     import re
     import urllib2
 
-    from modloader.preload import PreloadBase
+    from modloader.preload import Preload
 
-    class ImageURLPreloader(PreloadBase):
-        def loading_function(self, url):
-            """
-            Loads the image data from given url. The resulting data is a str containing the image data
-            """
-            return urllib2.urlopen(url).read()
+    def load_mod_image(url):
+        """
+        Loads the image data from given url. The resulting data is a str containing the image data
+        """
+        return urllib2.urlopen(url).read()
 
-    image_url_preloader = ImageURLPreloader(5) # 5 threads is plenty
+    mod_image_preloader = Preload(load_mod_image, 5) # 5 threads is plenty
 
     def _preload_mod_images(modlist, error):
         if error is not None:
@@ -98,10 +97,11 @@ init python:
             return
         image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
-            image_url_preloader.load(url)
+            mod_image_preloader.load(url)
         return
 
-    modconfig.steam_mod_list.register_callback(_preload_mod_images)
+    modconfig.steam_modlist_preloader.register_callback(_preload_mod_images)
+
 
     class ImageURL(Image):
         """
@@ -113,7 +113,7 @@ init python:
 #             from urllib2 import urlopen
             from renpy.display.im import cache
 
-            virtual_f = StringIO(image_url_preloader.get(self.filename))
+            virtual_f = StringIO(mod_image_preloader.get(self.filename))
 
             cache.add_load_log(self.filename)
             if unscaled:
@@ -154,7 +154,7 @@ init python:
 
     # Preload steam modlist, so we don't wait for it when we try to open the mod browser
     if internet_on() and modloader.has_steam():
-        modconfig.steam_mod_list.load()
+        modconfig.steam_modlist_preloader.load()
 
 
 init -1 python:
@@ -166,13 +166,13 @@ init -1 python:
 
 
     def is_modlist_loaded():
-        return modconfig.steam_mod_list.is_loaded()
+        return modconfig.steam_modlist_preloader.is_loaded()
 
     def _ensure_modlist_okay(strict=False):
         """Wait until the steam modlist is loaded, then check for errors and report any that have been detected.
         :parameter strict: default (False) only reports severe errors. if set to True, all errors are reported"""
         try:
-            modconfig.steam_mod_list.get()
+            modconfig.steam_modlist_preloader.get()
             return
         except steamhandler_extensions.CacheWriteError as exception:
             # CacheWriteError have a special error screen, as they're more severe

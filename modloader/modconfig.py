@@ -16,7 +16,7 @@ from renpy.ui import Action
 from renpy.exports import show_screen
 
 from modloader.modinfo import get_mods
-from modloader.preload import PreloadBase
+from modloader.preload import Preload
 from modloader import get_mod_path, workshop_enabled
 if workshop_enabled:
     from steam_workshop.steam_config import has_valid_signature, MODTOOLS_ID
@@ -100,44 +100,31 @@ def github_downloadable_mods():
 
 
 
-class SteamModlist(PreloadBase):
-    """Manages the steam modlist, as is gotten by the steam_downloadable_mods method.
-    It supports loading the modlist in a separate thread, and caching such results.
-    This is needed as loading the modlist takes quite a while,
-      And is an operation we would much rather do at startup, without delaying anything else.
-    """
+def load_steam_modlist():
+    """Loads and verifies the steam modlist data."""
+    # A different format,
+    # (id, mod_name, author, desc, image_url)
     
-    def loading_function(self):
-        """Loads and verifies the steam modlist data.
-        It must take no arguments, and return a single value: the loaded data.
-        It may raise an exception, in which case it'll be stored in self._exception.
-        """
-        # A different format,
-        # (id, mod_name, author, desc, image_url)
-        
-        # This uses GetAllItems(), Which is affected by the QueryApi crash.
-        #   therefore, steamhandler_extensions are preferred
-        mods = []
-        for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
-            if mod[0] == MODTOOLS_ID:
-                continue  # The modtools themselves need not be here (as they're already present and can't be removed using themselves), nor should the signing system complain about them...
-            file_id = mod[0]
-            create_time, modify_time, signature = mod[5:8]
-            is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
-            if is_valid:
-                mods.append(list(mod[:5]))
-                mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
-            else:
-                print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whole thing SIGNIFICANTLY speeds up this call
-        return mods
-    
+    # This uses GetAllItems(), Which is affected by the QueryApi crash.
+    #   therefore, steamhandler_extensions are preferred
+    mods = []
+    for mod in sorted(steamhandler_extensions.get_instance().GetAllItems(), key=lambda mod: mod[1]):
+        if mod[0] == MODTOOLS_ID:
+            continue  # The modtools themselves need not be here (as they're already present and can't be removed using themselves), nor should the signing system complain about them...
+        file_id = mod[0]
+        create_time, modify_time, signature = mod[5:8]
+        is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
+        if is_valid:
+            mods.append(list(mod[:5]))
+            mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+        else:
+            print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whole thing SIGNIFICANTLY speeds up this call
+    return mods
 
-
-steam_mod_list = SteamModlist(1) # As loading the steam modlist is a single-threaded thing, there's no reason to reserve many threads to it...
-
+steam_modlist_preloader = Preload(load_steam_modlist, 1) # As loading the steam modlist is a single-threaded thing, there's no reason to reserve many threads to it...
 
 def steam_downloadable_mods():
-    return steam_mod_list.get()
+    return steam_modlist_preloader.get()
 
 
 def download_github_mod(download_link, name, show_download=True, reload_script=True):
