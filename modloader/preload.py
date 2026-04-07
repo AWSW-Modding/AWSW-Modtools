@@ -1,94 +1,297 @@
+import collections
 import threading
 import sys
+import time
+import os
+import re
+import subprocess
 from abc import ABCMeta, abstractmethod
 
 
 class TimeoutError(Exception):
-    """Represents a timeout for waiting for a load. mostly allows the timeout parameter in the get() method, to differentiate between a timeout and a failure."""
+    """A timeout for waiting for a load. mostly allows the timeout parameter in the get() method, to differentiate between a timeout and a failure."""
     pass
 
+class Empty(TimeoutError):
+    """A pop operation on an empty queue"""
+    pass
+
+class Queue:
+    """As Queue.Queue isn't available, we make our own. maxsize isn't supported."""
+    
+    def __init__(self):
+        self._queue = collections.deque()
+        self._pop_condition = threading.Condition()
+        return
+    
+    
+    def put(self, item):
+        with self._pop_condition:
+            self._queue.append(item)
+            self._pop_condition.notify()
+        return
+    
+    def get(self, block=True, timeout=None):
+        if not block or timeout == 0: # For these non-blocking cases, We avoid the retrying located below.
+            try:
+                return self._queue.popleft()
+            except IndexError:
+                raise Empty()
+            
+        with self._pop_condition:
+            while True:
+                try:
+                    return self._queue.popleft()
+                except IndexError:
+                    s_time = time.time()
+                    self._pop_condition.wait(timeout)
+                    if timeout is not None:
+                        timeout -= time.time() - s_time
+                        if timeout < 0:
+                            raise Empty()
+    
+    def get_nowait(self):
+        self.get(False)
+
+
+# As we effectively use a threadpool for the preload class, we wish to access the cpu count of the machine to allow a logical default number of threads.
+#   multiprocessing (the standard way to check) is not available, so we use this one.
+# Source - https://stackoverflow.com/a/1006301
+# Posted by phihag, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-04-07, License - CC BY-SA 4.0
+def available_cpu_count():
+    """ Number of available virtual or physical CPUs on this system, i.e.
+    user/real as output by time(1) when called with an optimally scaling
+    userspace-only program"""
+
+    # cpuset
+    # cpuset may restrict the number of *available* processors
+    try:
+        m = re.search(r'(?m)^Cpus_allowed:\s*(.*)$',
+                      open('/proc/self/status').read())
+        if m:
+            res = bin(int(m.group(1).replace(',', ''), 16)).count('1')
+            if res > 0:
+                return res
+    except IOError:
+        pass
+
+    # Python 2.6+
+    try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    except (ImportError, NotImplementedError):
+        pass
+
+    # https://github.com/giampaolo/psutil
+    try:
+        import psutil
+        return psutil.cpu_count()   # psutil.NUM_CPUS on old versions
+    except (ImportError, AttributeError):
+        pass
+
+    # POSIX
+    try:
+        res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
+
+        if res > 0:
+            return res
+    except (AttributeError, ValueError):
+        pass
+
+    # Windows
+    try:
+        res = int(os.environ['NUMBER_OF_PROCESSORS'])
+
+        if res > 0:
+            return res
+    except (KeyError, ValueError):
+        pass
+
+    # jython
+    try:
+        from java.lang import Runtime
+        runtime = Runtime.getRuntime()
+        res = runtime.availableProcessors()
+        if res > 0:
+            return res
+    except ImportError:
+        pass
+
+    # BSD
+    try:
+        sysctl = subprocess.Popen(['sysctl', '-n', 'hw.ncpu'],
+                                  stdout=subprocess.PIPE)
+        scStdout = sysctl.communicate()[0]
+        res = int(scStdout)
+
+        if res > 0:
+            return res
+    except (OSError, ValueError):
+        pass
+
+    # Linux
+    try:
+        res = open('/proc/cpuinfo').read().count('processor\t:')
+
+        if res > 0:
+            return res
+    except IOError:
+        pass
+
+    # Solaris
+    try:
+        pseudoDevices = os.listdir('/devices/pseudo/')
+        res = 0
+        for pd in pseudoDevices:
+            if re.match(r'^cpuid@[0-9]+$', pd):
+                res += 1
+
+        if res > 0:
+            return res
+    except OSError:
+        pass
+
+    # Other UNIXes (heuristic)
+    try:
+        try:
+            dmesg = open('/var/run/dmesg.boot').read()
+        except IOError:
+            dmesgProcess = subprocess.Popen(['dmesg'], stdout=subprocess.PIPE)
+            dmesg = dmesgProcess.communicate()[0]
+
+        res = 0
+        while '\ncpu' + str(res) + ':' in dmesg:
+            res += 1
+
+        if res > 0:
+            return res
+    except OSError:
+        pass
+
+    raise Exception('Can not determine number of CPUs on this system')
+
+
+
 class PreloadBase:
-    """Manages the steam modlist, as is gotten by the steam_downloadable_mods method.
-    It supports loading the modlist in a separate thread via the load method,
-    And caching such results.
-    This is needed as loading the modlist takes quite a while,
-      And is an operation we would much rather do at startup, without delaying anything else.
-    Any exceptions raised in the loading process will be available through the get_exception() method.
-    Once the load finishes, Only one of the get() and get_exception() methods will return a value, while the other will return None.
-      If the load is successful, then get() will return a value. if the load raised an exception, then get_exception() will return a value.
+    """A base class for preloading of resources via threads.
+    Calls to loading_function() are preloaded by load(), their results are cached, and are accessed via get().
+    this is useful for resources, where their loading is IO-bound and may hang the main thread, and which are not expected to change during the course of the program.
+    
+    To load a resource, call load() with the parameters to send to loading_function().
+        multiple separate resources may be loaded at once, identified by their parameter lists.
+    To retrieve a resource, call get() with the same parameters. only positional parameters are supported.
+    To wait upon a resource load without retrieving it, call wait().
+    Callbacks are also supported, as per register_callback().
+    
+    Preloading is done by a threadpool, and as such, many calls to load can be done in short succession without significant performance costs.
     """
     
     __metaclass__ = ABCMeta
     
-    def __init__(self):
+    def __init__(self, max_workers=None):
+        """
+        :parameter max_workers: (default None) The maximum number of preloading threads. default is min(32, available_cpu_count() + 4), taken from concurrent.futures.ThreadPoolExecutor
+        """
+        if max_workers is None: # ensure worker count is valid
+            try:
+                max_workers = min(32, available_cpu_count() + 4) # taken from concurrent.futures.ThreadPoolExecutor
+            except Exception: # On the offchance that cpu count fails, we don't actually care enough to raise an error about it. it may be treated as 1.
+                max_workers = 5 # 1 (failed cpu count) + 4
+        elif not isinstance(max_workers, int):
+            raise TypeError("max_workers is not an integral type!")
+        elif max_workers < 1:
+            raise ValueError("max_workers must be an a positive integer. number given: {}".format(int(max_workers)))
         
         # I haven't found any conclusive source on whether parallel reads and writes to different keys in dictionaries are thread-safe,
         #  So they're treated as unsafe.
-        self._loading_threads = {}
-        self._load_start_lock = threading.Lock()
+        self._job_queue = Queue()
+        self._loading_threads = []
+        for i in range(max_workers):
+            self._loading_threads.append(threading.Thread(target=self._manage_job_queue,
+                                                          name=u"Preload-o{}-{:02}".format(id(self), i)))
+            self._loading_threads[-1].daemon = True
+            self._loading_threads[-1].start()
         
         self._loaded_data = {}
         self._exception = {}
-        self._return_data_lock = threading.Lock() # Lock protecting dict access to the loaded data dictionaries: self._loaded_data and self._exception
+        self._callbacks = []
+        # A lock used both to keep the load data dicts sane, and to ensure all callbacks are called on the appropriate results.
+        self._load_data_lock = threading.Lock()
         
-        self._is_loaded = {}
+        
+        self._is_loaded = {} # Presence of a key here is used to detect if that said key is being loaded
         self._is_loaded_lock = threading.Lock()
         
         return
+    
+    def _manage_job_queue(self):
+        while True:
+            next_job = self._job_queue.get()
+            job_type = next_job[0]
+            if job_type is "load":
+                self._load_and_set(*next_job[1])
+            elif job_type is "callback":
+                new_callback, finished_loads = next_job[1], next_job[2]
+                self._call_callbacks(finished_loads, (new_callback,))
+            else:
+                raise ValueError("Unrecogised job of type: \"{}\"".format(job_type))
+    
     
     @abstractmethod
     def loading_function(self, *args):
         """Actually loads the required data.
         It may only take positional arguments, and return a single value: the loaded data, which will be accessible via the get() method.
-        It may raise an exception, in which case it'll be stored, and accessible via the get_exception() method.
+        It may raise an exception, in which case it'll be stored, and reraised by calls to the get() method.
+        This way, the result of the get() method will always be identical to the results of this method.
         """
         pass
     
     def _load_and_set(self, *args):
-        """Calls the _loading_function and sets the internal values based on its results."""
+        """Calls the _loading_function and stores it results for get()."""
         try:
             data = self.loading_function(*args)
-            with self._return_data_lock:
-                self._loaded_data[args] = data
-                self._exception[args] = None
+            exception = None
             print "Finished preload without errors"
         except Exception as e:
             print "Finished preload with errors of type={}".format(type(e))
-            with self._return_data_lock:
-                e.traceback = sys.exc_info()[2] # Adding traceback information to e
-                self._loaded_data[args] = None
-                self._exception[args] = e
+            data = None
+            exception = e
+            exception.traceback = sys.exc_info()[2]  # Adding traceback information to e
+        
+        with self._load_data_lock:
+            self._loaded_data[args] = data
+            self._exception[args] = exception
+            curr_callbacks = tuple(self._callbacks)
         
         with self._is_loaded_lock:
             self._is_loaded[args].set()
-        print "Done preloading"
+        # print "Done preloading"
+        self._call_callbacks((args,), curr_callbacks)
         return
     
     def load(self, *args):
-        """Starts preloading the data for args if it is not already being loaded.
-        This method starts a thread which loads the data.
-        It guarantees that for any number of repeated calls to it from any number of threads, only one loading thread will be started.
+        """Starts preloading the result of self.loading_function(*args) if it is not already being loaded.
+        It guarantees that for any number of repeated calls to it from any number of threads, self.loading_function() will only be called once for each distinct args.
         Once the data is loaded, it is available through the get() method.
         """
-        with self._load_start_lock:
-            # print "args={}, l_threads={}".format(args, self._loading_threads)
-            if args not in self._loading_threads:
-                print "Preload thread not present, Starting..."
-                with self._is_loaded_lock:
-                    self._is_loaded[args] = threading.Event()
-                self._loading_threads[args] = threading.Thread(target=self._load_and_set,
-                                                               name=u"Thread-load-{}-{}".format(self.__class__.__name__, hash(args)),
-                                                               args=args)
-                self._loading_threads[args].start()
-            else:
-                print "Preload thread already present"
-            return self._loading_threads[args]
+        with self._is_loaded_lock:
+            if args in self._is_loaded:
+                print "({}) Preload already present: {}".format(type(self).__name__, args)
+                return
+            
+            self._is_loaded[args] = threading.Event()
+        
+        print "({}) Preload not present, Starting... {}".format(type(self).__name__, args)
+        self._job_queue.put(("load", args))
+        return
     
     def get(self, *args, **kwargs):
-        """Get the preloaded data.
+        """Get the preloaded data corresponding to args.
         If the data has already loaded, this method returns with it immediately,
-        Otherwise, load() is called, and this method blocks using self.wait(timeout).
-        :returns steam modlist data, If timeout has not been reached and the loading thread has not raised an error.
+        Otherwise, load(*args) is called, and this method blocks using self.wait(*args, timeout=timeout).
+        :parameter timeout - name only (default None) - identical to self.wait() timeout parameter.
+        :returns preloaded result of self.loading_function(*args), If timeout has not been reached and the loading thread has not raised an error.
         :raises Exception, If timeout has not been reached and the loading thread has raised an error. this raises that very exception.
         :raises TimeoutError, If timeout has been reached.
         """
@@ -103,18 +306,49 @@ class PreloadBase:
             #  In that case the load() method has been called before and is currently finishing,
             #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
             
-            print "Preload data already available"
+            print "({}) Preload data already available: {}".format(type(self).__name__, args)
         else:
-            print "Preload data not available, calling load"
+            print "({}) Preload data not available, calling load: {}".format(type(self).__name__, args)
             self.load(*args)
             self.wait(*args, timeout=timeout)
-            print "Loading done, fetching data"
         
-        with self._return_data_lock:
-            if self._exception[args] is not None:
+        with self._load_data_lock:
+            if self._exception[args] is not None: # by this point, args must be present in both data dicts
                 raise self._exception[args]
             
             return self._loaded_data[args]
+    
+    
+    def register_callback(self, callback):
+        """Register a callback to be run on the result of each load when finished.
+        The callback will also be run on each already finished load.
+        A callback must receive two positional arguments: the result of the finished load, and the exception raised during it.
+        It is guaranteed that each callback will eventually run exactly once on each load.
+        """
+        
+        with self._load_data_lock:
+            self._callbacks.append(callback)
+            finised_loads = tuple(self._loaded_data.keys())
+        
+        self._job_queue.put(("callback", callback, finised_loads))
+        return
+    
+    def _call_callbacks(self, loads, callbacks):
+        """calls each callback in callbacks on each result of loads"""
+        for load_key in loads:
+            data = None
+            exception = None
+            try:
+                data = self.get(*load_key)
+            except Exception as e:
+                exception = e
+            for callback in callbacks:
+                try:
+                    callback(data, exception)
+                except Exception: # callback exceptions are ignored and do not affect other callbacks.
+                    pass
+        return
+    
     
     def is_loaded(self, *args):
         with self._is_loaded_lock:
@@ -122,6 +356,7 @@ class PreloadBase:
     
     def wait(self, *args, **kwargs):
         """Waits for timeout seconds until loading is finished. if timeout is None (default), waits indefinitely until loading is finished.
+        :parameter timeout - name only (default None) - the number of seconds to wait. by default - indefinitely.
         :returns None if loading is finished before timeout elapsed.
         :raises TimeoutError if timeout has expired before loading is finished."""
         if "timeout" in kwargs:

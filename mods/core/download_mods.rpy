@@ -90,15 +90,18 @@ init python:
             """
             return urllib2.urlopen(url).read()
 
-    image_url_preloader = ImageURLPreloader()
+    image_url_preloader = ImageURLPreloader(5) # 5 threads is plenty
 
-    import time
-    def _preload_mod_images(contents):
-        s_time = time.time()
-        image_urls = [entry[4] for entry in contents]
+    def _preload_mod_images(modlist, error):
+        if error is not None:
+            print "Definitely can't preload this..."
+            return
+        image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
             image_url_preloader.load(url)
-        print "Preload load calls took: {}".format(time.time() - s_time)
+        return
+
+    modconfig.steam_mod_list.register_callback(_preload_mod_images)
 
     class ImageURL(Image):
         """
@@ -322,11 +325,7 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
-#                       Function(_preload_mod_images, contents)
-                      # Starting to preload ~60 mods caused a half-second delay in screen enter along with about 2 seconds of lag,
-                      #   Which is why preload images has been changed to by-page.
-                     ]
+    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam)]
 
 
 
@@ -383,8 +382,6 @@ screen modmenu_paged_modlist(contents, use_steam):
                                  use_steam=use_steam,
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
-    on "show" action [Function(_preload_mod_images, contents),
-                     ]
 
 
 

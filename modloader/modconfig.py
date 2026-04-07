@@ -102,12 +102,9 @@ def github_downloadable_mods():
 
 class SteamModlist(PreloadBase):
     """Manages the steam modlist, as is gotten by the steam_downloadable_mods method.
-    It supports loading the modlist in a separate thread via the load method,
-    And caching such results.
+    It supports loading the modlist in a separate thread, and caching such results.
     This is needed as loading the modlist takes quite a while,
       And is an operation we would much rather do at startup, without delaying anything else.
-    Any exceptions raised in the loading process will be available through the get() method.
-    Once the load finishes, get() will either return a value (if no exception was raised during loading), or raise the exception raised during loading.
     """
     
     def loading_function(self):
@@ -136,7 +133,7 @@ class SteamModlist(PreloadBase):
     
 
 
-steam_mod_list = SteamModlist()
+steam_mod_list = SteamModlist(1) # As loading the steam modlist is a single-threaded thing, there's no reason to reserve many threads to it...
 
 
 def steam_downloadable_mods():
