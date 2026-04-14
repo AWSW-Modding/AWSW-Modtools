@@ -75,7 +75,7 @@ class CachedSteamMgr:
     It is highly recommended to use this whenever one needs lists of steam mods (for example, the mod browser).
     """
     
-    __PAGE_CACHE_DIR = os.path.join(renpy.config.gamedir, "page_cache")
+    __PAGE_CACHE_DIR = os.path.join(renpy.config.savedir, "page_cache")
     
     def __init__(self, steam_manager):
         if not isinstance(steam_manager, SteamMgr):
