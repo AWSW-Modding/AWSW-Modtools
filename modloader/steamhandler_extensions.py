@@ -36,7 +36,6 @@ class ManagedThread(threading.Thread, object):
         super(ManagedThread, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self.holder = holder
         self.lock = lock
-        return
     
     def run(self):
         with self.lock:
@@ -88,7 +87,6 @@ class CachedSteamMgr:
         # This is done using ManagedThread instances, which use self._active_threads as their holder.
         self._active_threads = []
         self._active_threads_lock = threading.Lock()
-        return
     
     
     def register_callback(self, type, func):

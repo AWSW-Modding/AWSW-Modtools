@@ -120,7 +120,6 @@ class SteamModlist:
         self._loaded_data = None
         self._exception = None
         self._is_loaded = threading.Event()
-        return
     
     def _loading_function(self):
         """Loads and verifies the steam modlist data.
