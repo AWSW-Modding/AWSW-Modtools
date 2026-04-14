@@ -147,8 +147,9 @@ init -1 python:
     def is_modlist_loaded():
         return modconfig.steam_mod_list.is_loaded()
 
-    def _ensure_modlist_okay():
-        # This should only be called once the modlist has finished, As it blocks until then.
+    def _ensure_modlist_okay(strict=False):
+        """Wait until the steam modlist is loaded, then check for errors and report any that have been detected.
+        :parameter strict: default (False) only reports severe errors. if set to True, all errors are reported"""
         try:
             modconfig.steam_mod_list.get()
             return
@@ -157,15 +158,27 @@ init -1 python:
             modloader.report_modlist_errors("The steam modlist cache file write has failed.  "
                                         "This should never happen under normal circumstances, and may cause the game to crash or not open.  "
                                         "If you're seeing this, please report it to the developers of the Modtools, or on the fan discord, "
-                                        "preferably with a screenshot.  "
-                                        "\nError raised:\n"
+                                        "preferably with a screenshot.\n"
+                                        "Page cache location: \"{}\"\n".format(steamhandler_extensions.get_instance().get_page_cache_dir())
+                                        + "Error raised:\n"
                                         + "".join(traceback.format_exception(type(exception), exception, exception.cause_traceback))
             )
-        except Exception as exception:
-            modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
-                                        "\nError raised:\n"
+        except OSError as exception:
+            # These may happen if the page cache dir gets messed up
+            modloader.report_modlist_errors("The steam modlist cache file usage has failed.  "
+                                        "This generally means that the page cache directory has been messed up, which will cause issues with the in-game mod browser.  "
+                                        "If you're seeing this, please report it to the developers of the Modtools, or on the fan discord, "
+                                        "preferably with a screenshot.\n"
+                                        "Page cache location: \"{}\"\n".format(steamhandler_extensions.get_instance().get_page_cache_dir())
+                                        + "Error raised:\n"
                                         + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
             )
+        except Exception as exception:
+            if strict:
+                modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
+                                            "Error raised:\n"
+                                            + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
+                )
         return
 
     # Ensure error screens are available, as we may need them
@@ -178,7 +191,7 @@ init -1 python:
             # (id, name, author, desc, image) (for steam)
             if use_steam:
                 from modloader.modconfig import steam_downloadable_mods as download_mods
-                _ensure_modlist_okay()
+                _ensure_modlist_okay(strict=True)
             else:
                 from modloader.modconfig import github_downloadable_mods as download_mods
 

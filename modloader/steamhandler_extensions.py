@@ -104,6 +104,10 @@ class CachedSteamMgr:
         cache_time = os.path.getmtime(file_path)
         return (curr_time - cache_time) >= 15 * 60
     
+    
+    def get_page_cache_dir(self):
+        return self.__PAGE_CACHE_DIR
+    
     def get_cache_filename(self, page):
         """Returns the cache filename matching this page number."""
         if not isinstance(page, int):
@@ -202,12 +206,14 @@ class CachedSteamMgr:
             if os.path.isfile(cache_file_name):
                 print "cache file is a file"
                 is_cache_availbable = not self.is_file_stale(cache_file_name)
-            elif os.path.islink(cache_file_name):
-                print "cache file is a link to dir"
-                os.unlink(cache_file_name) # Clear symlink to directory in the position of the cache file...
             else:
-                print "cache file is a dir"
-                shutil.rmtree(cache_file_name) # Clear directory in the position of the cache file...
+                raise OSError(errno.EISDIR, "The cache file exists and is not a file", cache_file_name)
+            # elif os.path.islink(cache_file_name):
+            #     print "cache file is a link to dir"
+            #     os.unlink(cache_file_name) # Clear symlink to directory in the position of the cache file...
+            # else:
+            #     print "cache file is a dir"
+            #     shutil.rmtree(cache_file_name) # Clear directory in the position of the cache file...
         
         
         if is_cache_availbable:
