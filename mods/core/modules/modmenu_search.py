@@ -1,7 +1,17 @@
 import collections
 
 
+def cache(function):
+    def inner(*args):
+        if not hasattr(function, "results"):
+            function.results = {args: function(*args)}
+        elif args not in function.results:
+            function.results[args] = function(*args)
+        return function.results[args]
+    return inner
+
 # Copied from nltk (https://www.nltk.org/_modules/nltk/metrics/distance.html#jaro_similarity)
+@cache
 def jaro_similarity(s1, s2):
     """
     Computes the Jaro similarity between 2 sequences from:
