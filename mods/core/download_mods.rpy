@@ -153,6 +153,32 @@ init python:
         modconfig.steam_modlist_preloader.load()
 
 
+    from modmenu_search import sort_best
+    import time
+
+    def search_modlist(query):
+        # As renpy input doesn't allow for additional variables, I've had to resort to this cursed thing
+        curr_screen_scope = renpy.current_screen().scope
+
+        modlist = curr_screen_scope["contents"]
+        page = curr_screen_scope["current_page"]
+        page_size = curr_screen_scope["PAGE_SIZE"]
+        use_steam = curr_screen_scope["use_steam"]
+
+        s_time = time.time()
+        if query.strip():
+            sorted_ml = sort_best(query, modlist)
+        else:
+            sorted_ml = curr_screen_scope["contents"]
+        print "Search took: {:.5}".format(time.time() - s_time)
+
+        curr_screen_scope["ordered_contents"] = sorted_ml
+        _refresh_modlist_page(page, page_size, sorted_ml, use_steam)
+        renpy.restart_interaction()
+
+        return
+
+
 init -1 python:
     import sys
     import math
@@ -393,6 +419,10 @@ screen modmenu_paged(contents, use_steam):
     $ MIN_PAGE = 1 # Do note, modpage numbers are 1-indexed
     $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
 
+    # ordered_contents used for searchbar sorting. as it needs to be set mainly from that function, we use this if node so that it only gets set here if missing
+    if not "ordered_contents" in renpy.current_screen().scope:
+        $ ordered_contents = contents
+
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
 
@@ -440,7 +470,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Tried to bind this to shift+scroll, but it didn't work...
                 action [SetScreenVariable("current_page", max(current_page-5, MIN_PAGE)),
-                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, ordered_contents, use_steam=use_steam)
                        ]
                 sensitive (current_page > 1)
 
@@ -449,7 +479,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_4"
                 action [SetScreenVariable("current_page", current_page-1),
-                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, ordered_contents, use_steam=use_steam)
                        ]
                 sensitive (current_page > 1)
 
@@ -464,7 +494,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_5"
                 action [SetScreenVariable("current_page", current_page+1),
-                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, ordered_contents, use_steam=use_steam)
                         ]
                 sensitive (current_page < MAX_PAGE)
 
@@ -473,9 +503,17 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Also tried to bind this to shift+scroll, but it didn't work...
                 action [SetScreenVariable("current_page", min(current_page+5, MAX_PAGE)),
-                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, ordered_contents, use_steam=use_steam)
                         ]
                 sensitive (current_page < MAX_PAGE)
+
+    input default "" changed search_modlist:
+        size 30
+#         xpos 0.15
+        ypos 0.05
+        xcenter 0.15
+        yanchor 0.5
+
 
     on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
                       Function(_preload_mod_images, contents, None)]
