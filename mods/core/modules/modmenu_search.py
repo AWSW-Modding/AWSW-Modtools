@@ -130,7 +130,10 @@ def sort_best(query, modlist, return_score=False):
     """Sort mods by best match to query"""
     similarities = jaro_split_compare(query, modlist)
     
-    mod_order = [entry for entry in sorted(similarities.items(), key=lambda e: max(e[1]), reverse=True)]
+    # Sort by best match, with bias to strong modname matches
+    #  This bias is useful as the description normally takes the stronger value, unless the mod name is searched specifically.
+    #  Max gave me better results than sum, so I used it.
+    mod_order = [entry for entry in sorted(similarities.items(), key=lambda e: (max(e[1]) + int(e[1][0] > 0.9) * e[1][0]), reverse=True)]
     
     mods_by_name = {mod[1]: mod for mod in modlist}
     
