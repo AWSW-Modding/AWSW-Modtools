@@ -508,10 +508,11 @@ screen modmenu_paged(contents, use_steam):
                 sensitive (current_page < MAX_PAGE)
 
     input default "" changed search_modlist:
-        size 30
-#         xpos 0.15
+        size 34
+        color "#FFF000"
+        xpos 0.034
         ypos 0.05
-        xcenter 0.15
+        xanchor 0.0
         yanchor 0.5
 
 
