@@ -36,7 +36,7 @@ def jaro_similarity(s1, s2):
     len_s1, len_s2 = len(s1), len(s2)
     
     # The upper bound of the distance for being a matched character.
-    match_bound = int(max(len_s1, len_s2) / 2) - 1
+    match_bound = max(int(max(len_s1, len_s2) / 2) - 1, 0) # My one change from the original algorithm: allows two length=1 words to match if they are the same word.
     
     # Initialize the counts for matches and transpositions.
     matches = 0  # no.of matched characters in s1 and s2
@@ -72,20 +72,47 @@ def jaro_similarity(s1, s2):
                 )
         )
 
-def jaro_counter_similarity(query_counter, target_counter):
-    """Finds approximate similarity between word counter query_counter and word counter target_counter.
-    each word in query_counter is compared against all of target_counter's words to find the best match.
-    the similarity is then the weighted average of each of those best similarity numbers, weighted by word count in query_counter"""
+
+
+_jaro_best_match_cache = {}
+
+
+def jaro_counter_similarity(query_counter, target1, target2):
+    """Finds approximate similarity between word counter query_counter and target word strings target1 and target2.
+    each word in query_counter is compared against all of target1's and target2's words to find the best match.
+    the similarity is then the weighted average of each of those best similarity numbers, weighted by word count in query_counter.
+    these results are cached by target1 for each word of query_counter, and as such, for each value of target1 there should only be a single value of target2."""
     
-    best_similarity = {}
+    
+    best_similarity_1 = {}
+    best_similarity_2 = {}
     for query_word in query_counter.iterkeys():
-        curr_best = 0
-        for target_word in target_counter.iterkeys():
-            curr_best = max(curr_best, jaro_similarity(query_word, target_word))
-        best_similarity[query_word] = curr_best
+        if (query_word, target1) not in _jaro_best_match_cache:
+            t1_counter = collections.Counter(target1.lower().split())
+            curr_best_1 = 0
+            for target_word in t1_counter.iterkeys():
+                curr_best_1 = max(curr_best_1, jaro_similarity(query_word, target_word))
+            best_similarity_1[query_word] = curr_best_1
+            
+            t2_counter = collections.Counter(target2.lower().split())
+            curr_best_2 = 0
+            for target_word in t2_counter.iterkeys():
+                curr_best_2 = max(curr_best_2, jaro_similarity(query_word, target_word))
+            best_similarity_2[query_word] = curr_best_2
+            
+            
+            _jaro_best_match_cache[(query_word, target1)] = (curr_best_1, curr_best_2)
+        else:
+            sim1, sim2 = _jaro_best_match_cache[(query_word, target1)]
+            best_similarity_1[query_word] = sim1
+            best_similarity_2[query_word] = sim2
     
-    return sum(best_similarity[query_word] * count for query_word, count in query_counter.iteritems()) / sum(query_counter.itervalues())
-    
+    n_values = sum(query_counter.itervalues())
+    return (sum(best_similarity_1[query_word] * count for query_word, count in query_counter.iteritems()) / n_values,
+            sum(best_similarity_2[query_word] * count for query_word, count in query_counter.iteritems()) / n_values)
+
+
+
 def jaro_split_compare(query, modlist):
     """Compare the modlist to the query using jaro similarity on each word.
     :returns dict from modname to similarity tuple, which contains the similarity of query to modname, then the similarity of query to mod description.
@@ -94,18 +121,12 @@ def jaro_split_compare(query, modlist):
     query_words = collections.Counter(query.lower().split())
     
     for _, name, _, desc, _ in modlist:
-        name_words = collections.Counter(name.lower().split())
-        name_similarity = jaro_counter_similarity(query_words, name_words)
-        
-        desc_words = collections.Counter(desc.lower().split())
-        desc_similarity = jaro_counter_similarity(query_words, desc_words)
-        
-        comps[name] = (name_similarity, desc_similarity)
+        comps[name] = jaro_counter_similarity(query_words, name, desc)
     
     return comps
 
 
-def sort_best(query, modlist, return_score = False):
+def sort_best(query, modlist, return_score=False):
     """Sort mods by best match to query"""
     similarities = jaro_split_compare(query, modlist)
     
