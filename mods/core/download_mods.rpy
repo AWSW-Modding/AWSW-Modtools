@@ -132,10 +132,15 @@ init python:
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (220, 220))
 
+    class ModmenuPreviewImageURL(ImageURL):
+        def modify_surf(self, surf):
+            return renpy.display.pgrender.transform_scale(surf, (125, 125))
+
 
     ImageURL = Wrapper(ImageURL)
     ScaledImageURL = Wrapper(ScaledImageURL)
     ModmenuContentImageURL = Wrapper(ModmenuContentImageURL)
+    ModmenuPreviewImageURL = Wrapper(ModmenuPreviewImageURL)
 
     style.download_mods = Style(style.default)
 
@@ -906,31 +911,34 @@ screen modmenu_paged_modlist(contents, use_steam):
                 elif _modmenu_is_mod_added(modid):
                     $ modname += "\n{size=-5}(Added){/size}"
 
-                textbutton "[modname]":
-                    style "modmenu_select_btn"
-                    if _modmenu_is_mod_added(modid):
-                        background "#007f009B"
-                        hover_background "#7fff7f9B"
-                    elif _modmenu_is_mod_removed(modid):
-                        background "#7f00009B"
-                        hover_background "#ff7f7f9B"
+                hbox:
+                    python:
+                        ModmenuPreviewImageURL(url)
+                    textbutton "[modname]":
+                        style "modmenu_select_btn"
+                        if _modmenu_is_mod_added(modid):
+                            background "#007f009B"
+                            hover_background "#7fff7f9B"
+                        elif _modmenu_is_mod_removed(modid):
+                            background "#7f00009B"
+                            hover_background "#ff7f7f9B"
 
-                    action [Hide("modmenu_mod_content"),
-                            Show("modmenu_mod_content",
-                                 modid=modid,
-                                 name=unicode(name, "utf8"),
-                                 author=unicode(author, "utf8"),
-                                 description=unicode(description, "utf8"),
-                                 url=url,
-                                 use_steam=use_steam,
-                                 ),
-                            Play("audio", "se/sounds/open.ogg")]
+                        action [Hide("modmenu_mod_content"),
+                                Show("modmenu_mod_content",
+                                     modid=modid,
+                                     name=unicode(name, "utf8"),
+                                     author=unicode(author, "utf8"),
+                                     description=unicode(description, "utf8"),
+                                     url=url,
+                                     use_steam=use_steam,
+                                     ),
+                                Play("audio", "se/sounds/open.ogg")]
 
-                    alternate [If(_modmenu_is_mod_present(modid, name),
-                                   Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
-                                   Function(_modmenu_add_mod, modid, name)),
-                               Play("audio", "se/sounds/open.ogg")]
-                              ]
+                        alternate [If(_modmenu_is_mod_present(modid, name),
+                                       Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
+                                       Function(_modmenu_add_mod, modid, name)),
+                                   Play("audio", "se/sounds/open.ogg")]
+                                  ]
 
 
 
