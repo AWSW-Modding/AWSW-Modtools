@@ -20,14 +20,14 @@ init python:
     #style.modmenu_select_btn.yminimum = 50
 
     #old way
-    style.modmenu_select_btn.xminimum = 425
+    style.modmenu_select_btn.xminimum = 325
     style.modmenu_select_btn.yminimum = 125
     style.modmenu_select_btn.xalign = 0.5
     style.modmenu_select_btn.yalign = 0.5
     #style.modmenu_select_btn.ypadding = 5
     style.modmenu_select_btn_text.xalign = 0.5
     style.modmenu_select_btn_text.yalign = 0.5
-    style.modmenu_select_btn_text.size = 34
+    style.modmenu_select_btn_text.size = 28
     style.modmenu_select_btn_text.color = "#FFFFF0"
     style.modmenu_select_btn_text.selected_color = "#FFFFF0"
     style.modmenu_select_btn_text.antialias = True
@@ -872,9 +872,9 @@ screen modmenu_paged_modlist(contents, use_steam):
         background None
         yminimum 900
         ymaximum 900
-        xmaximum 425
-        xminimum 425
-        xpos 65
+        xmaximum 450
+        xminimum 450
+        xpos 40
         ypos 90
 
         #button hieght 125
@@ -882,8 +882,8 @@ screen modmenu_paged_modlist(contents, use_steam):
 
             yminimum 900
             ymaximum 900
-            xmaximum 425
-            xminimum 425
+            xmaximum 450
+            xminimum 450
 
             cols 1
             spacing 30
