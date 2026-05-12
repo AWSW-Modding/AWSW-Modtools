@@ -888,6 +888,7 @@ screen modmenu_paged_modlist(contents, use_steam):
             cols 1
             spacing 30
 
+            $ remove_last_word_re = re.compile("\s+\S*$")
             for modid, name, author, description, url in contents:
                 $ modname = modmenu_name_cleaner(name)
 
@@ -897,10 +898,13 @@ screen modmenu_paged_modlist(contents, use_steam):
                         $ modname = "{size=-5}" + modname + "{/size}"
 
                     #if modname is greater than 25 characters, decrease size of font by 10
+                    elif len(modname) <= 30:
+                        $ modname = "{size=-10}" + modname + "{/size}"
                     else:
-                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
-#                         if len(modname) > 30:
+                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places, on word boundary
                         $ modname = modname[:30]
+                        $ modname = remove_last_word_re.split(modname)[0]
+                        $ modname += " ..."
                         $ modname = "{size=-10}" + modname + "{/size}"
 
                 if _modmenu_is_mod_installed(modid, name):
