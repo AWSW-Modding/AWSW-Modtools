@@ -128,7 +128,7 @@ class CachedSteamMgr:
         
         def fill_cache_query_cb(array, arr_len):
             try:
-                print "Cache callback called with: (len={0}), array={1}".format(arr_len, array)
+                print "Cache callback for page={0} called with: (len={1}), array={2}".format(page, arr_len, array)
                 
                 # Get cache file name
                 cache_file_name = self.get_cache_filename(page)
@@ -152,10 +152,10 @@ class CachedSteamMgr:
                     json.dump(to_write, cache_file, encoding="utf-8") # While not strictly necessary, I'd rather be explicit with the encoding.
                 
             except Exception as e:
-                fill_cache_query_cb.error = CacheWriteError.from_exc("Error in cache file write.")
+                fill_cache_query_cb.error = CacheWriteError.from_exc("Error in cache file write (page={}).".format(page))
                 raise e
             finally:
-                print "Cache file write callback done."
+                print "Cache file write callback done (page {}).".format(page)
                 fill_cache_query_cb.done = True
             
             return
@@ -170,10 +170,10 @@ class CachedSteamMgr:
             
             reps = 0
             while not fill_cache_query_cb.done:
-                print "Waiting for cache callback, rep {}".format(int(reps))
+                print "Waiting for cache callback (page {}), rep {}".format(page, int(reps))
                 reps += 1
                 time.sleep(1)
-            print "Done cache callback"
+            print "Done cache callback for page {}".format(page)
             
             if fill_cache_query_cb.error is not None:
                 raise fill_cache_query_cb.error
@@ -202,22 +202,18 @@ class CachedSteamMgr:
         # Check if cache file is available for use, and try to reclaim it if it is detected as a non-file entity.
         is_cache_availbable = False
         if os.path.exists(cache_file_name):
-            print "cache file Exists"
+            print "cache file exists (page={})".format(page)
             if os.path.isfile(cache_file_name):
-                print "cache file is a file"
+                print "cache file is a file (page={})".format(page)
                 is_cache_availbable = not self.is_file_stale(cache_file_name)
             else:
                 raise OSError(errno.EISDIR, "The cache file exists and is not a file", cache_file_name)
-            # elif os.path.islink(cache_file_name):
-            #     print "cache file is a link to dir"
-            #     os.unlink(cache_file_name) # Clear symlink to directory in the position of the cache file...
-            # else:
-            #     print "cache file is a dir"
-            #     shutil.rmtree(cache_file_name) # Clear directory in the position of the cache file...
+        else:
+            print "cache file not exists (page={})".format(page)
         
         
         if is_cache_availbable:
-            print "Using cache file"
+            print "Using cache file (page={})".format(page)
             
             # There are 2 things that need to be ensured so that the json load will work like it should:
             #   1. Fields of the steamhandler.WorkshopData should be accessible via attribute name.
@@ -246,7 +242,7 @@ class CachedSteamMgr:
             qapi_thread = ManagedThread(holder=self._active_threads, lock=self._active_threads_lock, target=self._steam_manager.query_callback, kwargs={"array": array, "arr_len": arr_len})
             qapi_thread.start()
         else:
-            print "Not using cache file"
+            print "Not using cache file (page={})".format(page)
             self._CallQueryApi(page)
         return
     
@@ -266,8 +262,7 @@ class CachedSteamMgr:
         results = []
         
         def cb(array, arr_len):
-            print "Recieve items..."
-            cb.complete = False
+            print "Recieve items from page {}...".format(cb.page_num)
             # Querying a page is 50 results maximum
             if arr_len == 51:
                 cb.should_run_next = False
@@ -305,19 +300,21 @@ class CachedSteamMgr:
         self.register_callback(PyCallback.Query, cb)
         try:
             while cb.should_run_next:
-                cb.complete = False # reset complete flag from previous run.
+                print "GetAllItems getting page", cb.page_num
+                cb.complete = False  # reset complete flag from previous run.
                 self.QueryApi(cb.i)
                 
                 # Block
                 while not cb.complete:
                     pass
         finally: # Ensure that the callback will be unregistered
+            print "GetAllItems done getting pages."
             self.unregister_callback(PyCallback.Query, cb)
         
         if not get_all:
             adj_results = []
             for i, item in enumerate(results):
-                print "Getting persona", i, item[1] #, item # Printing full items made this ~100x slower...
+                print "GetAllItems getting persona for {}-th mod ({})".format(i, item[1])
                 item = list(item)
                 item[2] = self.GetPersona(item[2])
                 adj_results.append(tuple(item))
