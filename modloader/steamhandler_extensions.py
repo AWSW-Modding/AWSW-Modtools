@@ -1,6 +1,5 @@
 import sys
 import os
-import shutil
 import time
 import errno
 import json
@@ -156,23 +155,19 @@ class CachedSteamMgr:
                 raise e
             finally:
                 print "Cache file write callback done (page {}).".format(page)
-                fill_cache_query_cb.done = True
+                fill_cache_query_cb.done.set()
             
             return
         
         fill_cache_query_cb.error = None
         self.register_callback(PyCallback.Query, fill_cache_query_cb)
         try:
-            fill_cache_query_cb.done = False
+            fill_cache_query_cb.done = threading.Event()
             
             print "Calling QueryApi({})".format(page)
             self._steam_manager.QueryApi(page)
             
-            reps = 0
-            while not fill_cache_query_cb.done:
-                print "Waiting for cache callback (page {}), rep {}".format(page, int(reps))
-                reps += 1
-                time.sleep(1)
+            fill_cache_query_cb.done.wait()
             print "Done cache callback for page {}".format(page)
             
             if fill_cache_query_cb.error is not None:
@@ -266,47 +261,44 @@ class CachedSteamMgr:
             # Querying a page is 50 results maximum
             if arr_len == 51:
                 cb.should_run_next = False
-                cb.complete = True
+                cb.page_complete.set()
                 return
             
             for x in range(arr_len):
                 item = array[x]
                 if get_all:
-                    all_data = copy.deepcopy((item.m_nPublishedFileId, item.m_eResult, item.m_eFileType,
-                                              item.m_nCreatorAppID, item.m_nConsumerAppID, item.m_rgchTitle,
-                                              item.m_rgchDescription, item.m_ulSteamIDOwner, item.m_rtimeCreated,
-                                              item.m_rtimeUpdated, item.m_rtimeAddedToUserList, item.m_eVisibility,
-                                              item.m_bBanned, item.m_bAcceptedForUse, item.m_bTagsTruncated,
-                                              item.m_rgchTags, item.m_hFile, item.m_hPreviewFile, item.m_pchFileName,
-                                              item.m_nFileSize, item.m_nPreviewFileSize, item.m_rgchURL, item.m_unVotesUp,
-                                              item.m_unVotesDown, item.m_flScore, item.m_unNumChildren,
-                                              item.m_pchPreviewLink, item.m_metadata))
-                    results.append(all_data)
+                    results.append(copy.deepcopy((item.m_nPublishedFileId, item.m_eResult, item.m_eFileType,
+                                                  item.m_nCreatorAppID, item.m_nConsumerAppID, item.m_rgchTitle,
+                                                  item.m_rgchDescription, item.m_ulSteamIDOwner, item.m_rtimeCreated,
+                                                  item.m_rtimeUpdated, item.m_rtimeAddedToUserList, item.m_eVisibility,
+                                                  item.m_bBanned, item.m_bAcceptedForUse, item.m_bTagsTruncated,
+                                                  item.m_rgchTags, item.m_hFile, item.m_hPreviewFile, item.m_pchFileName,
+                                                  item.m_nFileSize, item.m_nPreviewFileSize, item.m_rgchURL, item.m_unVotesUp,
+                                                  item.m_unVotesDown, item.m_flScore, item.m_unNumChildren,
+                                                  item.m_pchPreviewLink, item.m_metadata)))
                 else:
-                    not_all_data = copy.deepcopy((item.m_nPublishedFileId, item.m_rgchTitle, item.m_ulSteamIDOwner,
+                    results.append(copy.deepcopy((item.m_nPublishedFileId, item.m_rgchTitle, item.m_ulSteamIDOwner,
                                                   item.m_rgchDescription, item.m_pchPreviewLink, item.m_rtimeCreated,
                                                   item.m_rtimeUpdated, item.m_metadata))
-                    results.append(not_all_data)
+                                   )
             
             cb.should_run_next = (arr_len == 50)
-            cb.i += 1
-            cb.complete = True
+            cb.page_complete.set()
             return
         
+        cb.page_num = 1
         cb.should_run_next = True
-        cb.i = 1
-        cb.complete = False
+        cb.page_complete = threading.Event()
         
         self.register_callback(PyCallback.Query, cb)
         try:
             while cb.should_run_next:
                 print "GetAllItems getting page", cb.page_num
-                cb.complete = False  # reset complete flag from previous run.
-                self.QueryApi(cb.i)
+                cb.page_complete.clear() # reset complete flag from previous run.
+                self.QueryApi(cb.page_num)
                 
-                # Block
-                while not cb.complete:
-                    pass
+                cb.page_complete.wait()
+                cb.page_num += 1
         finally: # Ensure that the callback will be unregistered
             print "GetAllItems done getting pages."
             self.unregister_callback(PyCallback.Query, cb)
