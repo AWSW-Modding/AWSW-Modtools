@@ -121,7 +121,7 @@ def load_steam_modlist():
             print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whole thing SIGNIFICANTLY speeds up this call
     return mods
 
-steam_modlist_preloader = Preload(load_steam_modlist, 1) # As loading the steam modlist is a single-threaded thing, there's no reason to reserve many threads to it...
+steam_modlist_preloader = Preload(load_steam_modlist) # As loading the steam modlist is a single-threaded thing, there's no reason to reserve many threads to it...
 
 def steam_downloadable_mods():
     return steam_modlist_preloader.get()

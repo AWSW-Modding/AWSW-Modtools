@@ -61,125 +61,6 @@ class Queue:
         self.get(False)
 
 
-# As we effectively use a threadpool for the preload class, we wish to access the cpu count of the machine to allow a logical default number of threads.
-#   multiprocessing (the standard way to check) is not available, so we use this one.
-# Source - https://stackoverflow.com/a/1006301
-# Posted by phihag, modified by community. See post 'Timeline' for change history
-# Retrieved 2026-04-07, License - CC BY-SA 4.0
-def available_cpu_count():
-    """ Number of available virtual or physical CPUs on this system, i.e.
-    user/real as output by time(1) when called with an optimally scaling
-    userspace-only program"""
-
-    # cpuset
-    # cpuset may restrict the number of *available* processors
-    try:
-        m = re.search(r'(?m)^Cpus_allowed:\s*(.*)$',
-                      open('/proc/self/status').read())
-        if m:
-            res = bin(int(m.group(1).replace(',', ''), 16)).count('1')
-            if res > 0:
-                return res
-    except IOError:
-        pass
-
-    # Python 2.6+
-    try:
-        import multiprocessing
-        return multiprocessing.cpu_count()
-    except (ImportError, NotImplementedError):
-        pass
-
-    # https://github.com/giampaolo/psutil
-    try:
-        import psutil
-        return psutil.cpu_count()   # psutil.NUM_CPUS on old versions
-    except (ImportError, AttributeError):
-        pass
-
-    # POSIX
-    try:
-        res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
-
-        if res > 0:
-            return res
-    except (AttributeError, ValueError):
-        pass
-
-    # Windows
-    try:
-        res = int(os.environ['NUMBER_OF_PROCESSORS'])
-
-        if res > 0:
-            return res
-    except (KeyError, ValueError):
-        pass
-
-    # jython
-    try:
-        from java.lang import Runtime
-        runtime = Runtime.getRuntime()
-        res = runtime.availableProcessors()
-        if res > 0:
-            return res
-    except ImportError:
-        pass
-
-    # BSD
-    try:
-        sysctl = subprocess.Popen(['sysctl', '-n', 'hw.ncpu'],
-                                  stdout=subprocess.PIPE)
-        scStdout = sysctl.communicate()[0]
-        res = int(scStdout)
-
-        if res > 0:
-            return res
-    except (OSError, ValueError):
-        pass
-
-    # Linux
-    try:
-        res = open('/proc/cpuinfo').read().count('processor\t:')
-
-        if res > 0:
-            return res
-    except IOError:
-        pass
-
-    # Solaris
-    try:
-        pseudoDevices = os.listdir('/devices/pseudo/')
-        res = 0
-        for pd in pseudoDevices:
-            if re.match(r'^cpuid@[0-9]+$', pd):
-                res += 1
-
-        if res > 0:
-            return res
-    except OSError:
-        pass
-
-    # Other UNIXes (heuristic)
-    try:
-        try:
-            dmesg = open('/var/run/dmesg.boot').read()
-        except IOError:
-            dmesgProcess = subprocess.Popen(['dmesg'], stdout=subprocess.PIPE)
-            dmesg = dmesgProcess.communicate()[0]
-
-        res = 0
-        while '\ncpu' + str(res) + ':' in dmesg:
-            res += 1
-
-        if res > 0:
-            return res
-    except OSError:
-        pass
-
-    raise Exception('Can not determine number of CPUs on this system')
-
-
-
 class Preload:
     """A class for preloading of resources via threads.
     Calls to loading_function are grouped by parameter list and preloaded by load(). their results are cached, and are accessible via get().
@@ -195,7 +76,7 @@ class Preload:
     Preloading is done by a threadpool, and as such, many calls to load can be done in short succession without significant performance costs.
     """
     
-    def __init__(self, loading_function, max_workers=None):
+    def __init__(self, loading_function, max_workers=1):
         """
         :parameter loading_function: The function used to load the resource.
         :parameter max_workers: (default None) The maximum number of preloading threads. default is min(32, available_cpu_count() + 4), taken from concurrent.futures.ThreadPoolExecutor
@@ -204,15 +85,11 @@ class Preload:
         self._loading_function = loading_function
         self._name = self._loading_function.__name__ # Used for debugging
         
-        if max_workers is None: # ensure worker count is valid
-            try:
-                max_workers = min(32, available_cpu_count() + 4) # taken from concurrent.futures.ThreadPoolExecutor
-            except Exception: # On the offchance that cpu count fails, we don't actually care enough to raise an error about it. it may be treated as 1.
-                max_workers = 5 # 1 (failed cpu count) + 4
-        elif not isinstance(max_workers, int):
+        # ensure worker count is valid
+        if not isinstance(max_workers, int):
             raise TypeError("max_workers is not an integral type!")
         elif max_workers < 1:
-            raise ValueError("max_workers must be an a positive integer. number given: {}".format(int(max_workers)))
+            raise ValueError("max_workers must be an a positive integer. number given: {}".format(max_workers))
         
         # I haven't found any conclusive source on whether parallel reads and writes to different keys in dictionaries are thread-safe,
         #  So they're treated as unsafe.
@@ -309,10 +186,7 @@ class Preload:
         :raises TimeoutError, If timeout has been reached.
         :raises ClearingError, If a clear() call was preformed during this get() call
         """
-        if "timeout" in kwargs:
-            timeout = kwargs["timeout"]
-        else:
-            timeout = None
+        timeout = getattr(kwargs, "timeout", None)
         
         with self._clear_session_lock:
             start_session_num = self._clear_session_num
@@ -387,8 +261,8 @@ class Preload:
                     if not self._is_clear_session_valid(clear_session):
                         return # Once a clear session passes, this whole thing is invalidated
                     callback(data, exception)
-                except Exception: # callback exceptions are ignored and do not affect other callbacks.
-                    pass
+                except Exception as callback_exception: # callback exceptions are ignored and do not affect other callbacks.
+                    print "[] Callback {}({}, {}) raised exception: {}".format(self._name, callback, data, exception, callback_exception)
         return
     
     
@@ -404,10 +278,7 @@ class Preload:
         :raises KeyError if waiting upon a non-loading key.
         :raises TimeoutError if timeout has expired before loading is finished.
         :raises ClearingError if cleared during this wait (invalidation)."""
-        if "timeout" in kwargs:
-            timeout = kwargs["timeout"]
-        else:
-            timeout = None
+        timeout = getattr(kwargs, "timeout", None)
         
         with self._clear_session_lock:
             with self._is_loaded_lock:

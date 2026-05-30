@@ -100,17 +100,13 @@ init python:
             mod_image_preloader.load(url)
         return
 
-#     modconfig.steam_modlist_preloader.register_callback(_preload_mod_images)
-
 
     class ImageURL(Image):
         """
         This image manipulator loads an image from a url.
         """
         def load(self, unscaled=False):
-#             import pygame
             from cStringIO import StringIO
-#             from urllib2 import urlopen
             from renpy.display.im import cache
 
             virtual_f = StringIO(mod_image_preloader.get(self.filename))
