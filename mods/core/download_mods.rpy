@@ -271,11 +271,12 @@ init -1 python:
         renpy.restart_interaction()
         return
 
+    _modmenu_entrance_cancelled = False
 
     def _modmenu_entrance_progress(st, at, load_manager, use_steam):
         state = load_manager.get_state()
         if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
-            if state == EntranceStates.DONE:
+            if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
                 return Text("Modlist load done, showing modmenu..."), None
             return Text(""), None
 
@@ -353,7 +354,8 @@ screen modmenu_entrance(use_steam):
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
                     Play("audio", "se/sounds/close.ogg"),
-                    Function(load_manager.disabled.set)]
+                    Function(load_manager.disabled.set),
+                    SetVariable("_modmenu_entrance_cancelled", True)]
 
             xpos 0.94
             ypos 0.02
@@ -361,6 +363,8 @@ screen modmenu_entrance(use_steam):
         add DynamicDisplayable(_modmenu_entrance_progress, load_manager, use_steam):
             xalign 0.5
             yalign 0.5
+
+    on "show" action SetVariable("_modmenu_entrance_cancelled", False)
 
 
 
