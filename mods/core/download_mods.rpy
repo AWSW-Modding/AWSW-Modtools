@@ -154,8 +154,10 @@ init python:
 
 
 init -1 python:
+    import sys
     import math
     import traceback
+    import threading
 
     import modloader
     from modloader import modconfig, steamhandler_extensions
@@ -202,20 +204,132 @@ init -1 python:
     if not renpy.exports.has_screen("_modlist_errors"):
         renpy.load_module("modloader/patch_errorhandling_screens")
 
-    def _mod_check_internet_downloader(use_steam):
-        if internet_on():
-            # (modid, name, author, description, image) (for github)
-            # (id, name, author, desc, image) (for steam)
-            if use_steam:
-                from modloader.modconfig import steam_downloadable_mods as download_mods
-                _ensure_modlist_okay(strict=True)
-            else:
-                from modloader.modconfig import github_downloadable_mods as download_mods
+    class EntranceStates:
+        INTERNET = "internet"
+        INTERNET_FAILED = "internet_failed"
+        MODLIST = "modlist"
+        MODLIST_FAILED = "modlist_failed"
+        DONE = "done"
 
-            contents = download_mods()
-            renpy.show_screen('modmenu_paged', contents=contents, use_steam=use_steam)
-        else:
-            renpy.show_screen('modmenu_nointernet')
+    class ModmenuEntranceLoadManager:
+        """Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading."""
+
+        def __init__(self, use_steam):
+            self.use_steam = use_steam
+
+            self._state = EntranceStates.INTERNET
+            self._state_lock = threading.Lock()
+
+            self._result = None
+            self._exception = None
+            self._done_signal = threading.Event() # Used to gat access to these two. a lock is not necessary as they are only accessible after being set for the last time.
+
+            self.disabled = threading.Event() # I've had issues with calls coming after a transition was supposed to take effect, so this allows me to disable the screen under those cases.
+
+            self._running_thread = threading.Thread(target=self._load_modlist, args=(self.use_steam,))
+            self._running_thread.daemonic = True
+            self._running_thread.start()
+
+        def set_state(self, state):
+            with self._state_lock:
+                self._state = state
+            return
+
+        def get_state(self):
+            with self._state_lock:
+                return self._state
+
+
+        def get_modlist(self):
+            self._done_signal.wait()
+            if self._exception is not None:
+                raise self._exception
+            return self._result
+
+
+        def _load_modlist(self, use_steam):
+            if internet_on():
+                self.set_state(EntranceStates.MODLIST)
+                try:
+                    # (modid, name, author, description, image) (for github)
+                    # (id, name, author, desc, image) (for steam)
+                    if use_steam:
+                        from modloader.modconfig import steam_downloadable_mods as download_mods
+                    else:
+                        from modloader.modconfig import github_downloadable_mods as download_mods
+
+                    self._result = download_mods()
+                    self.set_state(EntranceStates.DONE)
+                except Exception as e:
+                    self._exception = e
+                    self._exception.traceback = sys.exc_info()[2]
+                    self.set_state(EntranceStates.MODLIST_FAILED)
+            else:
+                print "Internet failed"
+                self.set_state(EntranceStates.INTERNET_FAILED)
+
+            self._done_signal.set()
+            return
+
+    _dots = 1
+    _MAX_DOTS = 3
+
+    def _cycle_dots():
+        global _dots, _MAX_DOTS
+        _dots = (_dots % _MAX_DOTS) + 1
+        return _dots
+
+
+    def _modmenu_entrance_transition_to(screen, load_manager, **kwargs):
+        """As transitioning out of the modmenu entrance without issues requires setting a few things, this helps ensure it is done correctly"""
+        renpy.show_screen(screen, **kwargs)
+        renpy.hide_screen('modmenu_entrance')
+        load_manager.disabled.set()
+        renpy.restart_interaction()
+        return
+
+    _modmenu_entrance_cancelled = False
+
+    def _modmenu_entrance_progress(st, at, load_manager, use_steam):
+        state = load_manager.get_state()
+        if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
+            if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
+                return Text("Modlist load done, showing modmenu..."), None
+            return Text(""), None
+
+        print "{:.4}".format(st), state
+
+        if state == EntranceStates.INTERNET:
+            t = Text("Connecting to network{}".format("." * _cycle_dots()))
+            return t, 1.5
+        elif state == EntranceStates.INTERNET_FAILED:
+            _modmenu_entrance_transition_to('modmenu_nointernet', load_manager)
+            return Text("Network connection failed!"), None
+        elif state == EntranceStates.MODLIST:
+            t = Text("Loading modlist{}".format("." * _cycle_dots()))
+            return t, 1.0
+        elif state == EntranceStates.MODLIST_FAILED:
+            if use_steam:
+                _ensure_modlist_okay(strict=True) # This will fail
+            else:
+                try:
+                    load_manager.get_modlist() # This will fail
+                except Exception as exception:
+                    modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
+                                        "Error raised:\n"
+                                        + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
+            )
+            return Text("Modlist load failed!"), None
+        else: # state == EntranceStates.DONE
+            contents = load_manager.get_modlist()
+            _modmenu_entrance_transition_to('modmenu_paged', load_manager, contents=contents, use_steam=use_steam)
+            return Text("Modlist load done, showing modmenu..."), None
+
+
+    def _enter_modmenu(use_steam):
+        renpy.show_screen('modmenu_entrance', use_steam=use_steam)
+        return
+
 
 
     # Paging methods
@@ -227,6 +341,47 @@ init -1 python:
         renpy.hide_screen('modmenu_paged_modlist')
         renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
         return
+
+
+
+screen modmenu_entrance(use_steam):
+    modal True
+
+    default load_manager = ModmenuEntranceLoadManager(use_steam)
+
+    frame id "modmenu_entrance" at alpha_dissolve:
+        add "image/ui/ingame_menu_bg3.png"
+
+        add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
+
+        text "MOD MENU":
+            size 65
+            xpos 0.5
+            ypos 0.05
+            xcenter 0.5
+            yanchor 0.5
+            font "Ardnas.otf"
+
+        #Close Button
+        imagebutton:
+            idle "image/ui/close_idle.png"
+            hover "image/ui/close_hover.png"
+            action [Show("modmenu", transition=dissolve),
+                    Hide("modmenu_entrance", transition=dissolve),
+                    Stop("modmenu_music", fadeout=1.0),
+                    Play("music", "mx/menu.ogg", fadein=1.0),
+                    Play("audio", "se/sounds/close.ogg"),
+                    Function(load_manager.disabled.set),
+                    SetVariable("_modmenu_entrance_cancelled", True)]
+
+            xpos 0.94
+            ypos 0.02
+
+        add DynamicDisplayable(_modmenu_entrance_progress, load_manager, use_steam):
+            xalign 0.5
+            yalign 0.5
+
+    on "show" action SetVariable("_modmenu_entrance_cancelled", False)
 
 
 
@@ -260,6 +415,7 @@ screen modmenu_paged(contents, use_steam):
                     Hide("modmenu_mod_content", transition=dissolve),
                     Hide("modmenu_paged_modlist", transition=dissolve),
                     Hide("modmenu_paged", transition=dissolve),
+                    Hide("modmenu_entrance", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
                     Play("audio", "se/sounds/close.ogg")]
