@@ -100,7 +100,7 @@ init python:
             mod_image_preloader.load(url)
         return
 
-    modconfig.steam_modlist_preloader.register_callback(_preload_mod_images)
+#     modconfig.steam_modlist_preloader.register_callback(_preload_mod_images)
 
 
     class ImageURL(Image):
@@ -325,7 +325,10 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam)]
+    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+                      Function(_preload_mod_images, contents, None)]
+
+    on "hide" action [Function(mod_image_preloader.clear)]
 
 
 

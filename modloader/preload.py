@@ -11,6 +11,10 @@ class TimeoutError(Exception):
     """A timeout for waiting for a load. mostly allows the timeout parameter in the get() method, to differentiate between a timeout and a failure."""
     pass
 
+class ClearingError(Exception):
+    """An action that was made invalid via a clear() call"""
+    pass
+
 class Empty(TimeoutError):
     """A pop operation on an empty queue"""
     pass
@@ -48,6 +52,10 @@ class Queue:
                         timeout -= time.time() - s_time
                         if timeout < 0:
                             raise Empty()
+    
+    def clear(self):
+        self._queue.clear()
+        return
     
     def get_nowait(self):
         self.get(False)
@@ -226,22 +234,29 @@ class Preload:
         self._is_loaded = {} # Presence of a key here is used to detect if that said key is being loaded
         self._is_loaded_lock = threading.Lock()
         
+        self._clear_session_num = 0 # clear() uses session numbers to ensure that once clear is called, all ongoing actions are invalidated
+        self._clear_session_lock = threading.RLock()
+        
         return
     
     def _manage_job_queue(self):
         while True:
             next_job = self._job_queue.get()
-            job_type = next_job[0]
+            print "[{}]{} next job: {} ({})".format(self._clear_session_num, self._name, next_job[1], next_job[2:])
+            job_clear_session = next_job[0]
+            if not self._is_clear_session_valid(job_clear_session):
+                continue
+            job_type = next_job[1]
             if job_type is "load":
-                self._load_and_set(*next_job[1])
+                self._load_and_set(job_clear_session, *next_job[2])
             elif job_type is "callback":
-                new_callback, finished_loads = next_job[1], next_job[2]
-                self._call_callbacks(finished_loads, (new_callback,))
+                new_callback, finished_loads = next_job[2], next_job[3]
+                self._call_callbacks(finished_loads, (new_callback,), clear_session=job_clear_session)
             else:
                 raise ValueError("Unrecogised job of type: \"{}\"".format(job_type))
     
     
-    def _load_and_set(self, *args):
+    def _load_and_set(self, clear_session, *args):
         """Calls the _loading_function and stores it results for get()."""
         try:
             data = self._loading_function(*args)
@@ -253,15 +268,18 @@ class Preload:
             exception = e
             exception.traceback = sys.exc_info()[2]  # Adding traceback information to e
         
-        with self._load_data_lock:
-            self._loaded_data[args] = data
-            self._exception[args] = exception
-            curr_callbacks = tuple(self._callbacks)
-        
-        with self._is_loaded_lock:
-            self._is_loaded[args].set()
-        # print "Done preloading"
-        self._call_callbacks((args,), curr_callbacks)
+        with self._clear_session_lock:
+            if not self._is_clear_session_valid(clear_session):
+                return # Invalidated
+            with self._load_data_lock:
+                self._loaded_data[args] = data
+                self._exception[args] = exception
+                curr_callbacks = tuple(self._callbacks)
+            
+            with self._is_loaded_lock:
+                self._is_loaded[args].set()
+            # print "Done preloading"
+            self._call_callbacks((args,), curr_callbacks, clear_session=self._clear_session_num)
         return
     
     def load(self, *args):
@@ -269,15 +287,16 @@ class Preload:
         It guarantees that for any number of repeated calls to it from any number of threads, loading_function() will only be called once for each distinct args.
         Once the data is loaded, it is available through the get() method.
         """
-        with self._is_loaded_lock:
-            if args in self._is_loaded:
-                print "({}) Preload already present: {}".format(self._name, args)
-                return
+        with self._clear_session_lock:
+            with self._is_loaded_lock:
+                if args in self._is_loaded:
+                    print "({}) Preload already present: {}".format(self._name, args)
+                    return
+                
+                self._is_loaded[args] = threading.Event()
             
-            self._is_loaded[args] = threading.Event()
-        
-        print "({}) Preload not present, Starting... {}".format(self._name, args)
-        self._job_queue.put(("load", args))
+            print "({}) Preload not present, Starting... {}".format(self._name, args)
+            self._job_queue.put((self._clear_session_num, "load", args))
         return
     
     def get(self, *args, **kwargs):
@@ -294,23 +313,40 @@ class Preload:
         else:
             timeout = None
         
-        if self.is_loaded(*args):
-            # Note: while the value of is_loaded can change between checking it here and referring to _loaded_data,
-            #  It can only change from False to True.
-            #  In that case the load() method has been called before and is currently finishing,
-            #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
+        with self._clear_session_lock:
+            if self.is_loaded(*args):
+                # Note: while the value of is_loaded can change between checking it here and referring to _loaded_data,
+                #  It can only change from False to True.
+                #  In that case the load() method has been called before and is currently finishing,
+                #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
+                
+                print "({}) Preload data already available: {}".format(self._name, args)
+            else:
+                print "({}) Preload data not available, calling load: {}".format(self._name, args)
+                self.load(*args)
+                self.wait(*args, timeout=timeout)
             
-            print "({}) Preload data already available: {}".format(self._name, args)
-        else:
-            print "({}) Preload data not available, calling load: {}".format(self._name, args)
-            self.load(*args)
-            self.wait(*args, timeout=timeout)
-        
-        with self._load_data_lock:
-            if self._exception[args] is not None: # by this point, args must be present in both data dicts
-                raise self._exception[args]
-            
-            return self._loaded_data[args]
+            with self._load_data_lock:
+                if self._exception[args] is not None: # by this point, args must be present in both data dicts
+                    raise self._exception[args]
+                
+                return self._loaded_data[args]
+    
+    def clear(self):
+        """Clears the loaded data, along with any ongoing loading and callback actions.
+        Note that it can't stop them outright, but it invalidates their results."""
+        with self._clear_session_lock:
+            print "Clearing {}".format(self._name)
+            self._clear_session_num += 1
+            self._loaded_data.clear()
+            self._exception.clear()
+            self._is_loaded.clear()
+            self._job_queue.clear()
+            return
+    
+    def _is_clear_session_valid(self, clear_session):
+        with self._clear_session_lock:
+            return clear_session == self._clear_session_num
     
     
     def register_callback(self, callback):
@@ -320,24 +356,30 @@ class Preload:
         It is guaranteed that each callback will eventually run exactly once on each load.
         """
         
-        with self._load_data_lock:
-            self._callbacks.append(callback)
-            finised_loads = tuple(self._loaded_data.keys())
+        with self._clear_session_lock:
+            with self._load_data_lock:
+                self._callbacks.append(callback)
+                finised_loads = tuple(self._loaded_data.keys())
         
-        self._job_queue.put(("callback", callback, finised_loads))
+            self._job_queue.put((self._clear_session_num, "callback", callback, finised_loads))
         return
     
-    def _call_callbacks(self, loads, callbacks):
+    def _call_callbacks(self, loads, callbacks, clear_session):
         """calls each callback in callbacks on each result of loads"""
         for load_key in loads:
             data = None
             exception = None
             try:
-                data = self.get(*load_key)
+                with self._clear_session_lock:
+                    if not self._is_clear_session_valid(clear_session):
+                        return # Once a clear session passes, this whole thing is invalidated
+                    data = self.get(*load_key)
             except Exception as e:
                 exception = e
             for callback in callbacks:
                 try:
+                    if not self._is_clear_session_valid(clear_session):
+                        return # Once a clear session passes, this whole thing is invalidated
                     callback(data, exception)
                 except Exception: # callback exceptions are ignored and do not affect other callbacks.
                     pass
@@ -345,8 +387,9 @@ class Preload:
     
     
     def is_loaded(self, *args):
-        with self._is_loaded_lock:
-            return args in self._is_loaded and self._is_loaded[args].is_set()
+        with self._clear_session_lock:
+            with self._is_loaded_lock:
+                return args in self._is_loaded and self._is_loaded[args].is_set()
     
     def wait(self, *args, **kwargs):
         """Waits for timeout seconds until loading is finished. if timeout is None (default), waits indefinitely until loading is finished.
@@ -358,8 +401,12 @@ class Preload:
         else:
             timeout = None
         
-        with self._is_loaded_lock:
-            correct_is_done = self._is_loaded[args] # lock should only protect dict access and should never contain blocking actions.
+        with self._clear_session_lock:
+            with self._is_loaded_lock:
+                try:
+                    correct_is_done = self._is_loaded[args] # lock should only protect dict access and should never contain blocking actions.
+                except AttributeError:
+                    raise ClearingError("wait{}".format(args))
             
         if not correct_is_done.wait(timeout):
             raise TimeoutError(type(self).__name__)
