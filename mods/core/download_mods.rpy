@@ -383,6 +383,38 @@ init -1 python:
         return
 
 
+    _modmenu_mods_to_add = {}
+    _modmenu_mods_to_remove = set()
+
+    def _modmenu_add_mod(mod_id, mod_name):
+        print "adding mod:", mod_id, mod_name
+        if mod_id in _modmenu_mods_to_remove:
+            _modmenu_mods_to_remove.discard(mod_id)
+        else:
+            _modmenu_mods_to_add[mod_id] = mod_name
+        return
+
+    def _modmenu_remove_mod(mod_id):
+        print "removing mod:", mod_id
+        if mod_id in _modmenu_mods_to_add:
+            _modmenu_mods_to_add.pop(mod_id)
+        else:
+            _modmenu_mods_to_remove.add(mod_id)
+        return
+
+    def _modmenu_get_added_mods():
+        return _modmenu_mods_to_add
+
+    def _modmenu_get_removed_mods():
+        return _modmenu_mods_to_remove
+
+    def _modmenu_is_mod_added(mod_id):
+        return mod_id in _modmenu_mods_to_add
+
+    def _modmenu_is_mod_removed(mod_id):
+        return mod_id in _modmenu_mods_to_remove
+
+
 
 screen modmenu_entrance(use_steam):
     modal True
@@ -521,6 +553,19 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
+        textbutton "Download status Placeholder":
+            background "#0000009B"
+            hover_background "#ffffff9B"
+            xpos 1855
+            ypos 990
+            xanchor 1.0
+            yanchor 1.0
+
+            xsize 425
+            ysize 125
+#             xalign 0.0
+#             yalign 0.0
+            action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods())]
 
     hbox:
         xpos 65
@@ -734,10 +779,11 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
                 null width 350
 
-                if str(modid) in modinfo.get_mod_folders():
+                if (str(modid) in modinfo.get_mod_folders() or _modmenu_is_mod_added(modid)) and not _modmenu_is_mod_removed(modid):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
+                        action [Function(_modmenu_remove_mod, modid),
+#                         Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -746,7 +792,8 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                 else:
                     textbutton "Install":
                         ycenter 0.5
-                        action [Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
+                        action [Function(_modmenu_add_mod, modid, name),
+#                         Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
