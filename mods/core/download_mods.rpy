@@ -383,15 +383,15 @@ init -1 python:
         return
 
 
-    _modmenu_mods_to_add = {}
-    _modmenu_mods_to_remove = set()
+    _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
+    _modmenu_mods_to_remove = set() # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
 
     def _modmenu_add_mod(mod_id, mod_name):
         print "adding mod:", mod_id, mod_name
-        if mod_id in _modmenu_mods_to_remove:
-            _modmenu_mods_to_remove.discard(mod_id)
-        else:
+        if mod_id not in _modmenu_mods_to_add and mod_id not in _modmenu_mods_to_remove: # Not added yet, and not an existing mod being reinstated
             _modmenu_mods_to_add[mod_id] = mod_name
+        else: # Added, then removed this session
+            _modmenu_mods_to_remove.discard(mod_id)
         return
 
     def _modmenu_remove_mod(mod_id):
@@ -400,6 +400,14 @@ init -1 python:
             _modmenu_mods_to_add.pop(mod_id)
         else:
             _modmenu_mods_to_remove.add(mod_id)
+        return
+
+    def _modmenu_clear_added_mods():
+        _modmenu_mods_to_add.clear()
+        return
+
+    def _modmenu_clear_removed_mods():
+        _modmenu_mods_to_remove.clear()
         return
 
     def _modmenu_get_added_mods():
@@ -413,6 +421,15 @@ init -1 python:
 
     def _modmenu_is_mod_removed(mod_id):
         return mod_id in _modmenu_mods_to_remove
+
+    def _modmenu_get_mod_actions():
+        """Using the add and remove list, get the list of mods to install, and the list of mods to uninstall.
+        This is distinct from the basic getters as the list of mods to install may not contain any mod that should be removed.
+        :returns 2-tuple containing a dict[int: str], and a set[int].
+            the dict is the dict of mods to install, from mod id to modname.
+            the set is the set of mods to uninstall, by mod id."""
+        mods_to_install = {mod_id: mod_name for mod_id, mod_name in _modmenu_mods_to_add.iteritems() if mod_id not in _modmenu_mods_to_remove}
+        return mods_to_install, _modmenu_get_removed_mods()
 
 
 
@@ -494,7 +511,8 @@ screen modmenu_paged(contents, use_steam):
                     Hide("modmenu_entrance", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
-                    Play("audio", "se/sounds/close.ogg")]
+                    Play("audio", "se/sounds/close.ogg")
+                    ]
 
             xpos 0.94
             ypos 0.02
@@ -553,9 +571,12 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-        textbutton "Download status Placeholder":
+        $ n_added_mods = len(_modmenu_get_added_mods())
+
+        textbutton "Install ([n_added_mods])":
             background "#0000009B"
             hover_background "#ffffff9B"
+            insensitive_background "#3f3f3fFF"
             xpos 1855
             ypos 990
             xanchor 1.0
@@ -563,9 +584,9 @@ screen modmenu_paged(contents, use_steam):
 
             xsize 425
             ysize 125
-#             xalign 0.0
-#             yalign 0.0
-            action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods())]
+            action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods()),
+                    Show("modmenu_apply_confirm", use_steam=use_steam)]
+            sensitive bool(n_added_mods)
 
     hbox:
         xpos 65
@@ -657,6 +678,8 @@ screen modmenu_paged(contents, use_steam):
     on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
                       Function(im.cache.clear),
                       Function(modmenu_search.clear_cache),
+                      Function(_modmenu_clear_added_mods),
+                      Function(_modmenu_clear_removed_mods)
                      ]
 
 
@@ -700,9 +723,14 @@ screen modmenu_paged_modlist(contents, use_steam):
                 if str(modid) in modinfo.get_mod_folders():
                     $ modname = modname + "\n{size=-5}(Installed){/size}"
 
-
                 textbutton "[modname]":
                     style "modmenu_select_btn"
+                    if _modmenu_is_mod_added(modid):
+                        background "#007f009B"
+                        hover_background "#7fff7f9B"
+                    elif _modmenu_is_mod_removed(modid):
+                        background "#7f00009B"
+                        hover_background "#ff7f7f9B"
 
                     action [Hide("modmenu_mod_content"),
                             Show("modmenu_mod_content",
@@ -824,37 +852,47 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
             #yalign 0.95
 
 
-screen modmenu_install_confirm(modid, modname, use_steam) tag smallscreen2:
+screen modmenu_apply_confirm(use_steam) tag smallscreen2:
     modal True
     python:
         if use_steam:
-            from modloader.modconfig import download_steam_mod as download_mod
+            from modloader.modconfig import download_steam_mods as download_mods
         else:
-            from modloader.modconfig import download_github_mod as download_mod
+            raise NotImplementedError("Github not yet implemented...")
+#             from modloader.modconfig import download_github_mod as download_mod
+
+        mods_to_install = _modmenu_get_added_mods()
+        mods_to_uninstall = _modmenu_get_removed_mods()
+        n_mods_to_install = len(mods_to_install)
+        n_mods_to_uninstall = len(mods_to_uninstall)
+
 
     add "image/ui/nvlscreen.png" at zoom_fade_in:
         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
 
-    window id "modmenu_install_confirm" at popup2:
+    window id "modmenu_apply_confirm" at popup2:
         style "alertwindow"
 
         hbox xalign 0.5 yalign 0.8:
             spacing 250
 
             textbutton "Yes":
-                action [Hide("modmenu_install_confirm"),
+                action [Hide("modmenu_apply_confirm"),
                         Play("audio", "se/sounds/close.ogg"),
-                        lambda download_mod=download_mod, modname=modname, modid=modid: download_mod(modid, modname)]
+                        lambda download_mods=download_mods, modmap=mods_to_install: download_mods(modmap)
+                        ]
 
                 style "yesnobutton"
 
             textbutton "No":
-                action [Hide("modmenu_install_confirm", transition=dissolve),
+                action [Hide("modmenu_apply_confirm", transition=dissolve),
                         Play("audio", "se/sounds/close.ogg")]
 
                 style "yesnobutton"
 
-        label "Are you sure you want to install [modname]?":
+        $ _mods_text = "mod" if n_mods_to_install == 1 else "mods" # Need to make sure they have singular/plural agreement, right?
+
+        label "Are you sure you want to install [n_mods_to_install] [_mods_text]?":
             style "yesno_prompt"
             text_style "yesno_prompt_text"
 

@@ -40,9 +40,9 @@ screen message(text, bg, fg):
     add bg
     text text xalign 0.5 yalign 0.5 color fg
 
-screen _modloader_download_screen(mod_id):
+screen _modloader_download_screen(install_status):
     add "#3485e7"
-    add DynamicDisplayable(_modloader_download_progress, mod_id):
+    add DynamicDisplayable(_modloader_download_progress, install_status):
             xalign 0.5
             yalign 0.5
 
@@ -51,7 +51,14 @@ init python:
     if workshop_enabled:
         from steam_workshop.steamhandler import convert_units, get_instance
 
-        def _modloader_download_progress(st, at, mod_id):
+        def _modloader_download_progress(st, at, install_status):
+            mod_id = install_status.get_curr()
+            if mod_id is None:
+                return Text("No mod is being installed...",
+                             xalign=0.5,
+                             yalign=0.5,
+                             substitute=False), .1
+
             steammgr = get_instance()
             bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
             mod_name = steammgr.GetItemFromID(mod_id)[1]

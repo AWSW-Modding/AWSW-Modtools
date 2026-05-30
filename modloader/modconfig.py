@@ -3,6 +3,7 @@ import sys
 import os
 
 import subprocess
+import threading
 import shutil
 from urllib2 import urlopen
 import json
@@ -144,12 +145,36 @@ def download_github_mod(download_link, name, show_download=True, reload_script=T
         restart_python()
     
 
-def download_steam_mod(id, name, reload_script=True):
+class ModmapInstallStatus:
+    """Holds the install status of a modmap install request in a thread-safe way."""
+    
+    def __init__(self):
+        self._curr_mod_id = None
+        
+        self._lock = threading.RLock()
+        
+    def set_curr(self, mod_id):
+        with self._lock:
+            self._curr_mod_id = mod_id
+        return
+    
+    def get_curr(self):
+        with self._lock:
+            return self._curr_mod_id
+        
+
+def download_steam_mod(id, name, reload_script=True, show_install_screen=True):
+    """:returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions. """
     steammgr = steamhandler.get_instance()
     # (id, mod_name, author, desc, image_url)
-    for i in renpy.config.layers:
-        renpy.game.context().scene_lists.clear(i)
-    show_screen("_modloader_download_screen", id, _layer="screens")
+    if show_install_screen:
+        install_status = ModmapInstallStatus()
+        install_status.set_curr(id)
+        for i in renpy.config.layers:
+            renpy.game.context().scene_lists.clear(i)
+        show_screen("_modloader_download_screen", install_status, _layer="screens")
+
+    done_flag = threading.Event()
     
     def cb(item, success):
         # Copy the folder
@@ -158,11 +183,58 @@ def download_steam_mod(id, name, reload_script=True):
         shutil.copytree(src, dest)
 
         steammgr.unregister_callback(steamhandler.PyCallback.Download, cb)
+        done_flag.set()
         if reload_script:
             restart_python()
     
     steammgr.register_callback(steamhandler.PyCallback.Download, cb)
     steammgr.Subscribe(id)
+    
+    if reload_script:
+        return None
+    else:
+        return done_flag
+
+
+def download_steam_mods(modmap, reload_script=True, show_install_screen=True):
+    """Download all steam mods in the mod map modmap{modid: modname}
+    :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
+    """
+    # steammgr = steamhandler.get_instance()
+    # # (id, mod_name, author, desc, image_url)
+    if show_install_screen:
+        install_status = ModmapInstallStatus()
+        
+        for i in renpy.config.layers:
+            renpy.game.context().scene_lists.clear(i)
+        show_screen("_modloader_download_screen", install_status, _layer="screens")
+    else:
+        install_status = None
+    
+    done_flag = threading.Event()
+    
+    def _install_loop(modmap, reload_script, install_status, thread_done_flag):
+        for modid, modname in modmap.iteritems():
+            if install_status is not None:
+                install_status.set_curr(modid)
+            mod_done_flag = download_steam_mod(modid, modname, reload_script=False, show_install_screen=False)
+            mod_done_flag.wait()
+        
+        thread_done_flag.set()
+        
+        if reload_script:
+            restart_python()
+        
+        return
+    
+    threading.Thread(name="download_steam_mods__install_loop", target=_install_loop, args=(modmap, reload_script, install_status, done_flag)).start()
+    
+    if reload_script:
+        return None
+    else:
+        return done_flag
+
+
 
 
 class UpdateModtools(Action):
