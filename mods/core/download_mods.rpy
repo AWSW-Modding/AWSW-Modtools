@@ -81,18 +81,35 @@ init python:
     import re
     import urllib2
 
+    from modloader.preload import Preload
+
+    def load_mod_image(url):
+        """
+        Loads the image data from given url. The resulting data is a str containing the image data
+        """
+        return urllib2.urlopen(url).read()
+
+    mod_image_preloader = Preload(load_mod_image, 5) # 5 threads is plenty
+
+    def _preload_mod_images(modlist, error):
+        if error is not None:
+            print "Definitely can't preload this..."
+            return
+        image_urls = [entry[4] for entry in modlist]
+        for url in image_urls:
+            mod_image_preloader.load(url)
+        return
+
+
     class ImageURL(Image):
         """
         This image manipulator loads an image from a url.
         """
         def load(self, unscaled=False):
-            import pygame
             from cStringIO import StringIO
-            from urllib2 import urlopen
             from renpy.display.im import cache
 
-            url_f = urlopen(self.filename)
-            virtual_f = StringIO(url_f.read())
+            virtual_f = StringIO(mod_image_preloader.get(self.filename))
 
             cache.add_load_log(self.filename)
             if unscaled:
@@ -133,7 +150,7 @@ init python:
 
     # Preload steam modlist, so we don't wait for it when we try to open the mod browser
     if internet_on() and modloader.has_steam():
-        modconfig.steam_mod_list.load()
+        modconfig.steam_modlist_preloader.load()
 
 
 init -1 python:
@@ -145,13 +162,13 @@ init -1 python:
 
 
     def is_modlist_loaded():
-        return modconfig.steam_mod_list.is_loaded()
+        return modconfig.steam_modlist_preloader.is_loaded()
 
     def _ensure_modlist_okay(strict=False):
         """Wait until the steam modlist is loaded, then check for errors and report any that have been detected.
         :parameter strict: default (False) only reports severe errors. if set to True, all errors are reported"""
         try:
-            modconfig.steam_mod_list.get()
+            modconfig.steam_modlist_preloader.get()
             return
         except steamhandler_extensions.CacheWriteError as exception:
             # CacheWriteError have a special error screen, as they're more severe
@@ -304,7 +321,10 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    on "show" action Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam)
+    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+                      Function(_preload_mod_images, contents, None)]
+
+    on "hide" action [Function(mod_image_preloader.clear)]
 
 
 
