@@ -307,6 +307,7 @@ class Preload:
         :returns preloaded result of loading_function(*args), If timeout has not been reached and the loading thread has not raised an error.
         :raises Exception, If timeout has not been reached and the loading thread has raised an error. this raises that very exception.
         :raises TimeoutError, If timeout has been reached.
+        :raises ClearingError, If a clear() call was preformed during this get() call
         """
         if "timeout" in kwargs:
             timeout = kwargs["timeout"]
@@ -314,18 +315,23 @@ class Preload:
             timeout = None
         
         with self._clear_session_lock:
-            if self.is_loaded(*args):
-                # Note: while the value of is_loaded can change between checking it here and referring to _loaded_data,
-                #  It can only change from False to True.
-                #  In that case the load() method has been called before and is currently finishing,
-                #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
-                
-                print "({}) Preload data already available: {}".format(self._name, args)
-            else:
-                print "({}) Preload data not available, calling load: {}".format(self._name, args)
-                self.load(*args)
-                self.wait(*args, timeout=timeout)
+            start_session_num = self._clear_session_num
+        
+        if self.is_loaded(*args):
+            # Note: while the value of is_loaded can change between checking it here and referring to _loaded_data,
+            #  It can only change from False to True.
+            #  In that case the load() method has been called before and is currently finishing,
+            #  And it'll be called again here, ignored, and _is_loaded will be waited upon, which will finish only once _loaded_data is available.
             
+            print "({}) Preload data already available: {}".format(self._name, args)
+        else:
+            print "({}) Preload data not available, calling load: {}".format(self._name, args)
+            self.load(*args)
+            self.wait(*args, timeout=timeout)
+        
+        with self._clear_session_lock:
+            if not start_session_num == self._clear_session_num:
+                raise ClearingError("get({}, {})".format(args, kwargs))
             with self._load_data_lock:
                 if self._exception[args] is not None: # by this point, args must be present in both data dicts
                     raise self._exception[args]
@@ -395,7 +401,9 @@ class Preload:
         """Waits for timeout seconds until loading is finished. if timeout is None (default), waits indefinitely until loading is finished.
         :parameter timeout - name only (default None) - the number of seconds to wait. by default - indefinitely.
         :returns None if loading is finished before timeout elapsed.
-        :raises TimeoutError if timeout has expired before loading is finished."""
+        :raises KeyError if waiting upon a non-loading key.
+        :raises TimeoutError if timeout has expired before loading is finished.
+        :raises ClearingError if cleared during this wait (invalidation)."""
         if "timeout" in kwargs:
             timeout = kwargs["timeout"]
         else:
@@ -405,10 +413,24 @@ class Preload:
             with self._is_loaded_lock:
                 try:
                     correct_is_done = self._is_loaded[args] # lock should only protect dict access and should never contain blocking actions.
-                except AttributeError:
-                    raise ClearingError("wait{}".format(args))
+                except KeyError:
+                    raise KeyError("[{}] Key {} cannot be waited upon, as it is not being loaded".format(self._name, args))
+            clear_session = self._clear_session_num
+        
+        timeout_numeric = timeout if timeout is not None else 1.0 # Much simpler logic
+        # As clearing should interrupt any wait actions, we unfortunately can't just call wait(timeout) and be done with it.
+        while True:
+            is_done = correct_is_done.wait(min(1.0, timeout_numeric))
             
-        if not correct_is_done.wait(timeout):
-            raise TimeoutError(type(self).__name__)
-        return
+            if not self._is_clear_session_valid(clear_session):
+                raise ClearingError("wait({})".format(args))
+            
+            if is_done:
+                return
+            
+            if timeout is not None:
+                timeout -= 1.0
+                timeout_numeric = timeout
+                if timeout < 0.0:
+                    raise TimeoutError(type(self).__name__)
     
