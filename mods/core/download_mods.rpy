@@ -519,7 +519,9 @@ screen modmenu_paged(contents, use_steam):
                       ]
 
     on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
-                      Function(im.cache.clear)]
+                      Function(im.cache.clear),
+                      Function(modmenu_search.clear_cache),
+                     ]
 
 
 

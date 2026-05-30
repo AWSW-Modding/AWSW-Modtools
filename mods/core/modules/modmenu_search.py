@@ -3,11 +3,14 @@ import collections
 
 def cache(function):
     def inner(*args):
-        if not hasattr(function, "results"):
-            function.results = {args: function(*args)}
-        elif args not in function.results:
-            function.results[args] = function(*args)
-        return function.results[args]
+        if not hasattr(inner, "results"):
+            inner.results = {args: function(*args)}
+        elif args not in inner.results:
+            inner.results[args] = function(*args)
+        return inner.results[args]
+    def clear_cache():
+        inner.results.clear()
+    inner.clear_cache = clear_cache
     return inner
 
 # Copied from nltk (https://www.nltk.org/_modules/nltk/metrics/distance.html#jaro_similarity)
@@ -142,3 +145,7 @@ def sort_best(query, modlist, return_score=False):
     else:
         return [mods_by_name[name] for name, _ in mod_order]
     
+
+def clear_cache():
+    _jaro_best_match_cache.clear()
+    jaro_similarity.clear_cache()
