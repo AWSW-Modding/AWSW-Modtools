@@ -156,7 +156,22 @@ init python:
     import modmenu_search
     import time
 
-    def search_modlist(query):
+    def set_query(value):
+        curr_screen_scope = renpy.current_screen().scope
+        curr_screen_scope["query"] = value
+        search_modlist(value, curr_screen_scope["author_query"])
+        return
+
+    def set_author_query(value):
+        curr_screen_scope = renpy.current_screen().scope
+        curr_screen_scope["author_query"] = value
+        search_modlist(curr_screen_scope["query"], value)
+        return
+
+
+    def search_modlist(query, author_query=""):
+        print "searching with {}, {}".format(query, author_query)
+
         # As renpy input doesn't allow for additional variables to this method, I've had to resort to this cursed thing
         curr_screen_scope = renpy.current_screen().scope
         modlist = curr_screen_scope["contents"]
@@ -419,6 +434,8 @@ screen modmenu_paged(contents, use_steam):
     $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
 
     default search_order_contents = contents
+    default query = ""
+    default author_query = ""
 
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -504,13 +521,81 @@ screen modmenu_paged(contents, use_steam):
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    input default "" changed search_modlist:
-        size 34
-        color "#FFF000"
-        xpos 0.034
-        ypos 0.05
+
+    hbox:
+        xpos 65
+        ypos 10
         xanchor 0.0
-        yanchor 0.5
+        yanchor 0.0
+
+        xsize 425
+        ysize 74
+
+        spacing 10
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            xsize 75
+            yfill True
+            spacing 6
+
+            label "author:":
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            label "mod:":
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            xfill True
+            yfill True
+            spacing 6
+
+            button:
+                background "#000000CD"
+                hover_background "#000040CD"
+                activate_sound None
+                action NullAction()
+                xfill True
+                ysize 32
+                top_padding 5
+                bottom_padding -5
+                xpadding 0
+
+                input:
+                    color "#FF7F00"
+                    xalign 0.0
+                    ycenter 0.5
+                    size 24
+                    pixel_width 320
+                    changed set_author_query
+
+
+
+            button:
+                background "#000000CD"
+                hover_background "#000040CD"
+                activate_sound None
+                action NullAction()
+                xfill True
+                ysize 32
+                top_padding 5
+                bottom_padding -5
+                xpadding 0
+
+                input:
+                    color "#FFFF00"
+                    xalign 0.0
+                    ycenter 0.5
+                    size 24
+                    pixel_width 320
+                    changed set_query
 
 
     on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
