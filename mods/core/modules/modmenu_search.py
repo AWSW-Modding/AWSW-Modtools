@@ -9,7 +9,8 @@ def cache(function):
             inner.results[args] = function(*args)
         return inner.results[args]
     def clear_cache():
-        inner.results.clear()
+        if hasattr(inner, "results"):
+            inner.results.clear()
     inner.clear_cache = clear_cache
     return inner
 
