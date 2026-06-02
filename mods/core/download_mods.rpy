@@ -527,9 +527,8 @@ screen modmenu_paged(contents, use_steam):
         ypos 10
         xanchor 0.0
         yanchor 0.0
-
         xsize 425
-        ysize 74
+        ysize 70
 
         spacing 10
 
@@ -537,15 +536,17 @@ screen modmenu_paged(contents, use_steam):
             xalign 0.0
             ycenter 0.5
             xsize 75
-            yfill True
             spacing 6
 
-            label "author:":
+            # For some reason 'label' and 'text' text components insisted on being ever so slightly larger than necessary, which made everything look misaligned
+            textbutton "author:":
+                background "#00000000"
                 text_size 24
                 ysize 32
                 xalign 0.0
 
-            label "mod:":
+            textbutton "mod:":
+                background "#00000000"
                 text_size 24
                 ysize 32
                 xalign 0.0
@@ -553,49 +554,50 @@ screen modmenu_paged(contents, use_steam):
         vbox:
             xalign 0.0
             ycenter 0.5
-            xfill True
-            yfill True
             spacing 6
 
+            default query_input_capture_focus = False
+            default author_query_input_capture_focus = False
+
+            # input components aggressively capture focus, to the point where you can't use more than one of them in a single screen.
+            #  a button is used to circumvent this, as it is a container that can itself hold focus, so it is able to intercept the aggressive behaviour.
             button:
-                background "#000000CD"
-                hover_background "#000040CD"
+                background If(author_query_input_capture_focus, "#FFFFFFCD", "#000000CD")
+                hover_background If(author_query_input_capture_focus, "#BFBFFFCD", "#000040CD")
                 activate_sound None
-                action NullAction()
+                key_events author_query_input_capture_focus
+                action [ToggleScreenVariable("author_query_input_capture_focus"), SetScreenVariable("query_input_capture_focus", False)]
                 xfill True
                 ysize 32
-                top_padding 5
-                bottom_padding -5
                 xpadding 0
 
                 input:
-                    color "#FF7F00"
+                    color If(author_query_input_capture_focus, "#000", "#FF7F00")
                     xalign 0.0
                     ycenter 0.5
                     size 24
-                    pixel_width 320
+                    pixel_width 320 # While the horizontal space is supposed to be 340, The inputs have a tendency to drop down a row...
                     changed set_author_query
 
 
-
             button:
-                background "#000000CD"
-                hover_background "#000040CD"
+                background If(query_input_capture_focus, "#FFFFFFCD", "#000000CD")
+                hover_background If(query_input_capture_focus, "#BFBFFFCD", "#000040CD")
                 activate_sound None
-                action NullAction()
+                key_events query_input_capture_focus
+                action [ToggleScreenVariable("query_input_capture_focus"), SetScreenVariable("author_query_input_capture_focus", False)]
                 xfill True
                 ysize 32
-                top_padding 5
-                bottom_padding -5
                 xpadding 0
 
                 input:
-                    color "#FFFF00"
+                    color If(query_input_capture_focus, "#000", "#FFFF00")
                     xalign 0.0
                     ycenter 0.5
                     size 24
                     pixel_width 320
                     changed set_query
+        key "K_ESCAPE" action [SetScreenVariable("query_input_capture_focus", False), SetScreenVariable("author_query_input_capture_focus", False)]
 
 
     on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
