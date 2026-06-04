@@ -129,15 +129,37 @@ def jaro_split_compare(query, modlist):
     
     return comps
 
-
-def sort_best(query, modlist, return_score=False):
-    """Sort mods by best match to query"""
-    similarities = jaro_split_compare(query, modlist)
+def jaro_author_compare(author_query, modlist):
+    comps = {}
+    author_query = author_query.lower()
     
-    # Sort by best match, with bias to strong modname matches
+    for _, name, author, _, _ in modlist:
+        comps[name] = jaro_similarity(author_query, author.lower())
+    
+    return comps
+
+
+def sort_best(query, modlist, author_query="", return_score=False):
+    """Sort mods by best match to query"""
+    if query.strip():
+        similarities = jaro_split_compare(query, modlist)
+    else:
+        similarities = {name: (0.0, 0.0) for _, name, _, _, _ in modlist}
+    if author_query.strip():
+        author_similarities = jaro_author_compare(author_query, modlist)
+    else:
+        author_similarities = {name: 0.0 for name in similarities.iterkeys()}
+    similarities = {name: scores + (author_similarities[name],) for name, scores in similarities.iteritems()} # Much easier to deal with if it's a single iterable
+    
+    # Sort by best match, with bias to strong modname matches and strong authorname matches
     #  This bias is useful as the description normally takes the stronger value, unless the mod name is searched specifically.
     #  Max gave me better results than sum, so I used it.
-    mod_order = [entry for entry in sorted(similarities.items(), key=lambda e: (max(e[1]) + int(e[1][0] > 0.9) * e[1][0]), reverse=True)]
+    comp_func = lambda e: (max(e[1][:2]) + (int(e[1][0] > 0.9) * e[1][0]) + (int(e[1][2] > 0.7) * e[1][2]))
+    mod_order = list(sorted(similarities.items(), key=comp_func, reverse=True))
+    
+    if comp_func(mod_order[0]) <= 0.3: # All bad matches, don't reorder
+        print "No good matches. reordering suppressed"
+        mod_order = list((name, 0.0) for _, name, _, _, _ in modlist)
     
     mods_by_name = {mod[1]: mod for mod in modlist}
     

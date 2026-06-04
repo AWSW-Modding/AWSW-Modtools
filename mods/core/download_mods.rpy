@@ -180,8 +180,8 @@ init python:
         use_steam = curr_screen_scope["use_steam"]
 
         s_time = time.time()
-        if query.strip(): # There's no reason to reorder the modlist if no search has been done.
-            reordered_modlist = modmenu_search.sort_best(query, modlist)
+        if query.strip() or author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
+            reordered_modlist = modmenu_search.sort_best(query, modlist, author_query=author_query)
         else:
             reordered_modlist = curr_screen_scope["contents"]
         print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
@@ -556,23 +556,23 @@ screen modmenu_paged(contents, use_steam):
             ycenter 0.5
             spacing 6
 
-            default query_input_capture_focus = False
-            default author_query_input_capture_focus = False
+            default focus_query_input = False
+            default focus_author_query_input = False
 
             # input components aggressively capture focus, to the point where you can't use more than one of them in a single screen.
             #  a button is used to circumvent this, as it is a container that can itself hold focus, so it is able to intercept the aggressive behaviour.
             button:
-                background If(author_query_input_capture_focus, "#FFFFFFCD", "#000000CD")
-                hover_background If(author_query_input_capture_focus, "#BFBFFFCD", "#000040CD")
+                background If(focus_author_query_input, "#FFFFFFCD", "#000000CD")
+                hover_background If(focus_author_query_input, "#BFBFFFCD", "#000040CD")
                 activate_sound None
-                key_events author_query_input_capture_focus
-                action [ToggleScreenVariable("author_query_input_capture_focus"), SetScreenVariable("query_input_capture_focus", False)]
+                key_events focus_author_query_input
+                action [ToggleScreenVariable("focus_author_query_input"), SetScreenVariable("focus_query_input", False)]
                 xfill True
                 ysize 32
                 xpadding 0
 
                 input:
-                    color If(author_query_input_capture_focus, "#000", "#FF7F00")
+                    color If(focus_author_query_input, "#000", "#FF7F00")
                     xalign 0.0
                     ycenter 0.5
                     size 24
@@ -581,23 +581,27 @@ screen modmenu_paged(contents, use_steam):
 
 
             button:
-                background If(query_input_capture_focus, "#FFFFFFCD", "#000000CD")
-                hover_background If(query_input_capture_focus, "#BFBFFFCD", "#000040CD")
+                background If(focus_query_input, "#FFFFFFCD", "#000000CD")
+                hover_background If(focus_query_input, "#BFBFFFCD", "#000040CD")
                 activate_sound None
-                key_events query_input_capture_focus
-                action [ToggleScreenVariable("query_input_capture_focus"), SetScreenVariable("author_query_input_capture_focus", False)]
+                key_events focus_query_input
+                action [ToggleScreenVariable("focus_query_input"), SetScreenVariable("focus_author_query_input", False)]
                 xfill True
                 ysize 32
                 xpadding 0
 
                 input:
-                    color If(query_input_capture_focus, "#000", "#FFFF00")
+                    color If(focus_query_input, "#000", "#FFFF00")
                     xalign 0.0
                     ycenter 0.5
                     size 24
                     pixel_width 320
                     changed set_query
-        key "K_ESCAPE" action [SetScreenVariable("query_input_capture_focus", False), SetScreenVariable("author_query_input_capture_focus", False)]
+        key "K_ESCAPE" action [SetScreenVariable("focus_query_input", False), SetScreenVariable("focus_author_query_input", False)]
+        key "K_TAB" action [ToggleScreenVariable("focus_author_query_input"),
+                            If(focus_author_query_input,
+                               ToggleScreenVariable("focus_query_input"),
+                               SetScreenVariable("focus_query_input", False))]
 
 
     on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
