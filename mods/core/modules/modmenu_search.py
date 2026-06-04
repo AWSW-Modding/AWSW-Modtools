@@ -1,5 +1,3 @@
-import collections
-
 
 def cache(function):
     def inner(*args):
@@ -81,29 +79,28 @@ def jaro_similarity(s1, s2):
 _jaro_best_match_cache = {}
 
 
-def jaro_counter_similarity(query_counter, target1, target2):
-    """Finds approximate similarity between word counter query_counter and target word strings target1 and target2.
-    each word in query_counter is compared against all of target1's and target2's words to find the best match.
-    the similarity is then the weighted average of each of those best similarity numbers, weighted by word count in query_counter.
-    these results are cached by target1 for each word of query_counter, and as such, for each value of target1 there should only be a single value of target2."""
+def jaro_set_similarity(query_set, target1, target2):
+    """Finds approximate similarity between word set query_set and target word strings target1 and target2.
+    each word in query_set is compared against all of target1's and target2's words to find the best match.
+    the similarity is then the average of each of those best similarity numbers.
+    these results are cached by target1 for each word of query_set, and as such, for each value of target1 there should only be a single value of target2."""
     
     
     best_similarity_1 = {}
     best_similarity_2 = {}
-    for query_word in query_counter.iterkeys():
+    for query_word in query_set:
         if (query_word, target1) not in _jaro_best_match_cache:
-            t1_counter = collections.Counter(target1.lower().split())
+            t1_word_set = set(target1.lower().split())
             curr_best_1 = 0
-            for target_word in t1_counter.iterkeys():
+            for target_word in t1_word_set:
                 curr_best_1 = max(curr_best_1, jaro_similarity(query_word, target_word))
             best_similarity_1[query_word] = curr_best_1
             
-            t2_counter = collections.Counter(target2.lower().split())
+            t2_word_set = set(target2.lower().split())
             curr_best_2 = 0
-            for target_word in t2_counter.iterkeys():
+            for target_word in t2_word_set:
                 curr_best_2 = max(curr_best_2, jaro_similarity(query_word, target_word))
             best_similarity_2[query_word] = curr_best_2
-            
             
             _jaro_best_match_cache[(query_word, target1)] = (curr_best_1, curr_best_2)
         else:
@@ -111,9 +108,9 @@ def jaro_counter_similarity(query_counter, target1, target2):
             best_similarity_1[query_word] = sim1
             best_similarity_2[query_word] = sim2
     
-    n_values = sum(query_counter.itervalues())
-    return (sum(best_similarity_1[query_word] * count for query_word, count in query_counter.iteritems()) / n_values,
-            sum(best_similarity_2[query_word] * count for query_word, count in query_counter.iteritems()) / n_values)
+    n_values = len(query_set)
+    return (sum(best_similarity_1[query_word] for query_word in query_set) / n_values,
+            sum(best_similarity_2[query_word] for query_word in query_set) / n_values)
 
 
 
@@ -122,10 +119,10 @@ def jaro_split_compare(query, modlist):
     :returns dict from modname to similarity tuple, which contains the similarity of query to modname, then the similarity of query to mod description.
     """
     comps = {}
-    query_words = collections.Counter(query.lower().split())
+    query_words = set(query.lower().split())
     
     for _, name, _, desc, _ in modlist:
-        comps[name] = jaro_counter_similarity(query_words, name, desc)
+        comps[name] = jaro_set_similarity(query_words, name, desc)
     
     return comps
 
