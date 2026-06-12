@@ -56,13 +56,13 @@ def report_exception(overview, error_str):
             #steammgr.HandleException(exception_str)
 
 
-def remove_mod(mod_name, filename):
+def remove_mod(mod_name, filename, reload_script=True):
     """Remove a mod from the game and reload.
 
     Args:
         mod_name (str): The internal name of the mod to be removed
     """
-    show_message("Removing mod {}...".format(mod_name))
+    # show_message("Removing mod {}...".format(mod_name))
     if filename is False:
         mod_class = get_mods()[mod_name]
         mod_folder = mod_class.__module__
@@ -74,11 +74,85 @@ def remove_mod(mod_name, filename):
         steammgr = steamhandler.get_instance()
         steammgr.Unsubscribe(int(mod_folder))
     shutil.rmtree(os.path.join(os.path.normpath(renpy.config.gamedir), "mods", mod_folder))
+    
+    if not reload_script:
+        print "Sucessfully removed {}".format(mod_name)
+        return
+    # else
     print "Sucessfully removed {}, reloading".format(mod_name)
     sys.stdout.flush()
-    show_message("Reloading game...")
+    # show_message("Reloading game...")
     _stop_music("modmenu_music")
     renpy.exports.reload_script()
+    return
+
+
+class ModmapInstallStatus:
+    """Holds the install status of a modmap install request in a thread-safe way."""
+    
+    def __init__(self, phase=False):
+        self._curr_mod_id = None
+        self._phase = phase
+        
+        self._lock = threading.RLock()
+    
+    def set_curr(self, mod_id):
+        with self._lock:
+            self._curr_mod_id = mod_id
+        return
+    
+    def get_curr(self):
+        with self._lock:
+            return self._curr_mod_id
+    
+    def set_phase(self, phase):
+        with self._lock:
+            self._phase = phase
+        return
+    
+    def get_phase(self):
+        with self._lock:
+            return self._phase
+
+
+def remove_mods(modmap, reload_script=True, show_status_screen=True):
+    """Remove all mods in the mod map modmap{mod_name: filename}
+    :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
+    """
+    print "remove_mods called with", modmap, reload_script, show_status_screen
+    if isinstance(show_status_screen, ModmapInstallStatus):
+        uninstall_status = show_status_screen
+    elif show_status_screen:
+        uninstall_status = ModmapInstallStatus(phase=True)
+        
+        for i in renpy.config.layers:
+            renpy.game.context().scene_lists.clear(i)
+        show_screen("_modloader_download_screen", uninstall_status, _layer="screens")
+    else:
+        uninstall_status = None
+    
+    thread_done_flag = threading.Event()
+    
+    def _uninstall_loop(modmap, reload_script, uninstall_status, thread_done_flag):
+        for mod_name, filename in modmap.iteritems():
+            if uninstall_status is not None:
+                uninstall_status.set_curr(mod_name)
+            remove_mod(mod_name, filename, reload_script=False)
+        
+        thread_done_flag.set()
+        
+        if reload_script:
+            restart_python()
+        
+        return
+    
+    threading.Thread(name="remove_mods__uninstall_loop", target=_uninstall_loop, args=(modmap, reload_script, uninstall_status, thread_done_flag)).start()
+    
+    if reload_script:
+        return None
+    else:
+        return thread_done_flag
+
 
 
 @cache
@@ -143,32 +217,15 @@ def download_github_mod(download_link, name, show_download=True, reload_script=T
     if reload_script:
         show_message("Reloading Game...")
         restart_python()
-    
 
-class ModmapInstallStatus:
-    """Holds the install status of a modmap install request in a thread-safe way."""
-    
-    def __init__(self):
-        self._curr_mod_id = None
-        
-        self._lock = threading.RLock()
-        
-    def set_curr(self, mod_id):
-        with self._lock:
-            self._curr_mod_id = mod_id
-        return
-    
-    def get_curr(self):
-        with self._lock:
-            return self._curr_mod_id
         
 
-def download_steam_mod(id, name, reload_script=True, show_install_screen=True):
+def download_steam_mod(id, name, reload_script=True, show_status_screen=True):
     """:returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions. """
     steammgr = steamhandler.get_instance()
     # (id, mod_name, author, desc, image_url)
-    if show_install_screen:
-        install_status = ModmapInstallStatus()
+    if show_status_screen:
+        install_status = ModmapInstallStatus(phase=False)
         install_status.set_curr(id)
         for i in renpy.config.layers:
             renpy.game.context().scene_lists.clear(i)
@@ -196,14 +253,16 @@ def download_steam_mod(id, name, reload_script=True, show_install_screen=True):
         return done_flag
 
 
-def download_steam_mods(modmap, reload_script=True, show_install_screen=True):
+def download_steam_mods(modmap, reload_script=True, show_status_screen=True):
     """Download all steam mods in the mod map modmap{modid: modname}
     :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
     """
     # steammgr = steamhandler.get_instance()
     # # (id, mod_name, author, desc, image_url)
-    if show_install_screen:
-        install_status = ModmapInstallStatus()
+    if isinstance(show_status_screen, ModmapInstallStatus):
+        install_status = show_status_screen
+    elif show_status_screen:
+        install_status = ModmapInstallStatus(phase=False)
         
         for i in renpy.config.layers:
             renpy.game.context().scene_lists.clear(i)
@@ -211,13 +270,13 @@ def download_steam_mods(modmap, reload_script=True, show_install_screen=True):
     else:
         install_status = None
     
-    done_flag = threading.Event()
+    thread_done_flag = threading.Event()
     
     def _install_loop(modmap, reload_script, install_status, thread_done_flag):
         for modid, modname in modmap.iteritems():
             if install_status is not None:
                 install_status.set_curr(modid)
-            mod_done_flag = download_steam_mod(modid, modname, reload_script=False, show_install_screen=False)
+            mod_done_flag = download_steam_mod(modid, modname, reload_script=False, show_status_screen=False)
             mod_done_flag.wait()
         
         thread_done_flag.set()
@@ -227,12 +286,52 @@ def download_steam_mods(modmap, reload_script=True, show_install_screen=True):
         
         return
     
-    threading.Thread(name="download_steam_mods__install_loop", target=_install_loop, args=(modmap, reload_script, install_status, done_flag)).start()
+    threading.Thread(name="download_steam_mods__install_loop", target=_install_loop, args=(modmap, reload_script, install_status, thread_done_flag)).start()
     
     if reload_script:
         return None
     else:
-        return done_flag
+        return thread_done_flag
+
+
+
+def apply_mod_changes(add_modmap, remove_modmap, reload_script=True, show_status_screen=True):
+    """
+    :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
+    """
+    print "apply_mod_changes called with", add_modmap, remove_modmap, reload_script, show_status_screen
+    if show_status_screen:
+        print "screen should be shown!"
+        apply_status = ModmapInstallStatus(phase=False)
+        
+        for i in renpy.config.layers:
+            renpy.game.context().scene_lists.clear(i)
+        show_screen("_modloader_download_screen", apply_status, _layer="screens")
+    else:
+        apply_status = None
+    
+    thread_done_flag = threading.Event()
+    
+    def _apply_loop(add_modmap, remove_modmap, reload_script, apply_status, thread_done_flag):
+        download_steam_mods(add_modmap, reload_script=False, show_status_screen=apply_status).wait()
+        apply_status.set_curr(None)
+        apply_status.set_phase(True)
+        remove_mods(remove_modmap, reload_script=False, show_status_screen=apply_status).wait()
+        
+        apply_status.set_curr(None)
+        thread_done_flag.set()
+        
+        if reload_script:
+            restart_python()
+        
+        return
+    
+    threading.Thread(name="apply_mod_changes__apply_loop", target=_apply_loop, args=(add_modmap, remove_modmap, reload_script, apply_status, thread_done_flag)).start()
+    
+    if reload_script:
+        return None
+    else:
+        return thread_done_flag
 
 
 

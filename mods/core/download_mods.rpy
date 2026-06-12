@@ -384,22 +384,22 @@ init -1 python:
 
 
     _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
-    _modmenu_mods_to_remove = set() # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
+    _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
 
     def _modmenu_add_mod(mod_id, mod_name):
         print "adding mod:", mod_id, mod_name
         if mod_id not in _modmenu_mods_to_add and mod_id not in _modmenu_mods_to_remove: # Not added yet, and not an existing mod being reinstated
             _modmenu_mods_to_add[mod_id] = mod_name
         else: # Added, then removed this session
-            _modmenu_mods_to_remove.discard(mod_id)
+            _modmenu_mods_to_remove.pop(mod_id)
         return
 
-    def _modmenu_remove_mod(mod_id):
+    def _modmenu_remove_mod(mod_id, mod_name, filename):
         print "removing mod:", mod_id
         if mod_id in _modmenu_mods_to_add:
             _modmenu_mods_to_add.pop(mod_id)
         else:
-            _modmenu_mods_to_remove.add(mod_id)
+            _modmenu_mods_to_remove[mod_id] = (mod_name, filename)
         return
 
     def _modmenu_clear_added_mods():
@@ -572,8 +572,9 @@ screen modmenu_paged(contents, use_steam):
                 sensitive (current_page < MAX_PAGE)
 
         $ n_added_mods = len(_modmenu_get_added_mods())
+        $ n_removed_mods = len(_modmenu_get_removed_mods())
 
-        textbutton "Install ([n_added_mods])":
+        textbutton "Install ([n_added_mods], [n_removed_mods])":
             background "#0000009B"
             hover_background "#ffffff9B"
             insensitive_background "#3f3f3fFF"
@@ -586,7 +587,7 @@ screen modmenu_paged(contents, use_steam):
             ysize 125
             action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods()),
                     Show("modmenu_apply_confirm", use_steam=use_steam)]
-            sensitive bool(n_added_mods)
+            sensitive bool(n_added_mods) or bool(n_removed_mods)
 
     hbox:
         xpos 65
@@ -810,7 +811,7 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                 if (str(modid) in modinfo.get_mod_folders() or _modmenu_is_mod_added(modid)) and not _modmenu_is_mod_removed(modid):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Function(_modmenu_remove_mod, modid),
+                        action [Function(_modmenu_remove_mod, modid, name, str(modid)),
 #                         Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
@@ -856,13 +857,14 @@ screen modmenu_apply_confirm(use_steam) tag smallscreen2:
     modal True
     python:
         if use_steam:
+            from modloader.modconfig import apply_mod_changes as apply_mod_changes
             from modloader.modconfig import download_steam_mods as download_mods
         else:
             raise NotImplementedError("Github not yet implemented...")
 #             from modloader.modconfig import download_github_mod as download_mod
 
         mods_to_install = _modmenu_get_added_mods()
-        mods_to_uninstall = _modmenu_get_removed_mods()
+        mods_to_uninstall = {mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()}
         n_mods_to_install = len(mods_to_install)
         n_mods_to_uninstall = len(mods_to_uninstall)
 
@@ -879,7 +881,7 @@ screen modmenu_apply_confirm(use_steam) tag smallscreen2:
             textbutton "Yes":
                 action [Hide("modmenu_apply_confirm"),
                         Play("audio", "se/sounds/close.ogg"),
-                        lambda download_mods=download_mods, modmap=mods_to_install: download_mods(modmap)
+                        Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),
                         ]
 
                 style "yesnobutton"
@@ -890,9 +892,10 @@ screen modmenu_apply_confirm(use_steam) tag smallscreen2:
 
                 style "yesnobutton"
 
-        $ _mods_text = "mod" if n_mods_to_install == 1 else "mods" # Need to make sure they have singular/plural agreement, right?
+        $ _install_mods_text = "mod" if n_mods_to_install == 1 else "mods" # Need to make sure they have singular/plural agreement, right?
+        $ _remove_mods_text = "mod" if n_mods_to_uninstall == 1 else "mods" # Need to make sure they have singular/plural agreement, right?
 
-        label "Are you sure you want to install [n_mods_to_install] [_mods_text]?":
+        label "Are you sure you want to install [n_mods_to_install] [_install_mods_text] and remove [n_mods_to_uninstall] [_remove_mods_text]?":
             style "yesno_prompt"
             text_style "yesno_prompt_text"
 
@@ -926,7 +929,8 @@ screen modmenu_remove_confirm_2(modname, filename) tag smallscreen2:
                 textbutton "Yes":
                     action [Hide("modmenu_remove_confirm_2"),
                             Play("audio", "se/sounds/close.ogg"),
-                            lambda remove_mod=remove_mod, modname=modname, filename=filename: remove_mod(modname, filename),
+                            Function(remove_mod, modname, filename),
+#                             lambda remove_mod=remove_mod, modname=modname, filename=filename: remove_mod(modname, filename),
                             Show("modmenu_remove")]
                     style "yesnobutton"
 

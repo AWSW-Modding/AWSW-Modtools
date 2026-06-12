@@ -52,26 +52,35 @@ init python:
         from steam_workshop.steamhandler import convert_units, get_instance
 
         def _modloader_download_progress(st, at, install_status):
-            mod_id = install_status.get_curr()
-            if mod_id is None:
+            curr = install_status.get_curr()
+            is_removing = install_status.get_phase()
+            if curr is None:
                 return Text("No mod is being installed...",
                              xalign=0.5,
                              yalign=0.5,
                              substitute=False), .1
 
-            steammgr = get_instance()
-            bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
-            mod_name = steammgr.GetItemFromID(mod_id)[1]
-            if bytes_downloaded == bytes_total == 0:
-                return  Text("Installing {}...".format(mod_name,
-                                                       convert_units(bytes_downloaded),
-                                                       convert_units(bytes_total)),
-                             xalign=0.5,
-                             yalign=0.5,
-                             substitute=False), .1
-            return Text("Downloading {}: {}/{}".format(mod_name,
-                                                       convert_units(bytes_downloaded),
-                                                       convert_units(bytes_total)),
-                        xalign=0.5,
-                        yalign=0.5,
-                        substitute=False), .1
+            if not is_removing:
+                mod_id = curr
+                steammgr = get_instance()
+                bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
+                mod_name = steammgr.GetItemFromID(mod_id)[1]
+                if bytes_downloaded == bytes_total == 0:
+                    return  Text("Installing {}...".format(mod_name,
+                                                           convert_units(bytes_downloaded),
+                                                           convert_units(bytes_total)),
+                                 xalign=0.5,
+                                 yalign=0.5,
+                                 substitute=False), .1
+                return Text("Downloading {}: {}/{}".format(mod_name,
+                                                           convert_units(bytes_downloaded),
+                                                           convert_units(bytes_total)),
+                            xalign=0.5,
+                            yalign=0.5,
+                            substitute=False), .1
+            else:
+                mod_name = curr
+                return Text("Removing {}".format(mod_name),
+                            xalign=0.5,
+                            yalign=0.5,
+                            substitute=False), .1
