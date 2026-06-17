@@ -386,6 +386,9 @@ init -1 python:
     _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
     _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
 
+    def _modmenu_is_mod_present(modid):
+        return (str(modid) in modinfo.get_mod_folders() or _modmenu_is_mod_added(modid)) and not _modmenu_is_mod_removed(modid)
+
     def _modmenu_add_mod(mod_id, mod_name):
         print "adding mod:", mod_id, mod_name
         if mod_id not in _modmenu_mods_to_add and mod_id not in _modmenu_mods_to_remove: # Not added yet, and not an existing mod being reinstated
@@ -764,6 +767,11 @@ screen modmenu_paged_modlist(contents, use_steam):
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
 
+                    alternate [If(_modmenu_is_mod_present(modid),
+                                   Function(_modmenu_remove_mod, modid, name, str(modid)),
+                                   Function(_modmenu_add_mod, modid, name)),
+                               Play("audio", "se/sounds/open.ogg")]
+                              ]
 
 
 
@@ -828,7 +836,7 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
                 null width 350
 
-                if (str(modid) in modinfo.get_mod_folders() or _modmenu_is_mod_added(modid)) and not _modmenu_is_mod_removed(modid):
+                if _modmenu_is_mod_present(modid):
                     textbutton "Uninstall":
                         ycenter 0.5
                         action [Function(_modmenu_remove_mod, modid, name, str(modid)),
