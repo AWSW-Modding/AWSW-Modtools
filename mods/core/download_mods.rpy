@@ -880,6 +880,9 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
             xpos 1682
             #yalign 0.95
 
+transform _button_zoom:
+    zoom 40.0 / 54.0
+
 
 screen modmenu_apply_confirm(use_steam):
     modal True
@@ -942,9 +945,23 @@ screen modmenu_apply_confirm(use_steam):
                         xfill True
                         mousewheel "change"
 
-                        for modname in _modmenu_get_added_mods().itervalues():
-                            text modname:
-                                xfill True
+                        for modid, modname in _modmenu_get_added_mods().iteritems():
+                            hbox:
+                                spacing 20
+                                ysize 60
+
+                                imagebutton:
+                                    idle "image/ui/close_idle.png" at _button_zoom
+                                    hover "image/ui/close_hover.png"
+                                    yalign 0.5
+
+                                    action Function(_modmenu_remove_mod, modid, modname, str(modid))
+
+                                text modname:
+                                    if len(modname) > 30:
+                                        size 30
+                                    xfill True
+                                    ysize 60
 
                 vbar value YScrollValue("_mod_add_list"):
                     style "modmenu_select_slider"
@@ -970,9 +987,23 @@ screen modmenu_apply_confirm(use_steam):
                         xfill True
                         mousewheel "change"
 
-                        for modname, _ in _modmenu_get_removed_mods().itervalues():
-                            text modname:
-                                xfill True
+                        for modid, (modname, _) in _modmenu_get_removed_mods().iteritems():
+                            hbox:
+                                spacing 20
+                                ysize 60
+
+                                imagebutton:
+                                    idle "image/ui/close_idle.png" at _button_zoom
+                                    hover "image/ui/close_hover.png"
+                                    yalign 0.5
+
+                                    action Function(_modmenu_add_mod, modid, modname)
+
+                                text modname:
+                                    if len(modname) > 30:
+                                        size 30
+                                    xfill True
+                                    ysize 60
 
                 vbar value YScrollValue("_mod_remove_list"):
                     style "modmenu_select_slider"
@@ -1002,13 +1033,14 @@ screen modmenu_apply_confirm(use_steam):
             textbutton "Apply":
                 background "#0000009B"
                 hover_background "#ffffff9B"
+                insensitive_background "#3f3f3fFF"
 
                 xalign 1.0
                 ycenter 0.5
                 xsize 425
                 ysize 125
-                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),
-                       ]
+                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),]
+                sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
 
 
 screen modmenu_nointernet() tag smallscreen2:
