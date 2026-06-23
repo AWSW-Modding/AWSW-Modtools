@@ -881,12 +881,11 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
             #yalign 0.95
 
 
-screen modmenu_apply_confirm(use_steam) tag smallscreen2:
+screen modmenu_apply_confirm(use_steam):
     modal True
     python:
         if use_steam:
             from modloader.modconfig import apply_mod_changes as apply_mod_changes
-            from modloader.modconfig import download_steam_mods as download_mods
         else:
             raise NotImplementedError("Github not yet implemented...")
 #             from modloader.modconfig import download_github_mod as download_mod
@@ -896,89 +895,120 @@ screen modmenu_apply_confirm(use_steam) tag smallscreen2:
         n_mods_to_install = len(mods_to_install)
         n_mods_to_uninstall = len(mods_to_uninstall)
 
+    window id "modmenu_apply_confirm" at alpha_dissolve:
+        background "image/ui/nvlscreen.png"
+        xfill True
+        yfill True
 
-    add "image/ui/nvlscreen.png" at zoom_fade_in:
-        xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
+        xpadding 0
+        ypadding 0
 
-    window id "modmenu_apply_confirm" at popup2:
-        style "alertwindow"
+        text "Are you sure you want to change these mods?":
+            size 65
+            xpos 0.5
+            ypos 0.05
+            xcenter 0.5
+            yanchor 0.5
+            font "Ardnas.otf"
 
-        hbox xalign 0.5 yalign 0.8:
-            spacing 250
 
-            textbutton "Yes":
-                action [Hide("modmenu_apply_confirm"),
-                        Play("audio", "se/sounds/close.ogg"),
-                        Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),
-                        ]
+        hbox: # Changelist
+            ysize 700
+            xsize 1800
 
-                style "yesnobutton"
+            ypos 100
+            xcenter 0.5
+            yanchor 0.0
 
-            textbutton "No":
+            $ mods_to_add_text = "\n".join(_modmenu_get_added_mods().itervalues())
+            $ mods_to_remove_text = "\n".join(modname for modname, filename in _modmenu_get_removed_mods().itervalues())
+
+            fixed: # Added mods list: fixed is used to force list+scrollbar to stay within their region
+                xalign 0.0
+                xsize 850
+                ymaximum 700
+
+                vbox:
+                    xsize 800
+                    xalign 0.0
+
+                    text "Added mods:":
+                        size 50
+                        ysize 100
+                        xfill True
+
+                    vpgrid id "_mod_add_list":
+                        cols 1
+                        xfill True
+                        mousewheel "change"
+
+                        for modname in _modmenu_get_added_mods().itervalues():
+                            text modname:
+                                xfill True
+
+                vbar value YScrollValue("_mod_add_list"):
+                    style "modmenu_select_slider"
+                    xalign 1.0
+
+
+            fixed: # Removed mods list: fixed is used to force list+scrollbar to stay within their region
+                xalign 1.0
+                xsize 850
+                ymaximum 700
+
+                vbox:
+                    xsize 800
+                    xalign 0.0
+
+                    text "Removed mods:":
+                        size 50
+                        ysize 100
+                        xfill True
+
+                    vpgrid id "_mod_remove_list":
+                        cols 1
+                        xfill True
+                        mousewheel "change"
+
+                        for modname, _ in _modmenu_get_removed_mods().itervalues():
+                            text modname:
+                                xfill True
+
+                vbar value YScrollValue("_mod_remove_list"):
+                    style "modmenu_select_slider"
+                    xalign 1.0
+
+        hbox: # Apply/Cancel buttons
+            ysize 125
+            xsize 1200
+
+            ypos 990
+            xcenter 0.5
+            yanchor 1.0
+
+
+            textbutton "Cancel":
+                background "#0000009B"
+                hover_background "#ffffff9B"
+
+                xalign 0.0
+                ycenter 0.5
+                xsize 425
+                ysize 125
                 action [Hide("modmenu_apply_confirm", transition=dissolve),
-                        Play("audio", "se/sounds/close.ogg")]
+                    Play("audio", "se/sounds/close.ogg"),
+                    ]
 
-                style "yesnobutton"
+            textbutton "Apply":
+                background "#0000009B"
+                hover_background "#ffffff9B"
 
-
-        $ _install_remove_text = ""
-        if n_mods_to_install:
-            $ _install_mods_word = "mod" if n_mods_to_install == 1 else "mods" # Need to make sure they have singular/plural agreement, right?
-            $ _install_remove_text += "install {} {}".format(n_mods_to_install, _install_mods_word)
-            if n_mods_to_uninstall:
-                $ _install_remove_text += " and "
-        if n_mods_to_uninstall:
-            $ _remove_mods_word = "mod" if n_mods_to_uninstall == 1 else "mods"
-            $ _install_remove_text += "remove {} {}".format(n_mods_to_uninstall, _remove_mods_word)
-        if not _install_remove_text:
-            $ _install_remove_text = "do nothing? how did you get here!"
-
-        label "Are you sure you want to [_install_remove_text]?":
-            style "yesno_prompt"
-            text_style "yesno_prompt_text"
-
-
-# screen modmenu_remove_confirm_2(modname, filename) tag smallscreen2:
-#     modal True
-#     python:
-#         from modloader.modconfig import remove_mod
-#
-#     add "image/ui/nvlscreen.png" at zoom_fade_in:
-#         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
-#
-#     window id "modmenu_remove_confirm" at popup2:
-#         style "alertwindow"
-#
-#         if modname == "Core":
-#             textbutton "Continue":
-#                 action [Hide("modmenu_remove_confirm_2", transition=dissolve),
-#                         Play("audio", "se/sounds/close.ogg")]
-#                         hovered Play("audio", "se/sounds/select.ogg")
-#                 style "yesnobutton"
-#                 xalign 0.5
-#                 yalign 0.8
-#
-#             label "You cannot remove the Core mod.":
-#                 style "yesno_prompt"
-#
-#         else:
-#             hbox xalign 0.5 yalign 0.8:
-#                 spacing 250
-#                 textbutton "Yes":
-#                     action [Hide("modmenu_remove_confirm_2"),
-#                             Play("audio", "se/sounds/close.ogg"),
-#                             Function(remove_mod, modname, filename),
-# #                             lambda remove_mod=remove_mod, modname=modname, filename=filename: remove_mod(modname, filename),
-#                             Show("modmenu_remove")]
-#                     style "yesnobutton"
-#
-#                 textbutton "No":
-#                     action [Hide("modmenu_remove_confirm_2"),
-#                             Play("audio", "se/sounds/close.ogg")]
-#                     style "yesnobutton"
-#
-#             label "Are you sure you want to remove [modname]?":
-#                 style "yesno_prompt"
+                xalign 1.0
+                ycenter 0.5
+                xsize 425
+                ysize 125
+                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),
+                       ]
 
 
 screen modmenu_nointernet() tag smallscreen2:
