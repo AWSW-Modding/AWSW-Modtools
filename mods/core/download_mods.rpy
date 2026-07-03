@@ -539,13 +539,13 @@ screen modmenu_paged(contents, use_steam):
             spacing 6
 
             # For some reason 'label' and 'text' text components insisted on being ever so slightly larger than necessary, which made everything look misaligned
-            textbutton "author:":
+            textbutton "Author:":
                 background "#00000000"
                 text_size 24
                 ysize 32
                 xalign 0.0
 
-            textbutton "mod:":
+            textbutton "Mod:":
                 background "#00000000"
                 text_size 24
                 ysize 32
