@@ -1,4 +1,18 @@
 
+# This file contains function definitions from nltk repository, under the Apache License Version 2.0
+# in particular, the function jaro_similarity has been used.
+# Those have been used under these attributions:
+#
+# Copyright (C) 2001-2025 NLTK Project
+# Author: Edward Loper <edloper@gmail.com>
+#         Steven Bird <stevenbird1@gmail.com>
+#         Tom Lippincott <tom@cs.columbia.edu>
+# URL: <https://www.nltk.org/>
+# For attribution license information, see NLTK_LICENSE.txt
+#
+# All components which are not explicitly licensed under the Apache License Version 2.0 of nltk (NLTK_LICENSE.txt) are licensed under this project's standard license (LICENSE)
+#
+
 def cache(function):
     def inner(*args):
         if not hasattr(inner, "results"):
@@ -13,6 +27,7 @@ def cache(function):
     return inner
 
 # Copied from nltk (https://www.nltk.org/_modules/nltk/metrics/distance.html#jaro_similarity)
+# This function is copied from nltk, and is therefore licensed under their Apache License Version 2.0 (NLTK_LICENSE.txt)
 @cache
 def jaro_similarity(s1, s2):
     """
@@ -64,9 +79,9 @@ def jaro_similarity(s1, s2):
     if matches == 0:
         return 0
     else:
-        matches = float(matches)
+        matches = float(matches) # Added to nltk's implementation. int division and float division are qualitatively different in python 2 (unlike python 3, where nltk is implemented), and the float division is the intended behaviour.
         return (
-                1 / 3.0
+                1 / 3.0 # Changed from nltk's 3 to 3.0, for the same reason as the last change.
                 * (
                         matches / len_s1
                         + matches / len_s2
