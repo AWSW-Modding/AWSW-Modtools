@@ -1,5 +1,5 @@
 This is a copy of the license of the nltk project (<https://www.nltk.org/>), as is required under section 4. Redistribution.
-It is particularly relevant for 'mods/core/modules/modmenu_search.py', and for any other instances of nltk code in this project.
+It is particularly relevant for the contents of the 'algorithms' directory this file is located in, and for any other instances of nltk code in this project.
 
 
                                  Apache License
