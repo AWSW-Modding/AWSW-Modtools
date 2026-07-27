@@ -1039,7 +1039,7 @@ screen modmenu_apply_confirm(use_steam):
                 ycenter 0.5
                 xsize 425
                 ysize 125
-                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall),]
+                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall, show_status_screen=True),]
                 sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
 
 
