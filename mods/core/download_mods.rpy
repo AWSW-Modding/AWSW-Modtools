@@ -153,6 +153,46 @@ init python:
         modconfig.steam_modlist_preloader.load()
 
 
+    import modmenu_search
+    import time
+
+    def set_query(value):
+        curr_screen_scope = renpy.current_screen().scope
+        curr_screen_scope["query"] = value
+        search_modlist(value, curr_screen_scope["author_query"])
+        return
+
+    def set_author_query(value):
+        curr_screen_scope = renpy.current_screen().scope
+        curr_screen_scope["author_query"] = value
+        search_modlist(curr_screen_scope["query"], value)
+        return
+
+
+    def search_modlist(query, author_query=""):
+        print "searching with {}, {}".format(query, author_query)
+
+        # As renpy input doesn't allow for additional variables to this method, I've had to resort to this cursed thing
+        curr_screen_scope = renpy.current_screen().scope
+        modlist = curr_screen_scope["contents"]
+        page = curr_screen_scope["current_page"]
+        page_size = curr_screen_scope["PAGE_SIZE"]
+        use_steam = curr_screen_scope["use_steam"]
+
+        s_time = time.time()
+        if query.strip() or author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
+            reordered_modlist = modmenu_search.sort_best(query, modlist, author_query=author_query)
+        else:
+            reordered_modlist = curr_screen_scope["contents"]
+        print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
+
+        curr_screen_scope["search_order_contents"] = reordered_modlist
+        _refresh_modlist_page(page, page_size, reordered_modlist, use_steam)
+        renpy.restart_interaction()
+
+        return
+
+
 init -1 python:
     import sys
     import math
@@ -393,6 +433,10 @@ screen modmenu_paged(contents, use_steam):
     $ MIN_PAGE = 1 # Do note, modpage numbers are 1-indexed
     $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
 
+    default search_order_contents = contents
+    default query = ""
+    default author_query = ""
+
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
 
@@ -440,7 +484,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Tried to bind this to shift+scroll, but it didn't work...
                 action [SetScreenVariable("current_page", max(current_page-5, MIN_PAGE)),
-                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
                        ]
                 sensitive (current_page > 1)
 
@@ -449,7 +493,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_4"
                 action [SetScreenVariable("current_page", current_page-1),
-                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
                        ]
                 sensitive (current_page > 1)
 
@@ -464,7 +508,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_5"
                 action [SetScreenVariable("current_page", current_page+1),
-                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
                         ]
                 sensitive (current_page < MAX_PAGE)
 
@@ -473,14 +517,102 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Also tried to bind this to shift+scroll, but it didn't work...
                 action [SetScreenVariable("current_page", min(current_page+5, MAX_PAGE)),
-                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, contents, use_steam=use_steam)
+                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
                         ]
                 sensitive (current_page < MAX_PAGE)
 
-    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
-                      Function(_preload_mod_images, contents, None)]
 
-    on "hide" action [Function(mod_image_preloader.clear)]
+    hbox:
+        xpos 65
+        ypos 10
+        xanchor 0.0
+        yanchor 0.0
+        xsize 425
+        ysize 70
+
+        spacing 10
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            xsize 75
+            spacing 6
+
+            # For some reason 'label' and 'text' text components insisted on being ever so slightly larger than necessary, which made everything look misaligned
+            textbutton "Author:":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            textbutton "Mod:":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            spacing 6
+
+            default focus_query_input = False
+            default focus_author_query_input = False
+
+            # input components aggressively capture focus, to the point where you can't use more than one of them in a single screen.
+            #  a button is used to circumvent this, as it is a container that can itself hold focus, so it is able to intercept the aggressive behaviour.
+            button:
+                background If(focus_author_query_input, "#FFFFFFCD", "#000000CD")
+                hover_background If(focus_author_query_input, "#BFBFFFCD", "#000040CD")
+                activate_sound None
+                key_events focus_author_query_input
+                action [ToggleScreenVariable("focus_author_query_input"), SetScreenVariable("focus_query_input", False)]
+                xfill True
+                ysize 32
+                xpadding 0
+
+                input:
+                    color If(focus_author_query_input, "#000", "#FF7F00")
+                    xalign 0.0
+                    ycenter 0.5
+                    size 24
+                    pixel_width 320 # While the horizontal space is supposed to be 340, The inputs have a tendency to drop down a row...
+                    changed set_author_query
+
+
+            button:
+                background If(focus_query_input, "#FFFFFFCD", "#000000CD")
+                hover_background If(focus_query_input, "#BFBFFFCD", "#000040CD")
+                activate_sound None
+                key_events focus_query_input
+                action [ToggleScreenVariable("focus_query_input"), SetScreenVariable("focus_author_query_input", False)]
+                xfill True
+                ysize 32
+                xpadding 0
+
+                input:
+                    color If(focus_query_input, "#000", "#FFFF00")
+                    xalign 0.0
+                    ycenter 0.5
+                    size 24
+                    pixel_width 320
+                    changed set_query
+        key "K_ESCAPE" action [SetScreenVariable("focus_query_input", False), SetScreenVariable("focus_author_query_input", False)]
+        key "K_TAB" action [ToggleScreenVariable("focus_author_query_input"),
+                            If(focus_author_query_input,
+                               ToggleScreenVariable("focus_query_input"),
+                               SetScreenVariable("focus_query_input", False))]
+
+
+    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+                      Function(_preload_mod_images, contents, None),
+                      Function(im.cache.clear) # I tended to get 'out of memory' errors on this menu, so we use this precaution
+                      ]
+
+    on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
+                      Function(im.cache.clear),
+                      Function(modmenu_search.clear_cache),
+                     ]
 
 
 
