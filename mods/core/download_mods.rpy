@@ -386,10 +386,15 @@ init -1 python:
     _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
     _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
 
-    def _modmenu_is_mod_present(modid):
-        return (str(modid) in modinfo.get_mod_folders() or _modmenu_is_mod_added(modid)) and not _modmenu_is_mod_removed(modid)
+    def _modmenu_is_mod_installed(mod_id, mod_name):
+        """Is mod actually installed on the computer, regardless of modmenu status."""
+        return str(mod_id) in modinfo.get_mod_folders() or str(mod_name) in modinfo.get_mod_folders()
 
-    def _modmenu_add_mod(mod_id, mod_name):
+    def _modmenu_is_mod_present(mod_id, mod_name):
+        """Will the mod be installed once the modmenu changes have been applied."""
+        return (_modmenu_is_mod_installed(mod_id, mod_name) or _modmenu_is_mod_added(mod_id)) and not _modmenu_is_mod_removed(mod_id)
+
+    def _modmenu_add_mod(mod_id, mod_name=""):
         print "adding mod:", mod_id, mod_name
         if mod_id not in _modmenu_mods_to_add and mod_id not in _modmenu_mods_to_remove: # Not added yet, and not an existing mod being reinstated
             _modmenu_mods_to_add[mod_id] = mod_name
@@ -397,8 +402,8 @@ init -1 python:
             _modmenu_mods_to_remove.pop(mod_id)
         return
 
-    def _modmenu_remove_mod(mod_id, mod_name, filename):
-        print "removing mod:", mod_id
+    def _modmenu_remove_mod(mod_id, mod_name="", filename=""):
+        print "removing mod:", mod_id, mod_name, filename
         if mod_id in _modmenu_mods_to_add:
             _modmenu_mods_to_add.pop(mod_id)
         else:
@@ -739,7 +744,7 @@ screen modmenu_paged_modlist(contents, use_steam):
                         $ modname = modname[:30]
                         $ modname = "{size=-10}" + modname + "{/size}"
 
-                if str(modid) in modinfo.get_mod_folders():
+                if _modmenu_is_mod_installed(modid, name):
                     $ modname += "\n{size=-5}(Installed"
                     if _modmenu_is_mod_removed(modid):
                         $ modname += ", removed"
@@ -767,8 +772,8 @@ screen modmenu_paged_modlist(contents, use_steam):
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
 
-                    alternate [If(_modmenu_is_mod_present(modid),
-                                   Function(_modmenu_remove_mod, modid, name, str(modid)),
+                    alternate [If(_modmenu_is_mod_present(modid, name),
+                                   Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
                                    Function(_modmenu_add_mod, modid, name)),
                                Play("audio", "se/sounds/open.ogg")]
                               ]
@@ -836,11 +841,10 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
                 null width 350
 
-                if _modmenu_is_mod_present(modid):
+                if _modmenu_is_mod_present(modid, name):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Function(_modmenu_remove_mod, modid, name, str(modid)),
-#                         Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
+                        action [Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -887,11 +891,7 @@ transform _button_zoom:
 screen modmenu_apply_confirm(use_steam):
     modal True
     python:
-        if use_steam:
-            from modloader.modconfig import apply_mod_changes as apply_mod_changes
-        else:
-            raise NotImplementedError("Github not yet implemented...")
-#             from modloader.modconfig import download_github_mod as download_mod
+        from modloader.modconfig import apply_mod_changes as apply_mod_changes
 
         mods_to_install = _modmenu_get_added_mods()
         mods_to_uninstall = {mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()}
@@ -955,7 +955,7 @@ screen modmenu_apply_confirm(use_steam):
                                     hover "image/ui/close_hover.png"
                                     yalign 0.5
 
-                                    action Function(_modmenu_remove_mod, modid, modname, str(modid))
+                                    action Function(_modmenu_remove_mod, modid) # As mod is guaranteed to be in the add list, we only need id to remove.
 
                                 text modname:
                                     if len(modname) > 30:
@@ -997,7 +997,7 @@ screen modmenu_apply_confirm(use_steam):
                                     hover "image/ui/close_hover.png"
                                     yalign 0.5
 
-                                    action Function(_modmenu_add_mod, modid, modname)
+                                    action Function(_modmenu_add_mod, modid) # As mod is guaranteed to be in the remove list, we only need id to add.
 
                                 text modname:
                                     if len(modname) > 30:
@@ -1039,7 +1039,7 @@ screen modmenu_apply_confirm(use_steam):
                 ycenter 0.5
                 xsize 425
                 ysize 125
-                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall, show_status_screen=True),]
+                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall, show_status_screen=True, use_steam=use_steam),]
                 sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
 
 

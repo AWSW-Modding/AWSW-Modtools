@@ -107,11 +107,16 @@ def steam_downloadable_mods():
 class ModmapInstallStatus:
     """Holds the install status of a modmap install request in a thread-safe way."""
     
-    def __init__(self, phase=False):
+    def __init__(self, phase=False, use_steam=True):
         self._curr_mod_id = None
         self._phase = phase
+        self._use_steam = use_steam
         
         self._lock = threading.RLock()
+    
+    # as this is treated as the source of this mod suite, we (currently) don't expect it to change during the suite.
+    def use_steam(self):
+        return self._use_steam
     
     def set_curr(self, mod_id):
         with self._lock:
@@ -153,13 +158,6 @@ def remove_mod(mod_name, filename):
     
     print "Sucessfully removed {}".format(mod_name)
     return
-    # else
-    # print "Sucessfully removed {}, reloading".format(mod_name)
-    # sys.stdout.flush()
-    # # show_message("Reloading game...")
-    # _stop_music("modmenu_music")
-    # renpy.exports.reload_script()
-    # return
 
 
 def remove_mods(modmap, install_status=None):
@@ -182,11 +180,12 @@ def remove_mods(modmap, install_status=None):
 
 
 
+def download_github_mod(download_link, name):
+    """Download a mod off the Github standard mod repository by its link and name.
 
-
-def download_github_mod(download_link, name, show_download=True, reload_script=True):
-    if show_download:
-        show_message("Downloading {}".format(name))
+    :param download_link: The github archive link of the mod.
+    :param name: The name of the mod to install. this is also the name (path relative to general mod installation path) of the destination directory.
+    """
     mod_folder = os.path.join(get_mod_path(), name)
     if os.path.exists(mod_folder):
         shutil.rmtree(mod_folder, ignore_errors=True)
@@ -196,10 +195,7 @@ def download_github_mod(download_link, name, show_download=True, reload_script=T
     root = zip_f.namelist()[0]
     os.rename(os.path.join(get_mod_path(), root),
               mod_folder)
-    if reload_script:
-        show_message("Reloading Game...")
-        restart_python()
-
+    return
 
 def download_steam_mod(id, name):
     """Download a mod off the Steam workshop based on its id.
@@ -228,35 +224,40 @@ def download_steam_mod(id, name):
     return
 
 
-def download_steam_mods(modmap, install_status=None):
-    """Download all steam mods in modmap, optionally while supplying status data.
-    
-    :param modmap: Mapping from modid to modname, as they are in download_steam_mod. the modlist to install.
+def download_github_mods(modmap, install_status=None):
+    """Download all github mods in modmap, optionally while supplying status data.
+
+    :param modmap: Mapping from modurl to modname, as they are in download_github_mod. the modlist to install.
     :param install_status: If not None, the ModmapInstallStatus instance used to show current progress.
-    :returns: A threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
     """
     if install_status is not None:
         install_status.set_phase(False)
     
-    thread_done_flag = threading.Event()
+    for modid, modname in modmap.iteritems():
+        if install_status is not None:
+            install_status.set_curr(modid)
+        download_github_mod(modid, modname)
     
-    def _install_loop(modmap, install_status, thread_done_flag):
-        for modid, modname in modmap.iteritems():
-            if install_status is not None:
-                install_status.set_curr(modid)
-            mod_done_flag = download_steam_mod(modid, modname)
-            mod_done_flag.wait()
-        
-        thread_done_flag.set()
-        return
+    return
+
+def download_steam_mods(modmap, install_status=None):
+    """Download all steam mods in modmap, optionally while supplying status data.
+
+    :param modmap: Mapping from modid to modname, as they are in download_steam_mod. the modlist to install.
+    :param install_status: If not None, the ModmapInstallStatus instance used to show current progress.
+    """
+    if install_status is not None:
+        install_status.set_phase(False)
     
-    threading.Thread(name="download_steam_mods__install_loop", target=_install_loop, args=(modmap, install_status, thread_done_flag)).start()
+    for modid, modname in modmap.iteritems():
+        if install_status is not None:
+            install_status.set_curr(modid)
+        download_steam_mod(modid, modname)
     
-    return thread_done_flag
+    return
 
 
-
-def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload_script=None):
+def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload_script=None, use_steam=True):
     """ Apply the mod changes given in the modlists, optionally showing the mod status screen and reloading when done.
     
     This acts as the main way to visibly apple a suite of mod changes, and should be the one used in most cases.
@@ -264,15 +265,15 @@ def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload
     :param remove_modmap: Mapping from modname to filename, as they are in remove_mod. the modlist to remove.
     :param show_status_screen: If True, then show the mod changes status screen.
     :param reload_script: If True, then restart the script once the mod changes are done. If None (the default), this is set to the value of show_status_screen.
+    :param use_steam: True (default) uses steam api to install the mods. False uses github api.
     :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
     """
     if reload_script is None:
         reload_script = show_status_screen
     
-    print "apply_mod_changes called with", add_modmap, remove_modmap, reload_script, show_status_screen
+    print "apply_mod_changes called with", add_modmap, remove_modmap, reload_script, show_status_screen, use_steam
     if show_status_screen:
-        print "screen should be shown!"
-        apply_status = ModmapInstallStatus(phase=False)
+        apply_status = ModmapInstallStatus(phase=False, use_steam=use_steam)
         
         for i in renpy.config.layers:
             renpy.game.context().scene_lists.clear(i)
@@ -283,7 +284,11 @@ def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload
     thread_done_flag = threading.Event()
     
     def _apply_loop(add_modmap, remove_modmap, reload_script, apply_status, thread_done_flag):
-        download_steam_mods(add_modmap, install_status=apply_status)
+        if use_steam:
+            download_steam_mods(add_modmap, install_status=apply_status)
+        else:
+            download_github_mods(add_modmap, install_status=apply_status)
+        
         if apply_status is not None:
             apply_status.set_curr(None)
             apply_status.set_phase(True)

@@ -46,7 +46,7 @@ screen modmenu tag smallscreen:
             #mod management buttons
             vbox xalign 0.5 yalign 0.5:
                 if has_steam():
-                    textbutton "Add mod from workshop":
+                    textbutton "Manage workshop mods":
                         action [Function(_enter_modmenu, use_steam=True),
                                 Play("audio", "se/sounds/open.ogg"),
                                 Stop("music", fadeout=1.0),
@@ -56,7 +56,7 @@ screen modmenu tag smallscreen:
                         style "menubutton2"
 
                 if is_github():
-                    textbutton "Add mod from Github":
+                    textbutton "Manage Github mods":
                         action [Function(_enter_modmenu, use_steam=False),
                                 Play("audio", "se/sounds/open.ogg"),
                                 Stop("music", fadeout=1.0),

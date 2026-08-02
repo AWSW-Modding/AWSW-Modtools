@@ -51,36 +51,44 @@ init python:
     if workshop_enabled:
         from steam_workshop.steamhandler import convert_units, get_instance
 
-        def _modloader_download_progress(st, at, install_status):
-            curr = install_status.get_curr()
-            is_removing = install_status.get_phase()
-            if curr is None:
-                return Text("No mod is being installed...",
+    def _modloader_download_progress(st, at, install_status):
+        curr = install_status.get_curr()
+        is_removing = install_status.get_phase()
+        use_steam = install_status.use_steam()
+        if curr is None:
+            return Text("No mod is being installed...",
+                         xalign=0.5,
+                         yalign=0.5,
+                         substitute=False), .1
+
+        if not is_removing:
+            print use_steam
+            if use_steam:
+                mod_id = curr
+                steammgr = get_instance()
+                mod_name = steammgr.GetItemFromID(mod_id)[1]
+                bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
+                no_install_step = False
+            else:
+                mod_name = curr
+                no_install_step = True
+            if not no_install_step and bytes_downloaded == bytes_total == 0:
+                return  Text("Installing {}...".format(mod_name),
                              xalign=0.5,
                              yalign=0.5,
                              substitute=False), .1
-
-            if not is_removing:
-                mod_id = curr
-                steammgr = get_instance()
-                bytes_downloaded, bytes_total = steammgr.GetItemDownloadInfo(mod_id)
-                mod_name = steammgr.GetItemFromID(mod_id)[1]
-                if bytes_downloaded == bytes_total == 0:
-                    return  Text("Installing {}...".format(mod_name,
-                                                           convert_units(bytes_downloaded),
-                                                           convert_units(bytes_total)),
-                                 xalign=0.5,
-                                 yalign=0.5,
-                                 substitute=False), .1
-                return Text("Downloading {}: {}/{}".format(mod_name,
-                                                           convert_units(bytes_downloaded),
-                                                           convert_units(bytes_total)),
-                            xalign=0.5,
-                            yalign=0.5,
-                            substitute=False), .1
+            if use_steam:
+                postfix = ": {}/{}".format(convert_units(bytes_downloaded),
+                                           convert_units(bytes_total))
             else:
-                mod_name = curr
-                return Text("Removing {}".format(mod_name),
-                            xalign=0.5,
-                            yalign=0.5,
-                            substitute=False), .1
+                postfix = ""
+            return Text("Downloading {}{}".format(mod_name, postfix),
+                        xalign=0.5,
+                        yalign=0.5,
+                        substitute=False), .1
+        else:
+            mod_name = curr
+            return Text("Removing {}".format(mod_name),
+                        xalign=0.5,
+                        yalign=0.5,
+                        substitute=False), .1
