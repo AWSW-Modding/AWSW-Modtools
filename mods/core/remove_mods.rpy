@@ -40,7 +40,6 @@ screen modmenu_remove_confirm(modname, filename) tag smallscreen2:
         else:
             hbox xalign 0.5 yalign 0.8:
                 spacing 250
-#                 textbutton "Yes" action [Hide("modmenu_remove_confirm"), Play("audio", "se/sounds/close.ogg"), lambda remove_mod=remove_mod, modname=modname, filename=filename: remove_mod(modname, filename), Show("modmenu_remove")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
                 textbutton "Yes" action [Hide("modmenu_remove_confirm"), Play("audio", "se/sounds/close.ogg"), Function(apply_mod_changes, add_modmap={}, remove_modmap={modname: filename}, show_status_screen=False, reload_script=True), Show("modmenu_remove")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
                 textbutton "No" action [Hide("modmenu_remove_confirm"),  Play("audio", "se/sounds/close.ogg")] hovered Play("audio", "se/sounds/select.ogg") style "yesnobutton"
 
