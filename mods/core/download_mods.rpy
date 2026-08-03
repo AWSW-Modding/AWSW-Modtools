@@ -386,16 +386,17 @@ init -1 python:
 
     def _modmenu_add_mod(mod_id, mod_name=""):
         print "adding mod:", mod_id, mod_name
-        if mod_id not in _modmenu_mods_to_add and mod_id not in _modmenu_mods_to_remove: # Not added yet, and not an existing mod being reinstated
-            _modmenu_mods_to_add[mod_id] = mod_name
-        else: # Added, then removed this session
+        if mod_id in _modmenu_mods_to_remove: # Added, then removed this session
             _modmenu_mods_to_remove.pop(mod_id)
+        elif mod_id not in _modmenu_mods_to_add: # Not added yet, and not an existing mod being reinstated
+            _modmenu_mods_to_add[mod_id] = mod_name
+        # else: nothing to do...
 
     def _modmenu_remove_mod(mod_id, mod_name="", filename=""):
         print "removing mod:", mod_id, mod_name, filename
         if mod_id in _modmenu_mods_to_add:
             _modmenu_mods_to_add.pop(mod_id)
-        else:
+        elif mod_id not in _modmenu_mods_to_remove:
             _modmenu_mods_to_remove[mod_id] = (mod_name, filename)
 
     def _modmenu_clear_added_mods():
