@@ -121,7 +121,6 @@ class ModmapInstallStatus:
     def set_curr(self, mod_id):
         with self._lock:
             self._curr_mod_id = mod_id
-        return
     
     def get_curr(self):
         with self._lock:
@@ -130,7 +129,6 @@ class ModmapInstallStatus:
     def set_phase(self, phase):
         with self._lock:
             self._phase = phase
-        return
     
     def get_phase(self):
         with self._lock:
@@ -157,7 +155,6 @@ def remove_mod(mod_name, filename):
     shutil.rmtree(os.path.join(os.path.normpath(renpy.config.gamedir), "mods", mod_folder))
     
     print "Sucessfully removed {}".format(mod_name)
-    return
 
 
 def remove_mods(modmap, install_status=None):
@@ -175,8 +172,6 @@ def remove_mods(modmap, install_status=None):
         if install_status is not None:
             install_status.set_curr(mod_name)
         remove_mod(mod_name, filename)
-    
-    return
 
 
 
@@ -195,7 +190,6 @@ def download_github_mod(download_link, name):
     root = zip_f.namelist()[0]
     os.rename(os.path.join(get_mod_path(), root),
               mod_folder)
-    return
 
 def download_steam_mod(id, name):
     """Download a mod off the Steam workshop based on its id.
@@ -215,13 +209,11 @@ def download_steam_mod(id, name):
 
         steammgr.unregister_callback(steamhandler.PyCallback.Download, cb)
         done_flag.set()
-        return
         
     steammgr.register_callback(steamhandler.PyCallback.Download, cb)
     steammgr.Subscribe(id)
     
     done_flag.wait()
-    return
 
 
 def download_github_mods(modmap, install_status=None):
@@ -238,8 +230,6 @@ def download_github_mods(modmap, install_status=None):
             install_status.set_curr(modid)
         download_github_mod(modid, modname)
     
-    return
-
 def download_steam_mods(modmap, install_status=None):
     """Download all steam mods in modmap, optionally while supplying status data.
 
@@ -253,8 +243,6 @@ def download_steam_mods(modmap, install_status=None):
         if install_status is not None:
             install_status.set_curr(modid)
         download_steam_mod(modid, modname)
-    
-    return
 
 
 def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload_script=None, use_steam=True):
@@ -300,8 +288,6 @@ def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload
         
         if reload_script:
             restart_python()
-        
-        return
     
     threading.Thread(name="apply_mod_changes__apply_loop", target=_apply_loop, args=(add_modmap, remove_modmap, reload_script, apply_status, thread_done_flag)).start()
     

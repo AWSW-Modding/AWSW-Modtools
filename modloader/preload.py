@@ -25,14 +25,12 @@ class Queue:
     def __init__(self):
         self._queue = collections.deque()
         self._pop_condition = threading.Condition()
-        return
     
     
     def put(self, item):
         with self._pop_condition:
             self._queue.append(item)
             self._pop_condition.notify()
-        return
     
     def get(self, block=True, timeout=None):
         if not block or timeout == 0: # For these non-blocking cases, We avoid the retrying located below.
@@ -55,7 +53,6 @@ class Queue:
     
     def clear(self):
         self._queue.clear()
-        return
     
     def get_nowait(self):
         self.get(False)
@@ -113,8 +110,7 @@ class Preload:
         
         self._clear_session_num = 0 # clear() uses session numbers to ensure that once clear is called, all ongoing actions are invalidated
         self._clear_session_lock = threading.RLock()
-        
-        return
+    
     
     def _manage_job_queue(self):
         while True:
@@ -157,7 +153,7 @@ class Preload:
                 self._is_loaded[args].set()
             # print "Done preloading"
             self._call_callbacks((args,), curr_callbacks, clear_session=self._clear_session_num)
-        return
+    
     
     def load(self, *args):
         """Starts preloading the result of loading_function(*args) if it is not already being loaded.
@@ -174,7 +170,7 @@ class Preload:
             
             print "({}) Preload not present, Starting... {}".format(self._name, args)
             self._job_queue.put((self._clear_session_num, "load", args))
-        return
+    
     
     def get(self, *args, **kwargs):
         """Get the preloaded data corresponding to args.
@@ -222,7 +218,7 @@ class Preload:
             self._exception.clear()
             self._is_loaded.clear()
             self._job_queue.clear()
-            return
+        
     
     def _is_clear_session_valid(self, clear_session):
         with self._clear_session_lock:
@@ -242,7 +238,7 @@ class Preload:
                 finised_loads = tuple(self._loaded_data.keys())
         
             self._job_queue.put((self._clear_session_num, "callback", callback, finised_loads))
-        return
+        
     
     def _call_callbacks(self, loads, callbacks, clear_session):
         """calls each callback in callbacks on each result of loads"""
@@ -263,7 +259,7 @@ class Preload:
                     callback(data, exception)
                 except Exception as callback_exception: # callback exceptions are ignored and do not affect other callbacks.
                     print "[] Callback {}({}, {}) raised exception: {}".format(self._name, callback, data, exception, callback_exception)
-        return
+        
     
     
     def is_loaded(self, *args):

@@ -98,7 +98,6 @@ init python:
         image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
             mod_image_preloader.load(url)
-        return
 
 
     class ImageURL(Image):
@@ -160,13 +159,11 @@ init python:
         curr_screen_scope = renpy.current_screen().scope
         curr_screen_scope["query"] = value
         search_modlist(value, curr_screen_scope["author_query"])
-        return
 
     def set_author_query(value):
         curr_screen_scope = renpy.current_screen().scope
         curr_screen_scope["author_query"] = value
         search_modlist(curr_screen_scope["query"], value)
-        return
 
 
     def search_modlist(query, author_query=""):
@@ -189,8 +186,6 @@ init python:
         curr_screen_scope["search_order_contents"] = reordered_modlist
         _refresh_modlist_page(page, page_size, reordered_modlist, use_steam)
         renpy.restart_interaction()
-
-        return
 
 
 init -1 python:
@@ -238,7 +233,6 @@ init -1 python:
                                             "Error raised:\n"
                                             + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
                 )
-        return
 
     # Ensure error screens are available, as we may need them
     if not renpy.exports.has_screen("_modlist_errors"):
@@ -273,7 +267,6 @@ init -1 python:
         def set_state(self, state):
             with self._state_lock:
                 self._state = state
-            return
 
         def get_state(self):
             with self._state_lock:
@@ -309,7 +302,6 @@ init -1 python:
                 self.set_state(EntranceStates.INTERNET_FAILED)
 
             self._done_signal.set()
-            return
 
     _dots = 1
     _MAX_DOTS = 3
@@ -326,7 +318,7 @@ init -1 python:
         renpy.hide_screen('modmenu_entrance')
         load_manager.disabled.set()
         renpy.restart_interaction()
-        return
+
 
     _modmenu_entrance_cancelled = False
 
@@ -368,7 +360,6 @@ init -1 python:
 
     def _enter_modmenu(use_steam):
         renpy.show_screen('modmenu_entrance', use_steam=use_steam)
-        return
 
 
 
@@ -380,7 +371,6 @@ init -1 python:
         start, end = _get_slice_lims_from_page(page, page_size)
         renpy.hide_screen('modmenu_paged_modlist')
         renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
-        return
 
 
     _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
@@ -400,7 +390,6 @@ init -1 python:
             _modmenu_mods_to_add[mod_id] = mod_name
         else: # Added, then removed this session
             _modmenu_mods_to_remove.pop(mod_id)
-        return
 
     def _modmenu_remove_mod(mod_id, mod_name="", filename=""):
         print "removing mod:", mod_id, mod_name, filename
@@ -408,15 +397,12 @@ init -1 python:
             _modmenu_mods_to_add.pop(mod_id)
         else:
             _modmenu_mods_to_remove[mod_id] = (mod_name, filename)
-        return
 
     def _modmenu_clear_added_mods():
         _modmenu_mods_to_add.clear()
-        return
 
     def _modmenu_clear_removed_mods():
         _modmenu_mods_to_remove.clear()
-        return
 
     def _modmenu_get_added_mods():
         return _modmenu_mods_to_add
