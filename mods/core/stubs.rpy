@@ -62,7 +62,6 @@ init python:
                          substitute=False), .1
 
         if not is_removing:
-            print use_steam
             if use_steam:
                 mod_id = curr
                 steammgr = get_instance()
