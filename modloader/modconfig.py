@@ -251,8 +251,8 @@ def apply_mod_changes(add_modmap, remove_modmap, show_status_screen=True, reload
     This acts as the main way to visibly apple a suite of mod changes, and should be the one used in most cases.
     :param add_modmap: Mapping from modid to modname, as they are in download_steam_mod. the modlist to install.
     :param remove_modmap: Mapping from modname to filename, as they are in remove_mod. the modlist to remove.
-    :param show_status_screen: If True, then show the mod changes status screen.
-    :param reload_script: If True, then restart the script once the mod changes are done. If None (the default), this is set to the value of show_status_screen.
+    :param show_status_screen: If True (default), then show the mod changes status screen. If False, doesn't show the mod changes status screen.
+    :param reload_script: If True, then restart the script once the mod changes are done. If False, no restarting is done. If None (the default), this is set to the value of show_status_screen which allows for 'install visibly then restart' and 'install silently'.
     :param use_steam: True (default) uses steam api to install the mods. False uses github api.
     :returns: done_flag if reload_script is False, else None. done_flag is a threading.Event which becomes set once the mod is installed. note that this return value can end interactions.
     """
