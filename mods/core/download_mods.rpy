@@ -305,6 +305,7 @@ init -1 python:
     import math
     import traceback
     import threading
+    from collections import Counter
 
     import modloader
     from modloader import modconfig, steamhandler_extensions
@@ -493,35 +494,41 @@ init -1 python:
             :param base_modlist: The vendor modlist for this class
             """
 
-            self._modlist = base_modlist
+            self._modlist = {mod.id: mod for mod in base_modlist}
             self._add_map = {}
-            self._dependant_add_map = {}
+            self._dependant_add_map = Counter()
             self._remove_map = {}
-            self._dependant_remove_map = {}
             self._dependency_map = {}
             self._r_dependency_map = {}
 
-            for mod in self._modlist:
-                mod_id = mod.id
+            for mod_id, mod in self._modlist.items():
                 child_list = mod.child_list
-                self._dependency_map[mod_id] = child_list
+                self._dependency_map[mod_id] = tuple(child_list)
                 for child_key in child_list:
                     if child_key in self._r_dependency_map:
                         self._r_dependency_map[child_key].append(mod_id)
                     else:
                         self._r_dependency_map[child_key] = [mod_id]
 
+            for key, value in self._r_dependency_map.iteritems():
+                self._r_dependency_map[key] = tuple(value)
+
+
         def get_mod(self, mod_id):
-            idx = [mod.id for mod in self._modlist].index(mod_id) # Raises ValueError if mod is not present. intentionally not caught
-            return self._modlist[idx]
+            return self._modlist[mod_id]
 
         def get_mod_by_name(self, mod_name):
-            idx = [mod.name for mod in self._modlist].index(mod_name) # Raises ValueError if mod is not present. intentionally not caught
-            return self._modlist[idx]
+            result = [mod_id for mod_id, mod in self._modlist.iteritems() if mod.name == mod_name]
+            if not result:
+                raise ValueError("mod \"{}\" not present in modlist".format(mod_name))
+            return result[0]
 
 
         def get_added_mods(self):
             return self._add_map
+
+        def get_added_dependencies(self):
+            return {mod_id: self.get_mod(mod_id).name for mod_id in self._dependant_add_map.iterkeys()}
 
         def get_removed_mods(self):
             return self._remove_map
@@ -529,8 +536,15 @@ init -1 python:
         def is_mod_added(self, mod_id):
             return mod_id in self.get_added_mods()
 
+        def is_mod_dependency(self, mod_id):
+            return mod_id in self.get_added_dependencies()
+
         def is_mod_removed(self, mod_id):
             return mod_id in self.get_removed_mods()
+
+        def is_all_dependencies_present(self, mod_id):
+            """Are all of mod_id's dependencies present in the modlist"""
+            return all((dep_id in self._modlist) for dep_id in self._dependency_map[mod_id])
 
 
         def is_mod_installed(self, mod_id):
@@ -543,18 +557,48 @@ init -1 python:
             return (self.is_mod_installed(mod_id) or self.is_mod_added(mod_id)) and not self.is_mod_removed(mod_id)
 
 
+        def _add_dependencies_count_recursive(self, mod_id, subtract=False):
+            """Recursively find all of mod_id's dependencies, then add them to self's self's dependency counts, using self's modlist.
+
+            :param mod_id: the mod that was added to self, which it's recursive dependency counts will be tracked.
+            :param subtract: if False (default), dependency counts will be added to self. if True, dependency counts will be subtracted.
+            """
+            print "adding dependencies for", mod_id
+            # Find recursive dependency counts
+            dependencies = set()
+            unchecked_mod_set = set((mod_id,))
+            while unchecked_mod_set:
+                new_mod_set = set()
+                # get current counts (repetitions are not counted)
+                for m_id in unchecked_mod_set:
+                    new_mod_set.update(self._dependency_map[m_id])
+                new_mod_set = (new_mod_set - dependencies).intersection(self._modlist.keys()) # Cut down mods that have already been found, and non-present mods
+                dependencies |= new_mod_set
+                unchecked_mod_set = new_mod_set
+
+            # += and -= create and destroy entries with count 0, which is why they're used
+            if subtract:
+                self._dependant_add_map -= Counter(dependencies)
+            else:
+                self._dependant_add_map += Counter(dependencies)
+
+            print "deplist", self._dependant_add_map
+
+
         def add_mod(self, mod_id):
             print "adding mod:", mod_id
             if mod_id in self._remove_map: # Added, then removed this session
                 self._remove_map.pop(mod_id)
             elif mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
                 self._add_map[mod_id] = self.get_mod(mod_id).name
+                self._add_dependencies_count_recursive(mod_id)
             # else: nothing to do...
 
         def remove_mod(self, mod_id, filename=""):
             print "removing mod:", mod_id, filename
             if mod_id in self._add_map:
                 self._add_map.pop(mod_id)
+                self._add_dependencies_count_recursive(mod_id, subtract=True)
             elif mod_id not in self._remove_map:
                 self._remove_map[mod_id] = (self.get_mod(mod_id).name, filename)
 
