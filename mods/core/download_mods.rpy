@@ -518,7 +518,7 @@ init -1 python:
             return self._modlist[mod_id]
 
         def get_mod_by_name(self, mod_name):
-            result = [mod_id for mod_id, mod in self._modlist.iteritems() if mod.name == mod_name]
+            result = [mod for mod in self._modlist.itervalues() if mod.name == mod_name]
             if not result:
                 raise ValueError("mod \"{}\" not present in modlist".format(mod_name))
             return result[0]
@@ -527,7 +527,18 @@ init -1 python:
         def get_added_mods(self):
             return self._add_map
 
-        def get_added_dependencies(self):
+        def get_added_dependencies(self, missing=False):
+            """Get all added mod dependencies.
+
+            :param missing: if True, only include missing (as in, not installed) dependencies. if False (default), include all dependencies
+            """
+            if missing:
+                result = {}
+                for mod_id in self._dependant_add_map.iterkeys():
+                    mod_name = self.get_mod(mod_id).name
+                    if not _modmenu_is_mod_installed(mod_id, mod_name):
+                        result[mod_id] = mod_name
+                return result
             return {mod_id: self.get_mod(mod_id).name for mod_id in self._dependant_add_map.iterkeys()}
 
         def get_removed_mods(self):
@@ -1005,9 +1016,17 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
 
                 textbutton "[mod_button_text]":
                     style "modmenu_select_btn"
+                    # Recolor the button if involved with add/remove/dependency lists
                     if mod_changes.is_mod_added(mod_id):
-                        background "#007f009B"
-                        hover_background "#7fff7f9B"
+                        if not mod_changes.is_all_dependencies_present(mod_id):
+                            background "#7f7f00CF"
+                            hover_background "#ffff7fCF"
+                        else:
+                            background "#007f009B"
+                            hover_background "#7fff7f9B"
+                    elif mod_changes.is_mod_dependency(mod_id):
+                        background "#007f3f9B"
+                        hover_background "#7fffaf9B"
                     elif mod_changes.is_mod_removed(mod_id):
                         background "#7f00009B"
                         hover_background "#ff7f7f9B"
@@ -1150,10 +1169,15 @@ transform _button_zoom:
 screen modmenu_apply_confirm(mod_changes, use_steam):
     modal True
     python:
-        from modloader.modconfig import apply_mod_changes as apply_mod_changes
+        from modloader.modconfig import apply_mod_changes
 
-        mods_to_install = mod_changes.get_added_mods()
-        mods_to_uninstall = {mod_name: filename for mod_name, filename in mod_changes.get_removed_mods().itervalues()}
+        mods_to_install = dict(mod_changes.get_added_mods())
+        mods_to_install.update(mod_changes.get_added_dependencies(missing=True))
+        mods_to_uninstall = {} # For some reason, the dict comprehension created problems when I added in if clause to it...
+        for mod_id, (mod_name, filename) in mod_changes.get_removed_mods().iteritems():
+            if not mod_changes.is_mod_dependency(mod_id):
+                mods_to_uninstall[mod_name] = filename
+#         mods_to_uninstall = {mod_name: filename for mod_id, (mod_name, filename) in mod_changes.get_removed_mods().iteritems() if not mod_changes.is_mod_dependency(mod_id)}
         n_mods_to_install = len(mods_to_install)
         n_mods_to_uninstall = len(mods_to_uninstall)
 
@@ -1209,12 +1233,13 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                 spacing 20
                                 ysize 60
 
-                                imagebutton:
-                                    idle "image/ui/close_idle.png" at _button_zoom
-                                    hover "image/ui/close_hover.png"
-                                    yalign 0.5
+                                if not mod_changes.is_mod_dependency(mod_id):
+                                    imagebutton:
+                                        idle "image/ui/close_idle.png" at _button_zoom
+                                        hover "image/ui/close_hover.png"
+                                        yalign 0.5
 
-                                    action Function(mod_changes.remove_mod, mod_id) # As mod is guaranteed to be in the add list, we only need id to remove.
+                                        action Function(mod_changes.remove_mod, mod_id) # As mod is guaranteed to be in the add list, we only need id to remove.
 
                                 text modname:
                                     if len(modname) > 30:
@@ -1255,7 +1280,7 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                     idle "image/ui/close_idle.png" at _button_zoom
                                     hover "image/ui/close_hover.png"
                                     yalign 0.5
-                                    action Function(mod_changes.add_mod, mod_changes.get_mod_by_name(modname)[0])
+                                    action Function(mod_changes.add_mod, mod_changes.get_mod_by_name(modname).id)
 
                                 text modname:
                                     if len(modname) > 30:
