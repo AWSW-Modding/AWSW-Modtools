@@ -616,6 +616,9 @@ init -1 python:
         def get_mod_dependencies(self, mod_id):
             return self._dependency_map[mod_id]
 
+        def get_mod_parents(self, mod_id):
+            return self._r_dependency_map[mod_id]
+
 
         def get_added_mods(self):
             return self._add_map
@@ -656,9 +659,15 @@ init -1 python:
             mod = self.get_mod(mod_id)
             return _modmenu_is_mod_installed(mod_id, mod.name)
 
-        def is_mod_present(self, mod_id):
-            """Will the mod be installed once the modmenu changes have been applied."""
-            return (self.is_mod_installed(mod_id) or self.is_mod_added(mod_id)) and not self.is_mod_removed(mod_id)
+        def is_mod_present(self, mod_id, dependency=False):
+            """Will the mod be installed once the modmenu changes have been applied
+            :param mod_id: the mod id to check presence
+            :param dependency: if False (default), ignore dependency install for this calculation. if True, then include such case"""
+            return ((self.is_mod_installed(mod_id) or self.is_mod_added(mod_id)) and not self.is_mod_removed(mod_id)) or (dependency and self.is_mod_dependency(mod_id))
+
+        def is_mod_removable(self, mod_id):
+            """Can a mod be removed without breaking dependency constraints. this decides if a remove_mod call will produce a visible effect"""
+            return all(not self.is_mod_present(parent_id, dependency=True) for parent_id in self.get_mod_parents(mod_id))
 
 
         def add_mod(self, mod_id):
@@ -1029,13 +1038,32 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
                         $ mod_button_text = mod_button_text[:30]
                         $ mod_button_text = "{size=-10}" + mod_button_text + "{/size}"
 
+                $ mod_button_text_extras = []
+
                 if mod_changes.is_mod_installed(mod_id):
-                    $ mod_button_text += "\n{size=-5}(Installed"
+                    $ mod_button_text_extras.append("Installed")
                     if mod_changes.is_mod_removed(mod_id):
-                        $ mod_button_text += ", removed"
-                    $ mod_button_text += "){/size}"
+                        if mod_changes.is_mod_removable(mod_id):
+                            $ mod_button_text_extras.append("Removed")
+                        else:
+                            $ mod_button_text_extras.append("{s}Removed{/s}")
                 elif mod_changes.is_mod_added(mod_id):
-                    $ mod_button_text += "\n{size=-5}(Added){/size}"
+                    $ mod_button_text_extras.append("Added")
+                    if not mod_changes.is_all_dependencies_present(mod_id):
+                        $ mod_button_text_extras.append("Missing")
+
+                if mod_changes.is_mod_dependency(mod_id):
+                    $ mod_button_text_extras.append("Dependency")
+
+                if mod_button_text_extras:
+                    $ mod_button_status_text = ", ".join(mod_button_text_extras)
+                    if len(mod_button_status_text) >= 25:
+                        $ mod_button_text += "\n{size=-10}("
+                    else:
+                        $ mod_button_text += "\n{size=-5}("
+                    $ mod_button_text += mod_button_status_text  + "){/size}"
+
+                # format: "\n{size=-5}(eff, eff, eff){/size}"
 
                 textbutton "[mod_button_text]":
                     style "modmenu_select_btn"
@@ -1051,8 +1079,13 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
                         background "#007f3f9B"
                         hover_background "#7fffaf9B"
                     elif mod_changes.is_mod_removed(mod_id):
-                        background "#7f00009B"
-                        hover_background "#ff7f7f9B"
+                        if mod_changes.is_mod_removable(mod_id):
+                            background "#7f00009B"
+                            hover_background "#ff7f7f9B"
+                        else:
+                            background "#7f3f009B"
+                            hover_background "#ffbf7f9B"
+
 
                     action [Hide("modmenu_mod_content"),
                             Show("modmenu_mod_content",
@@ -1231,7 +1264,7 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
         mods_to_install.update(mod_changes.get_added_dependencies(missing=True))
         mods_to_uninstall = {} # For some reason, the dict comprehension created problems when I added in if clause to it...
         for mod_id, (mod_name, filename) in mod_changes.get_removed_mods().iteritems():
-            if not mod_changes.is_mod_dependency(mod_id):
+            if mod_changes.is_mod_removable(mod_id):
                 mods_to_uninstall[mod_name] = filename
 #         mods_to_uninstall = {mod_name: filename for mod_id, (mod_name, filename) in mod_changes.get_removed_mods().iteritems() if not mod_changes.is_mod_dependency(mod_id)}
         n_mods_to_install = len(mods_to_install)
