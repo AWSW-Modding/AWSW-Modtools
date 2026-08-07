@@ -531,6 +531,50 @@ init -1 python:
         """Is mod actually installed on the computer, regardless of modmenu status."""
         return str(mod_id) in modinfo.get_mod_folders() or str(mod_name) in modinfo.get_mod_folders()
 
+
+    def _modmenu_get_recursive_deps(dep_map, reverse_dep_map, strict=True):
+        """Generate a recursive dependency map from the simple forward and reverse dependency maps
+
+        :param dep_map: mapping from mod_id to iterable(mod_id), from each mod to it's dependencies
+        :param reverse_dep_map: reverse mapping, from each mod to is users. used for efficiency
+        :param strict: if True (default), raise KeyError on dependencies which do not appear as keys in dep_map. if False, they are treated as mods without dependencies
+        :return mapping from mod_id to set(mod_id), recursive mod mapping
+        :raises KeyError when strict=True and a mod has a dependency not in the mapping
+        :raises ValueError when a circular dependency is detected
+        """
+        result = {}
+        if strict:
+            unfulfilled_deps = {mod_id: set(child_list) for mod_id, child_list in dep_map.iteritems()}
+        else:
+            checked_deps = dep_map.keys()
+            unfulfilled_deps = {mod_id: set(child_list).intersection(checked_deps) for mod_id, child_list in dep_map.iteritems()}
+        all_fulfilled = {mod_id: dep_map[mod_id] for mod_id, unfulfilled_list in unfulfilled_deps.iteritems() if not len(unfulfilled_list)}
+        unfulfilled_deps = {mod_id: child_list for mod_id, child_list in unfulfilled_deps.iteritems() if mod_id not in all_fulfilled} # remove fulfilled mods
+        while len(all_fulfilled):
+            for mod_id, child_list in all_fulfilled.iteritems():
+                # add entry to dependency map
+                if strict:
+                    recursive_deps = reduce(set.union, (dep_map[dep_id] for dep_id in child_list), set())
+                else:
+                    recursive_deps = reduce(set.union, (dep_map.get(dep_id, set()) for dep_id in child_list), set())
+                result[mod_id] = set(child_list).union(recursive_deps)
+
+                # update that they're fulfilled
+                for use_id in reverse_dep_map[mod_id]:
+                    unfulfilled_deps[use_id].remove(mod_id)
+
+            all_fulfilled = {mod_id: dep_map[mod_id] for mod_id, unfulfilled_list in unfulfilled_deps.iteritems() if not len(unfulfilled_list)}
+            unfulfilled_deps = {mod_id: child_list for mod_id, child_list in unfulfilled_deps.iteritems() if mod_id not in all_fulfilled}
+
+
+        # all missing are circular dependencies. this should really never happen...
+        circular_deps = set(dep_map.iterkeys()) - set(result.iterkeys())
+        if circular_deps:
+            raise ValueError("Circular dependency detected regarding these mods: {}".format(tuple(circular_deps)))
+
+        return result
+
+
     class Modchanges:
         def __init__(self, base_modlist):
             """A class holding the full modlist, along with functionality to request to install or uninstall a mod.
@@ -542,20 +586,22 @@ init -1 python:
             self._add_map = {}
             self._dependant_add_map = Counter()
             self._remove_map = {}
-            self._dependency_map = {}
-            self._r_dependency_map = {}
 
-            for mod_id, mod in self._modlist.items():
-                child_list = mod.child_list
-                self._dependency_map[mod_id] = tuple(child_list)
+            forward_dep_map = {mod_id: set(mod.child_list) for mod_id, mod in self._modlist.iteritems()}
+            reverse_dep_map = {mod_id: set() for mod_id in self._modlist}
+            for mod_id, child_list in forward_dep_map.iteritems():
                 for child_key in child_list:
-                    if child_key in self._r_dependency_map:
-                        self._r_dependency_map[child_key].append(mod_id)
-                    else:
-                        self._r_dependency_map[child_key] = [mod_id]
+                    if child_key not in reverse_dep_map:
+                        reverse_dep_map[child_key] = set()
+                    reverse_dep_map[child_key].add(mod_id)
 
-            for key, value in self._r_dependency_map.iteritems():
-                self._r_dependency_map[key] = tuple(value)
+            # Fixup forward_dep_map to include missing keys from reverse_dep_map as _modmenu_get_recursive_deps is annoying about them
+            missing_keys = set(reverse_dep_map.keys()) - set(forward_dep_map.keys())
+            forward_dep_map.update({key: set() for key in missing_keys})
+
+
+            self._dependency_map = _modmenu_get_recursive_deps(forward_dep_map, reverse_dep_map, strict=False)
+            self._r_dependency_map = _modmenu_get_recursive_deps(reverse_dep_map, forward_dep_map, strict=False)
 
 
         def get_mod(self, mod_id):
@@ -566,6 +612,9 @@ init -1 python:
             if not result:
                 raise ValueError("mod \"{}\" not present in modlist".format(mod_name))
             return result[0]
+
+        def get_mod_dependencies(self, mod_id):
+            return self._dependency_map[mod_id]
 
 
         def get_added_mods(self):
@@ -612,48 +661,20 @@ init -1 python:
             return (self.is_mod_installed(mod_id) or self.is_mod_added(mod_id)) and not self.is_mod_removed(mod_id)
 
 
-        def _add_dependencies_count_recursive(self, mod_id, subtract=False):
-            """Recursively find all of mod_id's dependencies, then add them to self's self's dependency counts, using self's modlist.
-
-            :param mod_id: the mod that was added to self, which it's recursive dependency counts will be tracked.
-            :param subtract: if False (default), dependency counts will be added to self. if True, dependency counts will be subtracted.
-            """
-            print "adding dependencies for", mod_id
-            # Find recursive dependency counts
-            dependencies = set()
-            unchecked_mod_set = set((mod_id,))
-            while unchecked_mod_set:
-                new_mod_set = set()
-                # get current counts (repetitions are not counted)
-                for m_id in unchecked_mod_set:
-                    new_mod_set.update(self._dependency_map[m_id])
-                new_mod_set = (new_mod_set - dependencies).intersection(self._modlist.keys()) # Cut down mods that have already been found, and non-present mods
-                dependencies |= new_mod_set
-                unchecked_mod_set = new_mod_set
-
-            # += and -= create and destroy entries with count 0, which is why they're used
-            if subtract:
-                self._dependant_add_map -= Counter(dependencies)
-            else:
-                self._dependant_add_map += Counter(dependencies)
-
-            print "deplist", self._dependant_add_map
-
-
         def add_mod(self, mod_id):
             print "adding mod:", mod_id
             if mod_id in self._remove_map: # Added, then removed this session
                 self._remove_map.pop(mod_id)
             elif mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
                 self._add_map[mod_id] = self.get_mod(mod_id).name
-                self._add_dependencies_count_recursive(mod_id)
+                self._dependant_add_map += Counter(self.get_mod_dependencies(mod_id))
             # else: nothing to do...
 
         def remove_mod(self, mod_id, filename=""):
             print "removing mod:", mod_id, filename
             if mod_id in self._add_map:
                 self._add_map.pop(mod_id)
-                self._add_dependencies_count_recursive(mod_id, subtract=True)
+                self._dependant_add_map -= Counter(self.get_mod_dependencies(mod_id))
             elif mod_id not in self._remove_map:
                 self._remove_map[mod_id] = (self.get_mod(mod_id).name, filename)
 
@@ -1173,7 +1194,7 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
             vbox xfill True ymaximum 600:
                 text "Dependencies:" size 40
 
-                for dep_id in mod.child_list:
+                for dep_id in mod_changes.get_mod_dependencies(mod_id):
                     python:
                         try:
                             dep_name = mod_changes.get_mod(dep_id).name
