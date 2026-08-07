@@ -1105,7 +1105,8 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
             font "Ardnas.otf"
 
         #Mods image
-        vbox xpos 0.72 ypos 0.21:
+#         vbox xpos 0.72 ypos 0.21:
+        vbox xpos 0.73 ypos 0.21:
             python:
                 ModmenuContentImageURL(url)
 
@@ -1147,8 +1148,8 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
                 #scrollbars "vertical"
                 draggable True
                 mousewheel True
-                xminimum 1100
-                xmaximum 1100
+                xminimum 1050
+                xmaximum 1050
                 yminimum 355
                 ymaximum 355
 
@@ -1161,8 +1162,40 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
         bar value YScrollValue("modcontent_vp"):
             style "modmenu_content_slider"
             ypos 472
-            xpos 1682
+            xpos 1582
             #yalign 0.95
+
+        # dependency area
+        frame xpos 1632 ypos 0.21 xsize 280 ysize 600:
+            background "#0000009B"
+            xpadding 15
+
+            vbox xfill True ymaximum 600:
+                text "Dependencies:" size 40
+
+                for dep_id in mod.child_list:
+                    python:
+                        try:
+                            dep_name = mod_changes.get_mod(dep_id).name
+
+                            if mod_changes.is_mod_installed(dep_id):
+                                dep_color = "#ffffffFF"
+                            elif mod_changes.is_mod_added(dep_id):
+                                dep_color = "#bfff00FF"
+                            else:
+                                dep_color = "#00ffbfFF"
+
+                        except KeyError:
+                            dep_name = "<Missing>"
+                            dep_color = "#7f7f7fFF"
+
+#                     textbutton dep_name xsize 250:
+#                         text_size 20
+                    text dep_name:
+                        size 20
+                        color dep_color
+
+
 
 transform _button_zoom:
     zoom 40.0 / 54.0
