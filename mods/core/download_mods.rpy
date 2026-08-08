@@ -155,37 +155,144 @@ init python:
     import modmenu_search
     import time
 
-    def set_query(value):
-        curr_screen_scope = renpy.current_screen().scope
-        curr_screen_scope["query"] = value
-        search_modlist(value, curr_screen_scope["author_query"])
+    class ModscreenModlistManager:
+        def __init__(self, modlist, page_size=6, filter_map=None, use_steam=True):
+            """Manages the modscreen's displayed modlist, including paging, searching and filtering.
 
-    def set_author_query(value):
-        curr_screen_scope = renpy.current_screen().scope
-        curr_screen_scope["author_query"] = value
-        search_modlist(curr_screen_scope["query"], value)
+            :param modlist: The base modlist to manage
+            :param page_size: The page size of each mod page
+            :param filter_map: mapping from name (str) to filter func: the initial filter types which are available. if None (default), the initial filter map is empty
+            """
+            if page_size <= 0:
+                raise ValueError("page_size={} must be positive!".format(page_size))
+
+            if filter_map is None:
+                filter_map = {}
+
+            self._base_modlist = modlist
+            self._reordered_modlist = modlist
+            self._filtered_modlist = modlist
+
+            self._current_page = 1
+            self._page_size = page_size
+
+            self._query = ""
+            self._author_query = ""
+
+            self._filter_funcs = filter_map
+            self._filter_activity = {name: None for name in filter_map.iterkeys()}
+
+            self.use_steam = use_steam
+
+        def get_current_page(self):
+            return self._current_page
+
+        def get_page_size(self):
+            return self._page_size
+
+        def get_max_page(self):
+            return int(math.ceil(len(self.get_current_modlist()) / float(self.get_page_size()))) # float is used to force accurate division so the ciel actually does its job
+
+        def get_query(self):
+            return self._query
+
+        def get_author_query(self):
+            return self._author_query
+
+        def is_filter_active(self, name):
+            """Return filter name's activity. see set_filter_active for how filter activity is defined"""
+            return self._filter_activity[name]
+
+        def get_filter_func(self, name):
+            return self._filter_funcs[name]
 
 
-    def search_modlist(query, author_query=""):
-        print "searching with {}, {}".format(query, author_query)
+        def get_base_modlist(self):
+            """Get the base modlist, upon which all paging, searching and filtering is done"""
+            return self._base_modlist
 
-        # As renpy input doesn't allow for additional variables to this method, I've had to resort to this cursed thing
-        curr_screen_scope = renpy.current_screen().scope
-        modlist = curr_screen_scope["contents"]
-        page = curr_screen_scope["current_page"]
-        page_size = curr_screen_scope["PAGE_SIZE"]
-        use_steam = curr_screen_scope["use_steam"]
+        def get_current_modlist(self):
+            """Get the searched and filtered modlist"""
+            return self._filtered_modlist
 
-        s_time = time.time()
-        if query.strip() or author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
-            reordered_modlist = modmenu_search.sort_best(query, modlist, author_query=author_query)
-        else:
-            reordered_modlist = curr_screen_scope["contents"]
-        print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
+        def get_current_modlist_page(self):
+            page_size = self.get_page_size()
+            page = self.get_current_page()
+            return self.get_current_modlist()[page_size*(page - 1) : page_size*page] # Pages are 1-indexed but lists are 0-indexed, so 1 is subtracted from page# to match them
 
-        curr_screen_scope["search_order_contents"] = reordered_modlist
-        _refresh_modlist_page(page, page_size, reordered_modlist, use_steam)
-        renpy.restart_interaction()
+
+        def set_current_page(self, page_num):
+            self._current_page = min(max(page_num, 1), self.get_max_page()) # clamp
+
+        def move_current_page(self, amount):
+            self.set_current_page(self.get_current_page() + amount)
+
+        def set_page_size(self, page_size):
+            if page_size <= 0:
+                raise ValueError("page_size={} must be positive!".format(page_size))
+            self._page_size = page_size
+
+        def set_query(self, query):
+            self._query = query
+            self._apply_search()
+
+        def set_author_query(self, query):
+            self._author_query = query
+            self._apply_search()
+
+        def set_filter_active(self, name, active):
+            """Set activity status of filter of name name
+            :param name: The name in the name map of the filter to set
+            :param active: The activity status to set. True filters out False results, False filters out True results, and None is disabled"""
+            print "setting filter \"{}\" to".format(name), active
+            self._filter_activity[name] = active
+            self._apply_filters()
+
+        def register_filter(self, name, func):
+            """Register a new filter func with the name name
+            :raises KeyError if name is already present"""
+            if name in self._filter_funcs:
+                raise KeyError("\'{}\' is already registered".format(name))
+
+            self._filter_funcs[name] = func
+            self._filter_activity[name] = None
+
+
+        def _apply_search(self):
+            """apply the new search to the modlist"""
+            s_time = time.time()
+            if self._query.strip() or self._author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
+                self._reordered_modlist = modmenu_search.sort_best(self._query, self.get_base_modlist(), author_query=self._author_query)
+            else:
+                self._reordered_modlist = self.get_base_modlist()
+            print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
+            self._apply_filters()
+
+        def _apply_filters(self):
+            result_contents = []
+
+            for entry in self._reordered_modlist:
+                passed = True
+                for name, status in self._filter_activity.iteritems():
+                    if status is not None and self._filter_funcs[name](entry) != status:
+                        passed = False
+                        break
+                if passed:
+                    result_contents.append(entry)
+
+            self._filtered_modlist = result_contents
+#             _refresh_modlist(self, self.use_steam)
+
+    def _modmenu_do_then_refresh(func, modlist_manager, use_steam):
+        """A wrapper which calls func and then refreshes the modlist display. necessary for searchbars, as they don't accept Actions"""
+        def inner(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            finally:
+                _refresh_modlist(modlist_manager, use_steam)
+
+        return inner
+
 
 
 init -1 python:
@@ -363,16 +470,13 @@ init -1 python:
 
 
 
-    # Paging methods
-    def _get_slice_lims_from_page(page, page_size):
-        return page_size * (page - 1), page_size * page # Pages are 1-indexed but lists are 0-indexed, so 1 is subtracted from page# to match them
-
-    def _refresh_modlist_page(page, page_size, modlist, use_steam):
-        start, end = _get_slice_lims_from_page(page, page_size)
+    def _refresh_modlist(modlist_manager, use_steam):
         renpy.hide_screen('modmenu_paged_modlist')
-        renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
+        renpy.show_screen('modmenu_paged_modlist', contents=modlist_manager.get_current_modlist_page(), use_steam=use_steam)
+        renpy.restart_interaction()
 
 
+    # Mod selection methods
     _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
     _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
 
@@ -472,14 +576,13 @@ screen modmenu_entrance(use_steam):
 screen modmenu_paged(contents, use_steam):
     modal True
 
-    default current_page = 1
-    default PAGE_SIZE = 6
-    $ MIN_PAGE = 1 # Do note, modpage numbers are 1-indexed
-    $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
+    python:
+        filter_map = {"install": lambda mod: _modmenu_is_mod_installed(mod[0], mod[1]),
+                   "select": lambda mod: _modmenu_is_mod_added(mod[0]) or _modmenu_is_mod_removed(mod[0]),
+                   "present": lambda mod: _modmenu_is_mod_present(mod[0], mod[1]),
+                  }
 
-    default search_order_contents = contents
-    default query = ""
-    default author_query = ""
+    default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
 
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -528,43 +631,45 @@ screen modmenu_paged(contents, use_steam):
                 xalign 0.2
                 ycenter 0.5
                 # Tried to bind this to shift+scroll, but it didn't work...
-                action [SetScreenVariable("current_page", max(current_page-5, MIN_PAGE)),
-                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, -5),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                        ]
-                sensitive (current_page > 1)
+                sensitive (modlist_manager.get_current_page() > 1)
 
             textbutton "-":
                 xalign 0.4
                 ycenter 0.5
                 keysym "mousedown_4"
-                action [SetScreenVariable("current_page", current_page-1),
-                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, -1),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                        ]
-                sensitive (current_page > 1)
+                sensitive (modlist_manager.get_current_page() > 1)
 
-            label "Page #[current_page]/[MAX_PAGE]":
+            # renpy seems to not like calling things in the string formatting...
+            $ _page_num = modlist_manager.get_current_page()
+            $ _max_page = modlist_manager.get_max_page()
+            label "Page #[_page_num]/[_max_page]":
                 xalign 0.5
                 ycenter 0.5
-
                 text_size 40
 
             textbutton "+":
                 xalign 0.6
                 ycenter 0.5
                 keysym "mousedown_5"
-                action [SetScreenVariable("current_page", current_page+1),
-                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, 1),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                         ]
-                sensitive (current_page < MAX_PAGE)
+                sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
             textbutton "+5":
                 xalign 0.8
                 ycenter 0.5
                 # Also tried to bind this to shift+scroll, but it didn't work...
-                action [SetScreenVariable("current_page", min(current_page+5, MAX_PAGE)),
-                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, 5),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                         ]
-                sensitive (current_page < MAX_PAGE)
+                sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
         $ n_added_mods = len(_modmenu_get_added_mods())
         $ n_removed_mods = len(_modmenu_get_removed_mods())
@@ -599,6 +704,7 @@ screen modmenu_paged(contents, use_steam):
                     Show("modmenu_apply_confirm", use_steam=use_steam)]
             sensitive bool(n_added_mods) or bool(n_removed_mods)
 
+    # Searchbars
     hbox:
         xpos 65
         ypos 10
@@ -654,7 +760,7 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320 # While the horizontal space is supposed to be 340, The inputs have a tendency to drop down a row...
-                    changed set_author_query
+                    changed _modmenu_do_then_refresh(modlist_manager.set_author_query, modlist_manager, use_steam)
 
 
             button:
@@ -673,15 +779,76 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320
-                    changed set_query
+                    changed _modmenu_do_then_refresh(modlist_manager.set_query, modlist_manager, use_steam)
         key "K_ESCAPE" action [SetScreenVariable("focus_query_input", False), SetScreenVariable("focus_author_query_input", False)]
         key "K_TAB" action [ToggleScreenVariable("focus_author_query_input"),
                             If(focus_author_query_input,
                                ToggleScreenVariable("focus_query_input"),
                                SetScreenVariable("focus_query_input", False))]
 
+    # Filter buttons
+    hbox:
+        xpos 510
+        ypos 10
+        xanchor 0.0
+        yanchor 0.0
+        xsize 250
+        ysize 110
 
-    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+        spacing 10
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            xsize 200
+            spacing 6
+
+            # For some reason 'label' and 'text' text components insisted on being ever so slightly larger than necessary, which made everything look misaligned
+            textbutton "Installed":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            textbutton "Selected":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            textbutton "To be installed":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+        vbox:
+            xalign 1.0
+            ycenter 0.5
+            spacing 6
+
+            $ _im_size = 30
+
+            for filter_name in ["install", "select", "present"]:
+
+                $ _status = modlist_manager.is_filter_active(filter_name)
+                imagebutton:
+                    if _status is True:
+                        idle im.Scale("ui/nsfw_chbox-checked.png", _im_size, _im_size)
+                    elif _status is False:
+                        idle im.Scale("ui/nsfw_chbox-crossed.png", _im_size, _im_size)
+                    else: # _status is None
+                        idle im.Scale("ui/nsfw_chbox-unchecked.png", _im_size, _im_size)
+
+                    action    [Function(modlist_manager.set_filter_active, filter_name, If(_status is True, None, True)),
+                               Function(_refresh_modlist, modlist_manager, use_steam)
+                              ]
+                    alternate [Function(modlist_manager.set_filter_active, filter_name, If(_status is False, None, False)),
+                               Function(_refresh_modlist, modlist_manager, use_steam)
+                              ]
+
+
+    on "show" action [Function(_refresh_modlist, modlist_manager, use_steam),
                       Function(_preload_mod_images, contents, None),
                       Function(im.cache.clear) # I tended to get 'out of memory' errors on this menu, so we use this precaution
                       ]
