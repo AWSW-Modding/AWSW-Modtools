@@ -886,7 +886,7 @@ screen modmenu_apply_confirm(use_steam):
         n_mods_to_uninstall = len(mods_to_uninstall)
 
     window id "modmenu_apply_confirm" at alpha_dissolve:
-        background "image/ui/nvlscreen.png"
+        add "#22589a"
         xfill True
         yfill True
 
