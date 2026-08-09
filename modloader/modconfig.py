@@ -8,6 +8,7 @@ import shutil
 from urllib2 import urlopen
 import json
 from cStringIO import StringIO
+from collections import namedtuple
 import zipfile
 
 import renpy
@@ -56,6 +57,7 @@ def report_exception(overview, error_str):
             #steammgr.HandleException(exception_str)
 
 
+ModlistEntry = namedtuple("ModlistEntry", ["id", "name", "author", "desc", "image_url", "child_list"])
 
 @cache
 def github_downloadable_mods():
@@ -66,14 +68,14 @@ def github_downloadable_mods():
     for branch in branches:
         name = branch["name"]
         if name.startswith("mod-"):
-            data.append([
+            data.append(ModlistEntry(
                 ZIP_LOCATION.format(mod_name=name),
                 name.replace("mod-", "", 1).encode("utf-8"),
                 "DummyAuthor",
                 "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?",
                 "http://s-media-cache-ak0.pinimg.com/originals/42/41/90/424190c7f88c514a1c26a79572d61191.png",
                 []
-            ])
+            ))
     return sorted(data, key=lambda mod: mod[1].lower())
 
 
@@ -81,7 +83,7 @@ def github_downloadable_mods():
 def load_steam_modlist():
     """Loads and verifies the steam modlist data."""
     # A different format,
-    # (id, mod_name, author, desc, image_url, child_list)
+    # (id, name, author, desc, image_url, child_list)
     
     # This uses GetAllItems(), Which is affected by the QueryApi crash.
     #   therefore, steamhandler_extensions are preferred
@@ -98,8 +100,9 @@ def load_steam_modlist():
         create_time, modify_time, signature = mod[5:8]
         is_valid, verified = has_valid_signature(file_id, create_time, modify_time, signature)
         if is_valid:
-            mods.append(list(mod[:5]) + [child_list])
-            mods[-1][3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+            next_mod = list(mod[:5]) + [child_list]
+            next_mod[3] += "\n\nVerified by {}".format(verified.username.replace("<postmaster@example.com>", ""))
+            mods.append(ModlistEntry(*next_mod))
         else:
             print "NOT VALID SIG", mod[1]  # Note: printing only the mod name, instead of the whole thing SIGNIFICANTLY speeds up this call
     return mods

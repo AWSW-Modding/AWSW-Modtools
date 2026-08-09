@@ -396,7 +396,7 @@ init -1 python:
             if internet_on():
                 self.set_state(EntranceStates.MODLIST)
                 try:
-                    # (modid, name, author, description, image) (for github)
+                    # (mod_url, name, author, description, image) (for github)
                     # (id, name, author, desc, image) (for steam)
                     if use_steam:
                         from modloader.modconfig import steam_downloadable_mods as download_mods
@@ -502,9 +502,8 @@ init -1 python:
             self._r_dependency_map = {}
 
             for mod in self._modlist:
-                mod_id = mod[0]
-                mod_name = mod[1]
-                child_list = mod[5]
+                mod_id = mod.id
+                child_list = mod.child_list
                 self._dependency_map[mod_id] = child_list
                 for child_key in child_list:
                     if child_key in self._r_dependency_map:
@@ -513,11 +512,11 @@ init -1 python:
                         self._r_dependency_map[child_key] = [mod_id]
 
         def get_mod(self, mod_id):
-            idx = [mod[0] for mod in self._modlist].index(mod_id) # Raises ValueError if mod is not present. intentionally not caught
+            idx = [mod.id for mod in self._modlist].index(mod_id) # Raises ValueError if mod is not present. intentionally not caught
             return self._modlist[idx]
 
         def get_mod_by_name(self, mod_name):
-            idx = [mod[1] for mod in self._modlist].index(mod_name) # Raises ValueError if mod is not present. intentionally not caught
+            idx = [mod.name for mod in self._modlist].index(mod_name) # Raises ValueError if mod is not present. intentionally not caught
             return self._modlist[idx]
 
 
@@ -537,7 +536,7 @@ init -1 python:
         def is_mod_installed(self, mod_id):
             """Version of _modmenu_is_mod_installed which matches the rest of the functions here"""
             mod = self.get_mod(mod_id)
-            return _modmenu_is_mod_installed(mod_id, mod[1])
+            return _modmenu_is_mod_installed(mod_id, mod.name)
 
         def is_mod_present(self, mod_id):
             """Will the mod be installed once the modmenu changes have been applied."""
@@ -549,7 +548,7 @@ init -1 python:
             if mod_id in self._remove_map: # Added, then removed this session
                 self._remove_map.pop(mod_id)
             elif mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
-                self._add_map[mod_id] = self.get_mod(mod_id)[1]
+                self._add_map[mod_id] = self.get_mod(mod_id).name
             # else: nothing to do...
 
         def remove_mod(self, mod_id, filename=""):
@@ -557,7 +556,7 @@ init -1 python:
             if mod_id in self._add_map:
                 self._add_map.pop(mod_id)
             elif mod_id not in self._remove_map:
-                self._remove_map[mod_id] = (self.get_mod(mod_id)[1], filename)
+                self._remove_map[mod_id] = (self.get_mod(mod_id).name, filename)
 
         def clear_added_mods(self):
             self._add_map.clear()
@@ -626,9 +625,9 @@ screen modmenu_paged(contents, use_steam):
     default mod_changes = Modchanges(contents)
 
     python:
-        filter_map = {"install": (lambda mod, mod_changes: mod_changes.is_mod_installed(mod[0]), mod_changes),
-                      "select":  (lambda mod, mod_changes: mod_changes.is_mod_added(mod[0]) or mod_changes.is_mod_removed(mod[0]), mod_changes),
-                      "present": (lambda mod, mod_changes: mod_changes.is_mod_present(mod[0]), mod_changes),
+        filter_map = {"install": (lambda mod, mod_changes: mod_changes.is_mod_installed(mod.id), mod_changes),
+                      "select":  (lambda mod, mod_changes: mod_changes.is_mod_added(mod.id) or mod_changes.is_mod_removed(mod.id), mod_changes),
+                      "present": (lambda mod, mod_changes: mod_changes.is_mod_present(mod.id), mod_changes),
                   }
 
     default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
@@ -659,8 +658,7 @@ screen modmenu_paged(contents, use_steam):
                     Hide("modmenu_entrance", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
-                    Play("audio", "se/sounds/close.ogg")
-                    ]
+                    Play("audio", "se/sounds/close.ogg")]
 
             xpos 0.94
             ypos 0.02
@@ -937,54 +935,50 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
             cols 1
             spacing 30
 
-            for modid, name, author, description, url, child_list in contents:
-                $ modname = modmenu_name_cleaner(name)
+            for mod in contents:
+                $ mod_id = mod.id
+                $ child_list = mod.child_list
+                $ mod_button_text = modmenu_name_cleaner(mod.name)
 
-                if len(modname) > 21:
-                    #if modname is greater than 21 characters, decrease size of font by 5
-                    if len(modname) <= 25:
-                        $ modname = "{size=-5}" + modname + "{/size}"
+                if len(mod_button_text) > 21:
+                    #if mod_button_text is greater than 21 characters, decrease size of font by 5
+                    if len(mod_button_text) <= 25:
+                        $ mod_button_text = "{size=-5}" + mod_button_text + "{/size}"
 
-                    #if modname is greater than 25 characters, decrease size of font by 10
+                    #if mod_button_text is greater than 25 characters, decrease size of font by 10
                     else:
-                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
-#                         if len(modname) > 30:
-                        $ modname = modname[:30]
-                        $ modname = "{size=-10}" + modname + "{/size}"
+                        #if mod_button_text is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
+                        $ mod_button_text = mod_button_text[:30]
+                        $ mod_button_text = "{size=-10}" + mod_button_text + "{/size}"
 
-                if mod_changes.is_mod_installed(modid):
-                    $ modname += "\n{size=-5}(Installed"
-                    if mod_changes.is_mod_removed(modid):
-                        $ modname += ", removed"
-                    $ modname += "){/size}"
-                elif mod_changes.is_mod_added(modid):
-                    $ modname += "\n{size=-5}(Added){/size}"
+                if mod_changes.is_mod_installed(mod_id):
+                    $ mod_button_text += "\n{size=-5}(Installed"
+                    if mod_changes.is_mod_removed(mod_id):
+                        $ mod_button_text += ", removed"
+                    $ mod_button_text += "){/size}"
+                elif mod_changes.is_mod_added(mod_id):
+                    $ mod_button_text += "\n{size=-5}(Added){/size}"
 
-                textbutton "[modname]":
+                textbutton "[mod_button_text]":
                     style "modmenu_select_btn"
-                    if mod_changes.is_mod_added(modid):
+                    if mod_changes.is_mod_added(mod_id):
                         background "#007f009B"
                         hover_background "#7fff7f9B"
-                    elif mod_changes.is_mod_removed(modid):
+                    elif mod_changes.is_mod_removed(mod_id):
                         background "#7f00009B"
                         hover_background "#ff7f7f9B"
 
                     action [Hide("modmenu_mod_content"),
                             Show("modmenu_mod_content",
-                                 modid=modid,
-                                 name=unicode(name, "utf8"),
-                                 author=unicode(author, "utf8"),
-                                 description=unicode(description, "utf8"),
-                                 url=url,
-                                 child_list=child_list,
+                                 mod=mod,
                                  mod_changes=mod_changes,
                                  use_steam=use_steam,
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
 
-                    alternate [If(mod_changes.is_mod_present(modid),
-                                   Function(mod_changes.remove_mod, modid, _get_modfolder(modid, name)),
-                                   Function(mod_changes.add_mod, modid)),
+                    alternate [If(mod_changes.is_mod_present(mod_id),
+                                   Function(mod_changes.remove_mod, mod_id, _get_modfolder(mod_id, mod.name)),
+                                   Function(mod_changes.add_mod, mod_id)),
                                Play("audio", "se/sounds/open.ogg")]
                               ]
 
@@ -992,7 +986,14 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
 
 
 
-screen modmenu_mod_content(modid, name, author, description, url, child_list, mod_changes, use_steam):
+
+screen modmenu_mod_content(mod, mod_changes, use_steam):
+    $ mod_id = mod.id
+    $ name = unicode(mod.name, "utf8")
+    $ author = unicode(mod.author, "utf8")
+    $ description = unicode(mod.desc, "utf8")
+    $ url = mod.image_url
+
     if use_steam:
         $ _get_modfolder = _steam_get_modfolder
     else:
@@ -1056,10 +1057,10 @@ screen modmenu_mod_content(modid, name, author, description, url, child_list, mo
 
                 null width 350
 
-                if mod_changes.is_mod_present(modid):
+                if mod_changes.is_mod_present(mod_id):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Function(mod_changes.remove_mod, modid, _get_modfolder(str(modid), name)),
+                        action [Function(mod_changes.remove_mod, mod_id, _get_modfolder(str(mod_id), name)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -1068,7 +1069,7 @@ screen modmenu_mod_content(modid, name, author, description, url, child_list, mo
                 else:
                     textbutton "Install":
                         ycenter 0.5
-                        action [Function(mod_changes.add_mod, modid),
+                        action [Function(mod_changes.add_mod, mod_id),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -1159,7 +1160,7 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                         xfill True
                         mousewheel "change"
 
-                        for modid, modname in mods_to_install.iteritems():
+                        for mod_id, modname in mods_to_install.iteritems():
                             hbox:
                                 spacing 20
                                 ysize 60
@@ -1169,7 +1170,7 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                     hover "image/ui/close_hover.png"
                                     yalign 0.5
 
-                                    action Function(mod_changes.remove_mod, modid) # As mod is guaranteed to be in the add list, we only need id to remove.
+                                    action Function(mod_changes.remove_mod, mod_id) # As mod is guaranteed to be in the add list, we only need id to remove.
 
                                 text modname:
                                     if len(modname) > 30:

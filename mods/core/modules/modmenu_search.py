@@ -43,9 +43,7 @@ def jaro_split_compare(query, modlist):
     query_words = set(query.lower().split())
     
     for mod in modlist:
-        name = mod[1]
-        desc = mod[3]
-        comps[name] = jaro_set_similarity(query_words, name, desc)
+        comps[mod.name] = jaro_set_similarity(query_words, mod.name, mod.desc)
     
     return comps
 
@@ -55,9 +53,7 @@ def jaro_author_compare(author_query, modlist):
     author_query = author_query.lower()
     
     for mod in modlist:
-        name = mod[1]
-        author = mod[2]
-        comps[name] = jaro_similarity(author_query, author.lower())
+        comps[mod.name] = jaro_similarity(author_query, mod.author.lower())
     
     return comps
 
@@ -67,7 +63,7 @@ def sort_best(query, modlist, author_query="", return_score=False):
     if query.strip():
         similarities = jaro_split_compare(query, modlist)
     else:
-        similarities = {mod[1]: (0.0, 0.0) for mod in modlist}
+        similarities = {mod.name: (0.0, 0.0) for mod in modlist}
     if author_query.strip():
         author_similarities = jaro_author_compare(author_query, modlist)
     else:
@@ -83,7 +79,7 @@ def sort_best(query, modlist, author_query="", return_score=False):
     
     if comp_func(mod_order[0]) <= 0.3:  # All bad matches, don't reorder
         print "No good matches. reordering suppressed"
-        mod_order = list((mod[1], 0.0) for mod in modlist)
+        mod_order = list((mod.name, 0.0) for mod in modlist)
     
     mods_by_name = {mod[1]: mod for mod in modlist}
     
