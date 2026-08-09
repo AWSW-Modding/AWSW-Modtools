@@ -98,7 +98,6 @@ init python:
         image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
             mod_image_preloader.load(url)
-        return
 
 
     class ImageURL(Image):
@@ -156,41 +155,144 @@ init python:
     import modmenu_search
     import time
 
-    def set_query(value):
-        curr_screen_scope = renpy.current_screen().scope
-        curr_screen_scope["query"] = value
-        search_modlist(value, curr_screen_scope["author_query"])
-        return
+    class ModscreenModlistManager:
+        def __init__(self, modlist, page_size=6, filter_map=None, use_steam=True):
+            """Manages the modscreen's displayed modlist, including paging, searching and filtering.
 
-    def set_author_query(value):
-        curr_screen_scope = renpy.current_screen().scope
-        curr_screen_scope["author_query"] = value
-        search_modlist(curr_screen_scope["query"], value)
-        return
+            :param modlist: The base modlist to manage
+            :param page_size: The page size of each mod page
+            :param filter_map: mapping from name (str) to filter func: the initial filter types which are available. if None (default), the initial filter map is empty
+            """
+            if page_size <= 0:
+                raise ValueError("page_size={} must be positive!".format(page_size))
+
+            if filter_map is None:
+                filter_map = {}
+
+            self._base_modlist = modlist
+            self._reordered_modlist = modlist
+            self._filtered_modlist = modlist
+
+            self._current_page = 1
+            self._page_size = page_size
+
+            self._query = ""
+            self._author_query = ""
+
+            self._filter_funcs = filter_map
+            self._filter_activity = {name: None for name in filter_map.iterkeys()}
+
+            self.use_steam = use_steam
+
+        def get_current_page(self):
+            return self._current_page
+
+        def get_page_size(self):
+            return self._page_size
+
+        def get_max_page(self):
+            return int(math.ceil(len(self.get_current_modlist()) / float(self.get_page_size()))) # float is used to force accurate division so the ciel actually does its job
+
+        def get_query(self):
+            return self._query
+
+        def get_author_query(self):
+            return self._author_query
+
+        def is_filter_active(self, name):
+            """Return filter name's activity. see set_filter_active for how filter activity is defined"""
+            return self._filter_activity[name]
+
+        def get_filter_func(self, name):
+            return self._filter_funcs[name]
 
 
-    def search_modlist(query, author_query=""):
-        print "searching with {}, {}".format(query, author_query)
+        def get_base_modlist(self):
+            """Get the base modlist, upon which all paging, searching and filtering is done"""
+            return self._base_modlist
 
-        # As renpy input doesn't allow for additional variables to this method, I've had to resort to this cursed thing
-        curr_screen_scope = renpy.current_screen().scope
-        modlist = curr_screen_scope["contents"]
-        page = curr_screen_scope["current_page"]
-        page_size = curr_screen_scope["PAGE_SIZE"]
-        use_steam = curr_screen_scope["use_steam"]
+        def get_current_modlist(self):
+            """Get the searched and filtered modlist"""
+            return self._filtered_modlist
 
-        s_time = time.time()
-        if query.strip() or author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
-            reordered_modlist = modmenu_search.sort_best(query, modlist, author_query=author_query)
-        else:
-            reordered_modlist = curr_screen_scope["contents"]
-        print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
+        def get_current_modlist_page(self):
+            page_size = self.get_page_size()
+            page = self.get_current_page()
+            return self.get_current_modlist()[page_size*(page - 1) : page_size*page] # Pages are 1-indexed but lists are 0-indexed, so 1 is subtracted from page# to match them
 
-        curr_screen_scope["search_order_contents"] = reordered_modlist
-        _refresh_modlist_page(page, page_size, reordered_modlist, use_steam)
-        renpy.restart_interaction()
 
-        return
+        def set_current_page(self, page_num):
+            self._current_page = min(max(page_num, 1), self.get_max_page()) # clamp
+
+        def move_current_page(self, amount):
+            self.set_current_page(self.get_current_page() + amount)
+
+        def set_page_size(self, page_size):
+            if page_size <= 0:
+                raise ValueError("page_size={} must be positive!".format(page_size))
+            self._page_size = page_size
+
+        def set_query(self, query):
+            self._query = query
+            self._apply_search()
+
+        def set_author_query(self, query):
+            self._author_query = query
+            self._apply_search()
+
+        def set_filter_active(self, name, active):
+            """Set activity status of filter of name name
+            :param name: The name in the name map of the filter to set
+            :param active: The activity status to set. True filters out False results, False filters out True results, and None is disabled"""
+            print "setting filter \"{}\" to".format(name), active
+            self._filter_activity[name] = active
+            self._apply_filters()
+
+        def register_filter(self, name, func):
+            """Register a new filter func with the name name
+            :raises KeyError if name is already present"""
+            if name in self._filter_funcs:
+                raise KeyError("\'{}\' is already registered".format(name))
+
+            self._filter_funcs[name] = func
+            self._filter_activity[name] = None
+
+
+        def _apply_search(self):
+            """apply the new search to the modlist"""
+            s_time = time.time()
+            if self._query.strip() or self._author_query.strip(): # There's no reason to reorder the modlist if no search has been done.
+                self._reordered_modlist = modmenu_search.sort_best(self._query, self.get_base_modlist(), author_query=self._author_query)
+            else:
+                self._reordered_modlist = self.get_base_modlist()
+            print "Search took: {:.5}".format(time.time() - s_time) # Hopefully this never goes above 0.3
+            self._apply_filters()
+
+        def _apply_filters(self):
+            result_contents = []
+
+            for entry in self._reordered_modlist:
+                passed = True
+                for name, status in self._filter_activity.iteritems():
+                    if status is not None and self._filter_funcs[name](entry) != status:
+                        passed = False
+                        break
+                if passed:
+                    result_contents.append(entry)
+
+            self._filtered_modlist = result_contents
+#             _refresh_modlist(self, self.use_steam)
+
+    def _modmenu_do_then_refresh(func, modlist_manager, use_steam):
+        """A wrapper which calls func and then refreshes the modlist display. necessary for searchbars, as they don't accept Actions"""
+        def inner(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            finally:
+                _refresh_modlist(modlist_manager, use_steam)
+
+        return inner
+
 
 
 init -1 python:
@@ -238,7 +340,6 @@ init -1 python:
                                             "Error raised:\n"
                                             + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
                 )
-        return
 
     # Ensure error screens are available, as we may need them
     if not renpy.exports.has_screen("_modlist_errors"):
@@ -273,7 +374,6 @@ init -1 python:
         def set_state(self, state):
             with self._state_lock:
                 self._state = state
-            return
 
         def get_state(self):
             with self._state_lock:
@@ -309,7 +409,6 @@ init -1 python:
                 self.set_state(EntranceStates.INTERNET_FAILED)
 
             self._done_signal.set()
-            return
 
     _dots = 1
     _MAX_DOTS = 3
@@ -326,7 +425,7 @@ init -1 python:
         renpy.hide_screen('modmenu_entrance')
         load_manager.disabled.set()
         renpy.restart_interaction()
-        return
+
 
     _modmenu_entrance_cancelled = False
 
@@ -368,19 +467,68 @@ init -1 python:
 
     def _enter_modmenu(use_steam):
         renpy.show_screen('modmenu_entrance', use_steam=use_steam)
-        return
 
 
 
-    # Paging methods
-    def _get_slice_lims_from_page(page, page_size):
-        return page_size * (page - 1), page_size * page # Pages are 1-indexed but lists are 0-indexed, so 1 is subtracted from page# to match them
-
-    def _refresh_modlist_page(page, page_size, modlist, use_steam):
-        start, end = _get_slice_lims_from_page(page, page_size)
+    def _refresh_modlist(modlist_manager, use_steam):
         renpy.hide_screen('modmenu_paged_modlist')
-        renpy.show_screen('modmenu_paged_modlist', contents=modlist[start:end], use_steam=use_steam)
-        return
+        renpy.show_screen('modmenu_paged_modlist', contents=modlist_manager.get_current_modlist_page(), use_steam=use_steam)
+        renpy.restart_interaction()
+
+
+    # Mod selection methods
+    _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
+    _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
+
+    def _modmenu_is_mod_installed(mod_id, mod_name):
+        """Is mod actually installed on the computer, regardless of modmenu status."""
+        return str(mod_id) in modinfo.get_mod_folders() or str(mod_name) in modinfo.get_mod_folders()
+
+    def _modmenu_is_mod_present(mod_id, mod_name):
+        """Will the mod be installed once the modmenu changes have been applied."""
+        return (_modmenu_is_mod_installed(mod_id, mod_name) or _modmenu_is_mod_added(mod_id)) and not _modmenu_is_mod_removed(mod_id)
+
+    def _modmenu_add_mod(mod_id, mod_name=""):
+        print "adding mod:", mod_id, mod_name
+        if mod_id in _modmenu_mods_to_remove: # Added, then removed this session
+            _modmenu_mods_to_remove.pop(mod_id)
+        elif mod_id not in _modmenu_mods_to_add: # Not added yet, and not an existing mod being reinstated
+            _modmenu_mods_to_add[mod_id] = mod_name
+        # else: nothing to do...
+
+    def _modmenu_remove_mod(mod_id, mod_name="", filename=""):
+        print "removing mod:", mod_id, mod_name, filename
+        if mod_id in _modmenu_mods_to_add:
+            _modmenu_mods_to_add.pop(mod_id)
+        elif mod_id not in _modmenu_mods_to_remove:
+            _modmenu_mods_to_remove[mod_id] = (mod_name, filename)
+
+    def _modmenu_clear_added_mods():
+        _modmenu_mods_to_add.clear()
+
+    def _modmenu_clear_removed_mods():
+        _modmenu_mods_to_remove.clear()
+
+    def _modmenu_get_added_mods():
+        return _modmenu_mods_to_add
+
+    def _modmenu_get_removed_mods():
+        return _modmenu_mods_to_remove
+
+    def _modmenu_is_mod_added(mod_id):
+        return mod_id in _modmenu_mods_to_add
+
+    def _modmenu_is_mod_removed(mod_id):
+        return mod_id in _modmenu_mods_to_remove
+
+    def _modmenu_get_mod_actions():
+        """Using the add and remove list, get the list of mods to install, and the list of mods to uninstall.
+        This is distinct from the basic getters as the list of mods to install may not contain any mod that should be removed.
+        :returns 2-tuple containing a dict[int: str], and a set[int].
+            the dict is the dict of mods to install, from mod id to modname.
+            the set is the set of mods to uninstall, by mod id."""
+        mods_to_install = {mod_id: mod_name for mod_id, mod_name in _modmenu_mods_to_add.iteritems() if mod_id not in _modmenu_mods_to_remove}
+        return mods_to_install, _modmenu_get_removed_mods()
 
 
 
@@ -428,14 +576,13 @@ screen modmenu_entrance(use_steam):
 screen modmenu_paged(contents, use_steam):
     modal True
 
-    default current_page = 1
-    default PAGE_SIZE = 6
-    $ MIN_PAGE = 1 # Do note, modpage numbers are 1-indexed
-    $ MAX_PAGE = int(math.ceil(len(contents) / float(PAGE_SIZE)))
+    python:
+        filter_map = {"install": lambda mod: _modmenu_is_mod_installed(mod[0], mod[1]),
+                   "select": lambda mod: _modmenu_is_mod_added(mod[0]) or _modmenu_is_mod_removed(mod[0]),
+                   "present": lambda mod: _modmenu_is_mod_present(mod[0], mod[1]),
+                  }
 
-    default search_order_contents = contents
-    default query = ""
-    default author_query = ""
+    default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
 
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -462,7 +609,8 @@ screen modmenu_paged(contents, use_steam):
                     Hide("modmenu_entrance", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
-                    Play("audio", "se/sounds/close.ogg")]
+                    Play("audio", "se/sounds/close.ogg")
+                    ]
 
             xpos 0.94
             ypos 0.02
@@ -483,45 +631,80 @@ screen modmenu_paged(contents, use_steam):
                 xalign 0.2
                 ycenter 0.5
                 # Tried to bind this to shift+scroll, but it didn't work...
-                action [SetScreenVariable("current_page", max(current_page-5, MIN_PAGE)),
-                        Function(_refresh_modlist_page, max(current_page-5, MIN_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, -5),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                        ]
-                sensitive (current_page > 1)
+                sensitive (modlist_manager.get_current_page() > 1)
 
             textbutton "-":
                 xalign 0.4
                 ycenter 0.5
                 keysym "mousedown_4"
-                action [SetScreenVariable("current_page", current_page-1),
-                        Function(_refresh_modlist_page, current_page-1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, -1),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                        ]
-                sensitive (current_page > 1)
+                sensitive (modlist_manager.get_current_page() > 1)
 
-            label "Page #[current_page]/[MAX_PAGE]":
+            # renpy seems to not like calling things in the string formatting...
+            $ _page_num = modlist_manager.get_current_page()
+            $ _max_page = modlist_manager.get_max_page()
+            label "Page #[_page_num]/[_max_page]":
                 xalign 0.5
                 ycenter 0.5
-
                 text_size 40
 
             textbutton "+":
                 xalign 0.6
                 ycenter 0.5
                 keysym "mousedown_5"
-                action [SetScreenVariable("current_page", current_page+1),
-                        Function(_refresh_modlist_page, current_page+1, PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, 1),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                         ]
-                sensitive (current_page < MAX_PAGE)
+                sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
             textbutton "+5":
                 xalign 0.8
                 ycenter 0.5
                 # Also tried to bind this to shift+scroll, but it didn't work...
-                action [SetScreenVariable("current_page", min(current_page+5, MAX_PAGE)),
-                        Function(_refresh_modlist_page, min(current_page+5, MAX_PAGE), PAGE_SIZE, search_order_contents, use_steam=use_steam)
+                action [Function(modlist_manager.move_current_page, 5),
+                        Function(_refresh_modlist, modlist_manager, use_steam)
                         ]
-                sensitive (current_page < MAX_PAGE)
+                sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
+        $ n_added_mods = len(_modmenu_get_added_mods())
+        $ n_removed_mods = len(_modmenu_get_removed_mods())
 
+        if n_added_mods:
+            if n_removed_mods:
+                $ apply_button_prefix = "Apply"
+                $ apply_button_postfix = "(+{}, -{})".format(n_added_mods, n_removed_mods)
+            else:
+                $ apply_button_prefix = "Install"
+                $ apply_button_postfix = "({})".format(n_added_mods)
+        else:
+            if n_removed_mods:
+                $ apply_button_prefix = "Uninstall"
+                $ apply_button_postfix = "({})".format(n_removed_mods)
+            else:
+                $ apply_button_prefix = "No mods selected..."
+                $ apply_button_postfix = ""
+
+        textbutton "[apply_button_prefix] [apply_button_postfix]":
+            background "#0000009B"
+            hover_background "#ffffff9B"
+            insensitive_background "#3f3f3fFF"
+            xpos 1855
+            ypos 990
+            xanchor 1.0
+            yanchor 1.0
+
+            xsize 425
+            ysize 125
+            action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods()),
+                    Show("modmenu_apply_confirm", use_steam=use_steam)]
+            sensitive bool(n_added_mods) or bool(n_removed_mods)
+
+    # Searchbars
     hbox:
         xpos 65
         ypos 10
@@ -577,7 +760,7 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320 # While the horizontal space is supposed to be 340, The inputs have a tendency to drop down a row...
-                    changed set_author_query
+                    changed _modmenu_do_then_refresh(modlist_manager.set_author_query, modlist_manager, use_steam)
 
 
             button:
@@ -596,15 +779,76 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320
-                    changed set_query
+                    changed _modmenu_do_then_refresh(modlist_manager.set_query, modlist_manager, use_steam)
         key "K_ESCAPE" action [SetScreenVariable("focus_query_input", False), SetScreenVariable("focus_author_query_input", False)]
         key "K_TAB" action [ToggleScreenVariable("focus_author_query_input"),
                             If(focus_author_query_input,
                                ToggleScreenVariable("focus_query_input"),
                                SetScreenVariable("focus_query_input", False))]
 
+    # Filter buttons
+    hbox:
+        xpos 510
+        ypos 10
+        xanchor 0.0
+        yanchor 0.0
+        xsize 250
+        ysize 110
 
-    on "show" action [Function(_refresh_modlist_page, current_page, PAGE_SIZE, contents, use_steam=use_steam),
+        spacing 10
+
+        vbox:
+            xalign 0.0
+            ycenter 0.5
+            xsize 200
+            spacing 6
+
+            # For some reason 'label' and 'text' text components insisted on being ever so slightly larger than necessary, which made everything look misaligned
+            textbutton "Installed":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            textbutton "Selected":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+            textbutton "To be installed":
+                background "#00000000"
+                text_size 24
+                ysize 32
+                xalign 0.0
+
+        vbox:
+            xalign 1.0
+            ycenter 0.5
+            spacing 6
+
+            $ _im_size = 30
+
+            for filter_name in ["install", "select", "present"]:
+
+                $ _status = modlist_manager.is_filter_active(filter_name)
+                imagebutton:
+                    if _status is True:
+                        idle im.Scale("ui/nsfw_chbox-checked.png", _im_size, _im_size)
+                    elif _status is False:
+                        idle im.Scale("ui/nsfw_chbox-crossed.png", _im_size, _im_size)
+                    else: # _status is None
+                        idle im.Scale("ui/nsfw_chbox-unchecked.png", _im_size, _im_size)
+
+                    action    [Function(modlist_manager.set_filter_active, filter_name, If(_status is True, None, True)),
+                               Function(_refresh_modlist, modlist_manager, use_steam)
+                              ]
+                    alternate [Function(modlist_manager.set_filter_active, filter_name, If(_status is False, None, False)),
+                               Function(_refresh_modlist, modlist_manager, use_steam)
+                              ]
+
+
+    on "show" action [Function(_refresh_modlist, modlist_manager, use_steam),
                       Function(_preload_mod_images, contents, None),
                       Function(im.cache.clear) # I tended to get 'out of memory' errors on this menu, so we use this precaution
                       ]
@@ -612,6 +856,8 @@ screen modmenu_paged(contents, use_steam):
     on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
                       Function(im.cache.clear),
                       Function(modmenu_search.clear_cache),
+                      Function(_modmenu_clear_added_mods),
+                      Function(_modmenu_clear_removed_mods)
                      ]
 
 
@@ -652,12 +898,22 @@ screen modmenu_paged_modlist(contents, use_steam):
                         $ modname = modname[:30]
                         $ modname = "{size=-10}" + modname + "{/size}"
 
-                if str(modid) in modinfo.get_mod_folders():
-                    $ modname = modname + "\n{size=-5}(Installed){/size}"
-
+                if _modmenu_is_mod_installed(modid, name):
+                    $ modname += "\n{size=-5}(Installed"
+                    if _modmenu_is_mod_removed(modid):
+                        $ modname += ", removed"
+                    $ modname += "){/size}"
+                elif _modmenu_is_mod_added(modid):
+                    $ modname += "\n{size=-5}(Added){/size}"
 
                 textbutton "[modname]":
                     style "modmenu_select_btn"
+                    if _modmenu_is_mod_added(modid):
+                        background "#007f009B"
+                        hover_background "#7fff7f9B"
+                    elif _modmenu_is_mod_removed(modid):
+                        background "#7f00009B"
+                        hover_background "#ff7f7f9B"
 
                     action [Hide("modmenu_mod_content"),
                             Show("modmenu_mod_content",
@@ -670,6 +926,11 @@ screen modmenu_paged_modlist(contents, use_steam):
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
 
+                    alternate [If(_modmenu_is_mod_present(modid, name),
+                                   Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
+                                   Function(_modmenu_add_mod, modid, name)),
+                               Play("audio", "se/sounds/open.ogg")]
+                              ]
 
 
 
@@ -734,10 +995,10 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
                 null width 350
 
-                if str(modid) in modinfo.get_mod_folders():
+                if _modmenu_is_mod_present(modid, name):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Show("modmenu_remove_confirm_2", modname=name, filename=str(modid)),
+                        action [Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -746,7 +1007,8 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                 else:
                     textbutton "Install":
                         ycenter 0.5
-                        action [Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
+                        action [Function(_modmenu_add_mod, modid, name),
+#                         Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -776,82 +1038,163 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
             xpos 1682
             #yalign 0.95
 
+transform _button_zoom:
+    zoom 40.0 / 54.0
 
-screen modmenu_install_confirm(modid, modname, use_steam) tag smallscreen2:
+
+screen modmenu_apply_confirm(use_steam):
     modal True
     python:
-        if use_steam:
-            from modloader.modconfig import download_steam_mod as download_mod
-        else:
-            from modloader.modconfig import download_github_mod as download_mod
+        from modloader.modconfig import apply_mod_changes as apply_mod_changes
 
-    add "image/ui/nvlscreen.png" at zoom_fade_in:
-        xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
+        mods_to_install = _modmenu_get_added_mods()
+        mods_to_uninstall = {mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()}
+        n_mods_to_install = len(mods_to_install)
+        n_mods_to_uninstall = len(mods_to_uninstall)
 
-    window id "modmenu_install_confirm" at popup2:
-        style "alertwindow"
+    window id "modmenu_apply_confirm" at alpha_dissolve:
+        add "#22589a"
+        xfill True
+        yfill True
 
-        hbox xalign 0.5 yalign 0.8:
-            spacing 250
+        xpadding 0
+        ypadding 0
 
-            textbutton "Yes":
-                action [Hide("modmenu_install_confirm"),
-                        Play("audio", "se/sounds/close.ogg"),
-                        lambda download_mod=download_mod, modname=modname, modid=modid: download_mod(modid, modname)]
-
-                style "yesnobutton"
-
-            textbutton "No":
-                action [Hide("modmenu_install_confirm", transition=dissolve),
-                        Play("audio", "se/sounds/close.ogg")]
-
-                style "yesnobutton"
-
-        label "Are you sure you want to install [modname]?":
-            style "yesno_prompt"
-            text_style "yesno_prompt_text"
+        text "Are you sure you want to change these mods?":
+            size 65
+            xpos 0.5
+            ypos 0.05
+            xcenter 0.5
+            yanchor 0.5
+            font "Ardnas.otf"
 
 
-screen modmenu_remove_confirm_2(modname, filename) tag smallscreen2:
-    modal True
-    python:
-        from modloader.modconfig import remove_mod
+        hbox: # Changelist
+            ysize 700
+            xsize 1800
 
-    add "image/ui/nvlscreen.png" at zoom_fade_in:
-        xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
+            ypos 100
+            xcenter 0.5
+            yanchor 0.0
 
-    window id "modmenu_remove_confirm" at popup2:
-        style "alertwindow"
+            $ mods_to_add_text = "\n".join(_modmenu_get_added_mods().itervalues())
+            $ mods_to_remove_text = "\n".join(modname for modname, filename in _modmenu_get_removed_mods().itervalues())
 
-        if modname == "Core":
-            textbutton "Continue":
-                action [Hide("modmenu_remove_confirm_2", transition=dissolve),
-                        Play("audio", "se/sounds/close.ogg")]
-                        hovered Play("audio", "se/sounds/select.ogg")
-                style "yesnobutton"
-                xalign 0.5
-                yalign 0.8
+            fixed: # Added mods list: fixed is used to force list+scrollbar to stay within their region
+                xalign 0.0
+                xsize 850
+                ymaximum 700
 
-            label "You cannot remove the Core mod.":
-                style "yesno_prompt"
+                vbox:
+                    xsize 800
+                    xalign 0.0
 
-        else:
-            hbox xalign 0.5 yalign 0.8:
-                spacing 250
-                textbutton "Yes":
-                    action [Hide("modmenu_remove_confirm_2"),
-                            Play("audio", "se/sounds/close.ogg"),
-                            lambda remove_mod=remove_mod, modname=modname, filename=filename: remove_mod(modname, filename),
-                            Show("modmenu_remove")]
-                    style "yesnobutton"
+                    text "Added mods:":
+                        size 50
+                        ysize 100
+                        xfill True
 
-                textbutton "No":
-                    action [Hide("modmenu_remove_confirm_2"),
-                            Play("audio", "se/sounds/close.ogg")]
-                    style "yesnobutton"
+                    vpgrid id "_mod_add_list":
+                        cols 1
+                        xfill True
+                        mousewheel "change"
 
-            label "Are you sure you want to remove [modname]?":
-                style "yesno_prompt"
+                        for modid, modname in _modmenu_get_added_mods().iteritems():
+                            hbox:
+                                spacing 20
+                                ysize 60
+
+                                imagebutton:
+                                    idle "image/ui/close_idle.png" at _button_zoom
+                                    hover "image/ui/close_hover.png"
+                                    yalign 0.5
+
+                                    action Function(_modmenu_remove_mod, modid) # As mod is guaranteed to be in the add list, we only need id to remove.
+
+                                text modname:
+                                    if len(modname) > 30:
+                                        size 30
+                                    xfill True
+                                    ysize 60
+
+                vbar value YScrollValue("_mod_add_list"):
+                    style "modmenu_select_slider"
+                    xalign 1.0
+
+
+            fixed: # Removed mods list: fixed is used to force list+scrollbar to stay within their region
+                xalign 1.0
+                xsize 850
+                ymaximum 700
+
+                vbox:
+                    xsize 800
+                    xalign 0.0
+
+                    text "Removed mods:":
+                        size 50
+                        ysize 100
+                        xfill True
+
+                    vpgrid id "_mod_remove_list":
+                        cols 1
+                        xfill True
+                        mousewheel "change"
+
+                        for modid, (modname, _) in _modmenu_get_removed_mods().iteritems():
+                            hbox:
+                                spacing 20
+                                ysize 60
+
+                                imagebutton:
+                                    idle "image/ui/close_idle.png" at _button_zoom
+                                    hover "image/ui/close_hover.png"
+                                    yalign 0.5
+
+                                    action Function(_modmenu_add_mod, modid) # As mod is guaranteed to be in the remove list, we only need id to add.
+
+                                text modname:
+                                    if len(modname) > 30:
+                                        size 30
+                                    xfill True
+                                    ysize 60
+
+                vbar value YScrollValue("_mod_remove_list"):
+                    style "modmenu_select_slider"
+                    xalign 1.0
+
+        hbox: # Apply/Cancel buttons
+            ysize 125
+            xsize 1200
+
+            ypos 990
+            xcenter 0.5
+            yanchor 1.0
+
+
+            textbutton "Cancel":
+                background "#0000009B"
+                hover_background "#ffffff9B"
+
+                xalign 0.0
+                ycenter 0.5
+                xsize 425
+                ysize 125
+                action [Hide("modmenu_apply_confirm", transition=dissolve),
+                    Play("audio", "se/sounds/close.ogg"),
+                    ]
+
+            textbutton "Apply":
+                background "#0000009B"
+                hover_background "#ffffff9B"
+                insensitive_background "#3f3f3fFF"
+
+                xalign 1.0
+                ycenter 0.5
+                xsize 425
+                ysize 125
+                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall, show_status_screen=True, reload_script=True, use_steam=use_steam),]
+                sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
 
 
 screen modmenu_nointernet() tag smallscreen2:

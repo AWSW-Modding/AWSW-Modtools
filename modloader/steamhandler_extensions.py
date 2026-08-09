@@ -156,8 +156,7 @@ class CachedSteamMgr:
             finally:
                 print "Cache file write callback done (page {}).".format(page)
                 fill_cache_query_cb.done.set()
-            
-            return
+        
         
         fill_cache_query_cb.error = None
         self.register_callback(PyCallback.Query, fill_cache_query_cb)
@@ -172,9 +171,6 @@ class CachedSteamMgr:
             
             if fill_cache_query_cb.error is not None:
                 raise fill_cache_query_cb.error
-            
-            return
-        
         finally:
             self.unregister_callback(PyCallback.Query, fill_cache_query_cb)
     
@@ -284,7 +280,6 @@ class CachedSteamMgr:
             
             cb.should_run_next = (arr_len == 50)
             cb.page_complete.set()
-            return
         
         cb.page_num = 1
         cb.should_run_next = True
