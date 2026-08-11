@@ -144,12 +144,12 @@ class CachedSteamMgr:
                 
                 # Prepare data to write: convert it to json compatible dicts
                 field_names = [name for name, _ in WorkshopData._fields_]
-                to_write = [{name: getattr(array[i], name) for name in field_names} for i in range(arr_len)]
+                to_write = [{name: getattr(array[i], name) for name in field_names if hasattr(array[i], name)} for i in range(arr_len)]
                 
                 # m_pvecChildrenId is a type that doesn't work for json, so we fix it up to be one
-                
                 for item in to_write:
-                    item["m_pvecChildrenId"] = [item["m_pvecChildrenId"][i] for i in range(item["m_unNumChildren"])]
+                    if "m_pvecChildrenId" in item:
+                        item["m_pvecChildrenId"] = [item["m_pvecChildrenId"][i] for i in range(item["m_unNumChildren"])]
                 
                 # Write cache file
                 with open(cache_file_name, "w") as cache_file:
@@ -278,18 +278,14 @@ class CachedSteamMgr:
                                                   item.m_bBanned, item.m_bAcceptedForUse, item.m_bTagsTruncated,
                                                   item.m_rgchTags, item.m_hFile, item.m_hPreviewFile, item.m_pchFileName,
                                                   item.m_nFileSize, item.m_nPreviewFileSize, item.m_rgchURL, item.m_unVotesUp,
-                                                  item.m_unVotesDown, item.m_flScore, item.m_unNumChildren, item.m_pvecChildrenId,
+                                                  item.m_unVotesDown, item.m_flScore, item.m_unNumChildren, getattr(item, "m_pvecChildrenId", []), # m_pvecChildrenId may be missing in the old DLL
                                                   item.m_pchPreviewLink, item.m_metadata)))
                 else:
                     results.append(copy.deepcopy((item.m_nPublishedFileId, item.m_rgchTitle, item.m_ulSteamIDOwner,
                                                   item.m_rgchDescription, item.m_pchPreviewLink, item.m_rtimeCreated,
                                                   item.m_rtimeUpdated, item.m_metadata,
-                                                  item.m_unNumChildren, item.m_pvecChildrenId))
+                                                  item.m_unNumChildren, getattr(item, "m_pvecChildrenId", [])))
                                    )
-            
-            # with open(r"P:\AWSW_Messing_About\childinfo.txt", "a") as f:
-            #     for k, v in child_nums.iteritems():
-            #         f.write("{}: {}\n".format(k, v))
             
             cb.should_run_next = (arr_len == 50)
             cb.page_complete.set()
