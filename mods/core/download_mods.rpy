@@ -1128,6 +1128,9 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
                         else:
                             background "#7f3f009B"
                             hover_background "#ffbf7f9B"
+                    elif mod_changes.is_mod_installed(mod_id):
+                        background "#001f3f9B"
+                        hover_background "#003f7f9B"
 
 
                     action [Hide("modmenu_mod_content"),
@@ -1274,25 +1277,59 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
                     vbox:
                         for dep_id in mod_changes.get_mod_dependencies(mod_id):
                             python:
+                                dep_present = True
                                 try:
                                     dep_name = mod_changes.get_mod(dep_id).name
 
-                                    if mod_changes.is_mod_removed(dep_id):
-                                        dep_color = "#ff3f00FF"
+                                    if mod_changes.is_mod_removed(dep_id, dependency=False):
+                                        if mod_changes.is_mod_removable(dep_id):
+                                            dep_color = "#ff1f1fFF"
+                                            dep_hover = "#ff4f4fFF"
+                                        else:
+                                            dep_color = "#9f7f7fFF"
+                                            dep_hover = "#7f5f5fFF"
                                     elif mod_changes.is_mod_installed(dep_id):
-                                        dep_color = "#ffffffFF"
-                                    elif mod_changes.is_mod_added(dep_id):
+                                        dep_color = "#00bfffFF"
+                                        dep_hover = "#007fbfFF"
+                                    elif mod_changes.is_mod_added(dep_id, dependency=False):
                                         dep_color = "#bfff00FF"
-                                    else:
+                                        dep_hover = "#7fbf00FF"
+                                    elif mod_changes.is_mod_dependency(dep_id):
                                         dep_color = "#00ffbfFF"
+                                        dep_hover = "#00bf7fFF"
+                                    else:
+                                        dep_color = "#ffffffFF"
+                                        dep_hover = "#bfbfbfFF"
 
                                 except KeyError:
+                                    dep_present = False
                                     dep_name = "<Missing>"
                                     dep_color = "#7f7f7fFF"
+                                    dep_hover = "#afafafFF"
 
-                            text "[dep_name]":
-                                size 20
-                                color dep_color
+                            textbutton "[dep_name]":
+                                background "#0000" # Clear background, as I don't wish there to be
+                                padding (0, 0)
+                                text_size 20
+                                text_color dep_color
+                                text_hover_color dep_hover
+
+                                if dep_present:
+                                    action [Hide("modmenu_mod_content"),
+                                            Show("modmenu_mod_content",
+                                                 mod=mod_changes.get_mod(dep_id),
+                                                 mod_changes=mod_changes,
+                                                 use_steam=use_steam,
+                                                 ),
+                                            Play("audio", "se/sounds/open.ogg")]
+
+                                    alternate [If(mod_changes.is_mod_present(dep_id, dependency=False),
+                                                   Function(mod_changes.remove_mod, dep_id, _get_modfolder(dep_id, mod_changes.get_mod(dep_id).name)),
+                                                   Function(mod_changes.add_mod, dep_id)),
+                                               Play("audio", "se/sounds/open.ogg")]
+                                              ]
+
+
 
             bar value YScrollValue("_dep_list"):
                 style "modmenu_content_slider"
@@ -1314,26 +1351,59 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
                     mousewheel "change"
 
                     vbox:
-                        for dep_id in mod_changes.get_mod_parents(mod_id):
+                        for parent_id in mod_changes.get_mod_parents(mod_id):
                             python:
+                                parent_present = True
                                 try:
-                                    parent_name = mod_changes.get_mod(dep_id).name
-                                    if mod_changes.is_mod_removed(dep_id):
-                                        dep_color = "#ff3f00FF"
-                                    elif mod_changes.is_mod_installed(dep_id):
-                                        dep_color = "#00bfffFF"
-                                    elif mod_changes.is_mod_added(dep_id):
-                                        dep_color = "#bfff00FF"
+                                    parent_name = mod_changes.get_mod(parent_id).name
+
+                                    if mod_changes.is_mod_removed(parent_id, dependency=False):
+                                        if mod_changes.is_mod_removable(parent_id):
+                                            parent_color = "#ff1f1fFF"
+                                            parent_hover = "#ff4f4fFF"
+                                        else:
+                                            parent_color = "#9f7f7fFF"
+                                            parent_hover = "#7f5f5fFF"
+                                    elif mod_changes.is_mod_installed(parent_id):
+                                        parent_color = "#00bfffFF"
+                                        parent_hover = "#007fbfFF"
+                                    elif mod_changes.is_mod_added(parent_id, dependency=False):
+                                        parent_color = "#bfff00FF"
+                                        parent_hover = "#7fbf00FF"
+                                    elif mod_changes.is_mod_dependency(parent_id):
+                                        parent_color = "#00ffbfFF"
+                                        parent_hover = "#00bf7fFF"
                                     else:
-                                        dep_color = "#ffffffFF"
+                                        parent_color = "#ffffffFF"
+                                        parent_hover = "#bfbfbfFF"
 
                                 except KeyError:
+                                    parent_present = False
                                     parent_name = "<Missing>"
-                                    dep_color = "#7f7f7fFF"
+                                    parent_color = "#7f7f7fFF"
+                                    parent_hover = "#afafafFF"
 
-                            text "[parent_name]":
-                                size 20
-                                color dep_color
+                            textbutton "[parent_name]":
+                                background "#0000" # Clear background, as I don't wish there to be
+                                padding (0, 0)
+                                text_size 20
+                                text_color parent_color
+                                text_hover_color parent_hover
+
+                                if parent_present:
+                                    action [Hide("modmenu_mod_content"),
+                                            Show("modmenu_mod_content",
+                                                 mod=mod_changes.get_mod(parent_id),
+                                                 mod_changes=mod_changes,
+                                                 use_steam=use_steam,
+                                                 ),
+                                            Play("audio", "se/sounds/open.ogg")]
+
+                                    alternate [If(mod_changes.is_mod_present(parent_id, dependency=False),
+                                                   Function(mod_changes.remove_mod, parent_id, _get_modfolder(parent_id, mod_changes.get_mod(parent_id).name)),
+                                                   Function(mod_changes.add_mod, parent_id)),
+                                               Play("audio", "se/sounds/open.ogg")]
+                                              ]
 
             bar value YScrollValue("_parent_list"):
                 style "modmenu_content_slider"
