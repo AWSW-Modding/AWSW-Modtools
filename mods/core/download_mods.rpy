@@ -711,7 +711,9 @@ init -1 python:
                 self._installed_dependant_map += Counter(self.get_mod_dependencies(mod_id))
             elif not is_installed and mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
                 self._add_map[mod_id] = self.get_mod(mod_id).name
-                self._dependant_add_map += Counter(self.get_mod_dependencies(mod_id))
+                # filter add map to only care about mods which actually exist in the modlist
+
+                self._dependant_add_map += Counter(self.get_mod_dependencies(mod_id).intersection(self._modlist.keys()))
             # else: nothing to do...
 
         def remove_mod(self, mod_id, filename=""):
@@ -1259,32 +1261,86 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
             #yalign 0.95
 
         # dependency area
-        frame xpos 1632 ypos 0.21 xsize 280 ysize 600:
+        frame xpos 1632 ypos 0.21 xsize 280 ysize 290:
             background "#0000009B"
             xpadding 15
 
-            vbox xfill True ymaximum 600:
+            vbox xsize 230 yfill True:
                 text "Dependencies:" size 40
 
-                for dep_id in mod_changes.get_mod_dependencies(mod_id):
-                    python:
-                        try:
-                            dep_name = mod_changes.get_mod(dep_id).name
+                viewport id "_dep_list" xfill True:
+                    mousewheel "change"
 
-                            if mod_changes.is_mod_installed(dep_id):
-                                dep_color = "#ffffffFF"
-                            elif mod_changes.is_mod_added(dep_id):
-                                dep_color = "#bfff00FF"
-                            else:
-                                dep_color = "#00ffbfFF"
+                    vbox:
+                        for dep_id in mod_changes.get_mod_dependencies(mod_id):
+                            python:
+                                try:
+                                    dep_name = mod_changes.get_mod(dep_id).name
 
-                        except KeyError:
-                            dep_name = "<Missing>"
-                            dep_color = "#7f7f7fFF"
+                                    if mod_changes.is_mod_removed(dep_id):
+                                        dep_color = "#ff3f00FF"
+                                    elif mod_changes.is_mod_installed(dep_id):
+                                        dep_color = "#ffffffFF"
+                                    elif mod_changes.is_mod_added(dep_id):
+                                        dep_color = "#bfff00FF"
+                                    else:
+                                        dep_color = "#00ffbfFF"
 
-                    text dep_name:
-                        size 20
-                        color dep_color
+                                except KeyError:
+                                    dep_name = "<Missing>"
+                                    dep_color = "#7f7f7fFF"
+
+                            text "[dep_name]":
+                                size 20
+                                color dep_color
+
+            bar value YScrollValue("_dep_list"):
+                style "modmenu_content_slider"
+                ysize 250
+                yalign 1.0
+                xalign 1.0
+                unscrollable "hide"
+
+
+        # parents area
+        frame xpos 1632 ypos 0.497 xsize 280 ysize 290:
+            background "#0000009B"
+            xpadding 15
+
+            vbox xsize 230 yfill True:
+                text "Dependants:" size 40
+
+                viewport id "_parent_list" xfill True:
+                    mousewheel "change"
+
+                    vbox:
+                        for dep_id in mod_changes.get_mod_parents(mod_id):
+                            python:
+                                try:
+                                    parent_name = mod_changes.get_mod(dep_id).name
+                                    if mod_changes.is_mod_removed(dep_id):
+                                        dep_color = "#ff3f00FF"
+                                    elif mod_changes.is_mod_installed(dep_id):
+                                        dep_color = "#00bfffFF"
+                                    elif mod_changes.is_mod_added(dep_id):
+                                        dep_color = "#bfff00FF"
+                                    else:
+                                        dep_color = "#ffffffFF"
+
+                                except KeyError:
+                                    parent_name = "<Missing>"
+                                    dep_color = "#7f7f7fFF"
+
+                            text "[parent_name]":
+                                size 20
+                                color dep_color
+
+            bar value YScrollValue("_parent_list"):
+                style "modmenu_content_slider"
+                ysize 250
+                yalign 1.0
+                xalign 1.0
+                unscrollable "hide"
 
 
 
@@ -1438,7 +1494,6 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
 
 
                             if overridden_mods:
-                                # If null is the first thing in the vpgrid, then nothing shows up
                                 if not mods_to_uninstall:
                                     text "---":
                                         xfill True
