@@ -1298,7 +1298,16 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
         from modloader.modconfig import apply_mod_changes
 
         mods_to_install = mod_changes.get_added_mods()
+        mods_added_to_install = dict(mods_to_install)
+        mod_deps_to_install = mod_changes.get_added_dependencies(missing=True)
+        for mod_id in mod_deps_to_install:
+            if mod_id in mods_added_to_install:
+                del mods_added_to_install[mod_id]
         mods_to_uninstall = mod_changes.get_removed_mods()
+        overridden_mods = dict(mod_changes.get_removed_mods(dependency=False))
+        for mod_id in mods_to_uninstall:
+            if mod_id in overridden_mods:
+                del overridden_mods[mod_id]
         n_mods_to_install = len(mods_to_install)
         n_mods_to_uninstall = len(mods_to_uninstall)
 
@@ -1327,9 +1336,6 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
             xcenter 0.5
             yanchor 0.0
 
-            $ mods_to_add_text = "\n".join(mods_to_install.itervalues())
-            $ mods_to_remove_text = "\n".join(modname for modname, _ in mods_to_uninstall.itervalues())
-
             fixed: # Added mods list: fixed is used to force list+scrollbar to stay within their region
                 xalign 0.0
                 xsize 850
@@ -1344,17 +1350,19 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                         ysize 100
                         xfill True
 
-                    vpgrid id "_mod_add_list":
-                        cols 1
+                    viewport id "_mod_add_list":
                         xfill True
                         mousewheel "change"
 
-                        for mod_id, mod_name in mods_to_install.iteritems():
-                            hbox:
-                                spacing 20
-                                ysize 60
+                        vbox:
+                            spacing 5
+                            xfill True
 
-                                if not mod_changes.is_mod_dependency(mod_id):
+                            for mod_id, mod_name in mods_added_to_install.iteritems():
+                                hbox:
+                                    spacing 20
+                                    ysize 60
+
                                     imagebutton:
                                         idle "image/ui/close_idle.png" at _button_zoom
                                         hover "image/ui/close_hover.png"
@@ -1362,11 +1370,28 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
 
                                         action Function(mod_changes.remove_mod, mod_id) # As mod is guaranteed to be in the add list, we only need id to remove.
 
-                                text mod_name:
-                                    if len(mod_name) > 30:
-                                        size 30
-                                    xfill True
-                                    ysize 60
+                                    text mod_name:
+                                        if len(mod_name) > 30:
+                                            size 30
+                                        xfill True
+                                        ysize 60
+
+                            if mod_deps_to_install:
+                                null height 5
+                                text "Including these dependencies:":
+                                    size 50
+                                null height 10
+
+                                for mod_name in mod_deps_to_install.itervalues():
+                                    hbox:
+                                        spacing 20
+                                        ysize 60
+
+                                        text mod_name:
+                                            if len(mod_name) > 30:
+                                                size 30
+                                            xfill True
+                                            ysize 60
 
                 vbar value YScrollValue("_mod_add_list"):
                     style "modmenu_select_slider"
@@ -1387,27 +1412,58 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                         ysize 100
                         xfill True
 
-                    vpgrid id "_mod_remove_list":
-                        cols 1
+                    viewport id "_mod_remove_list":
                         xfill True
                         mousewheel "change"
 
-                        for mod_id, (mod_name, _) in mods_to_uninstall.iteritems():
-                            hbox:
-                                spacing 20
-                                ysize 60
-
-                                imagebutton:
-                                    idle "image/ui/close_idle.png" at _button_zoom
-                                    hover "image/ui/close_hover.png"
-                                    yalign 0.5
-                                    action Function(mod_changes.add_mod, mod_id)
-
-                                text mod_name:
-                                    if len(mod_name) > 30:
-                                        size 30
-                                    xfill True
+                        vbox:
+                            spacing 5
+                            xfill True
+                            for mod_id, (mod_name, _) in mods_to_uninstall.iteritems():
+                                hbox:
+                                    spacing 20
                                     ysize 60
+
+                                    imagebutton:
+                                        idle "image/ui/close_idle.png" at _button_zoom
+                                        hover "image/ui/close_hover.png"
+                                        yalign 0.5
+                                        action Function(mod_changes.add_mod, mod_id)
+
+                                    text mod_name:
+                                        if len(mod_name) > 30:
+                                            size 30
+                                        xfill True
+                                        ysize 60
+
+
+                            if overridden_mods:
+                                # If null is the first thing in the vpgrid, then nothing shows up
+                                if not mods_to_uninstall:
+                                    text "---":
+                                        xfill True
+                                        ysize 60
+                                null height 5
+                                text "Removal suppressed:":
+                                    size 50
+                                null height 10
+
+                                for mod_id, (mod_name, _) in overridden_mods.iteritems():
+                                    hbox:
+                                        spacing 20
+                                        ysize 60
+
+                                        imagebutton:
+                                            idle "image/ui/close_idle.png" at _button_zoom
+                                            hover "image/ui/close_hover.png"
+                                            yalign 0.5
+                                            action Function(mod_changes.add_mod, mod_id)
+
+                                        text mod_name:
+                                            if len(mod_name) > 30:
+                                                size 30
+                                            xfill True
+                                            ysize 60
 
                 vbar value YScrollValue("_mod_remove_list"):
                     style "modmenu_select_slider"
@@ -1449,9 +1505,6 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
 
 screen modmenu_nointernet() tag smallscreen2:
     modal True
-    python:
-        #from modloader.modconfig import download_github_mod
-        pass
 
     add "image/ui/nvlscreen.png" at zoom_fade_in:
         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
