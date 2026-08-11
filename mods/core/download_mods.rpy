@@ -584,9 +584,9 @@ init -1 python:
 
             self._modlist = {mod.id: mod for mod in base_modlist}
             self._add_map = {}
-            self._dependant_add_map = Counter()
+            self._dependent_add_map = Counter()
             self._remove_map = {}
-            self._installed_dependant_map = Counter() # equivalent of _dependant_add_map used to keep track when a mod is safe to delete
+            self._installed_dependent_map = Counter() # equivalent of _dependent_add_map used to keep track when a mod is safe to delete
 
             # setup recursive dependency maps
             forward_dep_map = {mod_id: set(mod.child_list) for mod_id, mod in self._modlist.iteritems()}
@@ -604,15 +604,15 @@ init -1 python:
             self._dependency_map = _modmenu_get_recursive_deps(forward_dep_map, reverse_dep_map, strict=False)
             self._r_dependency_map = _modmenu_get_recursive_deps(reverse_dep_map, forward_dep_map, strict=False)
 
-            self._reset_installed_dependant_map()
+            self._reset_installed_dependent_map()
 
 
-        def _reset_installed_dependant_map(self):
-            self._installed_dependant_map.clear()
+        def _reset_installed_dependent_map(self):
+            self._installed_dependent_map.clear()
 
             for mod_id in self._modlist:
                 if self.is_mod_installed(mod_id):
-                    self._installed_dependant_map += Counter(self._dependency_map[mod_id])
+                    self._installed_dependent_map += Counter(self._dependency_map[mod_id])
 
 
         def get_mod(self, mod_id):
@@ -655,15 +655,15 @@ init -1 python:
             """
             if missing:
                 result = {}
-                for mod_id in self._dependant_add_map.iterkeys():
+                for mod_id in self._dependent_add_map.iterkeys():
                     mod_name = self.get_mod(mod_id).name
                     if not _modmenu_is_mod_installed(mod_id, mod_name):
                         result[mod_id] = mod_name
                 return result
-            return {mod_id: self.get_mod(mod_id).name for mod_id in self._dependant_add_map.iterkeys()}
+            return {mod_id: self.get_mod(mod_id).name for mod_id in self._dependent_add_map.iterkeys()}
 
         def get_installed_dependencies(self):
-            return {mod_id for mod_id in self._installed_dependant_map.iterkeys()}
+            return {mod_id for mod_id in self._installed_dependent_map.iterkeys()}
 
 
         def is_mod_added(self, mod_id, dependency=True):
@@ -699,7 +699,7 @@ init -1 python:
 
         def is_mod_removable(self, mod_id):
             """Can a mod be removed without breaking dependency constraints. this decides if a remove_mod call will produce a visible effect"""
-            return mod_id not in self._installed_dependant_map and mod_id not in self._dependant_add_map
+            return mod_id not in self._installed_dependent_map and mod_id not in self._dependent_add_map
 
 
         def add_mod(self, mod_id):
@@ -708,12 +708,12 @@ init -1 python:
 
             if is_installed and mod_id in self._remove_map: # Added, then removed this session
                 self._remove_map.pop(mod_id)
-                self._installed_dependant_map += Counter(self.get_mod_dependencies(mod_id))
+                self._installed_dependent_map += Counter(self.get_mod_dependencies(mod_id))
             elif not is_installed and mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
                 self._add_map[mod_id] = self.get_mod(mod_id).name
                 # filter add map to only care about mods which actually exist in the modlist
 
-                self._dependant_add_map += Counter(self.get_mod_dependencies(mod_id).intersection(self._modlist.keys()))
+                self._dependent_add_map += Counter(self.get_mod_dependencies(mod_id).intersection(self._modlist.keys()))
             # else: nothing to do...
 
         def remove_mod(self, mod_id, filename=""):
@@ -722,18 +722,18 @@ init -1 python:
 
             if not is_installed and mod_id in self._add_map:
                 self._add_map.pop(mod_id)
-                self._dependant_add_map -= Counter(self.get_mod_dependencies(mod_id))
+                self._dependent_add_map -= Counter(self.get_mod_dependencies(mod_id))
             elif is_installed and mod_id not in self._remove_map:
                 self._remove_map[mod_id] = (self.get_mod(mod_id).name, filename)
-                self._installed_dependant_map -= Counter(self.get_mod_dependencies(mod_id))
+                self._installed_dependent_map -= Counter(self.get_mod_dependencies(mod_id))
 
         def clear_added_mods(self):
             self._add_map.clear()
-            self._dependant_add_map.clear()
+            self._dependent_add_map.clear()
 
         def clear_removed_mods(self):
             self._remove_map.clear()
-            self._reset_installed_dependant_map()
+            self._reset_installed_dependent_map()
 
         def clear_mods(self):
             self.clear_added_mods()
@@ -1308,7 +1308,7 @@ screen modmenu_mod_content(mod, mod_changes, use_steam):
             xpadding 15
 
             vbox xsize 230 yfill True:
-                text "Dependants:" size 40
+                text "Dependents:" size 40
 
                 viewport id "_parent_list" xfill True:
                     mousewheel "change"
