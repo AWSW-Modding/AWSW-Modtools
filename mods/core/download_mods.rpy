@@ -1,3 +1,169 @@
+# modmenu entrance stuff
+init -1 python:
+    class EntranceStates:
+        INTERNET = "internet"
+        INTERNET_FAILED = "internet_failed"
+        MODLIST = "modlist"
+        MODLIST_FAILED = "modlist_failed"
+        DONE = "done"
+
+    class ModmenuEntranceLoadManager:
+        """Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading."""
+
+        def __init__(self, use_steam):
+            self.use_steam = use_steam
+
+            self._state = EntranceStates.INTERNET
+            self._state_lock = threading.Lock()
+
+            self._result = None
+            self._exception = None
+            self._done_signal = threading.Event() # Used to gat access to these two. a lock is not necessary as they are only accessible after being set for the last time.
+
+            self.disabled = threading.Event() # I've had issues with calls coming after a transition was supposed to take effect, so this allows me to disable the screen under those cases.
+
+            self._running_thread = threading.Thread(target=self._load_modlist, args=(self.use_steam,))
+            self._running_thread.daemonic = True
+            self._running_thread.start()
+
+        def set_state(self, state):
+            with self._state_lock:
+                self._state = state
+
+        def get_state(self):
+            with self._state_lock:
+                return self._state
+
+
+        def get_modlist(self):
+            self._done_signal.wait()
+            if self._exception is not None:
+                raise self._exception
+            return self._result
+
+
+        def _load_modlist(self, use_steam):
+            if internet_on():
+                self.set_state(EntranceStates.MODLIST)
+                try:
+                    # (mod_url, name, author, description, image) (for github)
+                    # (id, name, author, desc, image) (for steam)
+                    if use_steam:
+                        from modloader.modconfig import steam_downloadable_mods as download_mods
+                    else:
+                        from modloader.modconfig import github_downloadable_mods as download_mods
+
+                    self._result = download_mods()
+                    self.set_state(EntranceStates.DONE)
+                except Exception as e:
+                    self._exception = e
+                    self._exception.traceback = sys.exc_info()[2]
+                    self.set_state(EntranceStates.MODLIST_FAILED)
+            else:
+                print "Internet failed"
+                self.set_state(EntranceStates.INTERNET_FAILED)
+
+            self._done_signal.set()
+
+    _dots = 1
+    _MAX_DOTS = 3
+
+    def _cycle_dots():
+        global _dots, _MAX_DOTS
+        _dots = (_dots % _MAX_DOTS) + 1
+        return _dots
+
+
+    def _modmenu_entrance_transition_to(screen, load_manager, **kwargs):
+        """As transitioning out of the modmenu entrance without issues requires setting a few things, this helps ensure it is done correctly"""
+        renpy.show_screen(screen, **kwargs)
+        renpy.hide_screen('modmenu_entrance')
+        load_manager.disabled.set()
+        renpy.restart_interaction()
+
+
+    _modmenu_entrance_cancelled = False
+
+    def _modmenu_entrance_progress(st, at, load_manager, use_steam):
+        state = load_manager.get_state()
+        if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
+            if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
+                return Text("Modlist load done, showing modmenu..."), None
+            return Text(""), None
+
+        print "{:.4}".format(st), state
+
+        if state == EntranceStates.INTERNET:
+            t = Text("Connecting to network{}".format("." * _cycle_dots()))
+            return t, 1.5
+        elif state == EntranceStates.INTERNET_FAILED:
+            _modmenu_entrance_transition_to('modmenu_nointernet', load_manager)
+            return Text("Network connection failed!"), None
+        elif state == EntranceStates.MODLIST:
+            t = Text("Loading modlist{}".format("." * _cycle_dots()))
+            return t, 1.0
+        elif state == EntranceStates.MODLIST_FAILED:
+            if use_steam:
+                _ensure_modlist_okay(strict=True) # This will fail
+            else:
+                try:
+                    load_manager.get_modlist() # This will fail
+                except Exception as exception:
+                    modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
+                                        "Error raised:\n"
+                                        + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
+            )
+            return Text("Modlist load failed!"), None
+        else: # state == EntranceStates.DONE
+            contents = load_manager.get_modlist()
+            _modmenu_entrance_transition_to('modmenu_paged', load_manager, contents=contents, use_steam=use_steam)
+            return Text("Modlist load done, showing modmenu..."), None
+
+
+    def _enter_modmenu(use_steam):
+        renpy.show_screen('modmenu_entrance', use_steam=use_steam)
+
+screen modmenu_entrance(use_steam):
+    modal True
+
+    default load_manager = ModmenuEntranceLoadManager(use_steam)
+
+    frame id "modmenu_entrance" at alpha_dissolve:
+        add "image/ui/ingame_menu_bg3.png"
+
+        add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
+
+        text "MOD MENU":
+            size 65
+            xpos 0.5
+            ypos 0.05
+            xcenter 0.5
+            yanchor 0.5
+            font "Ardnas.otf"
+
+        #Close Button
+        imagebutton:
+            idle "image/ui/close_idle.png"
+            hover "image/ui/close_hover.png"
+            action [Show("modmenu", transition=dissolve),
+                    Hide("modmenu_entrance", transition=dissolve),
+                    Stop("modmenu_music", fadeout=1.0),
+                    Play("music", "mx/menu.ogg", fadein=1.0),
+                    Play("audio", "se/sounds/close.ogg"),
+                    Function(load_manager.disabled.set),
+                    SetVariable("_modmenu_entrance_cancelled", True)]
+
+            xpos 0.94
+            ypos 0.02
+
+        add DynamicDisplayable(_modmenu_entrance_progress, load_manager, use_steam):
+            xalign 0.5
+            yalign 0.5
+
+    on "show" action SetVariable("_modmenu_entrance_cancelled", False)
+
+
+
 init python:
     renpy.music.register_channel("modmenu_music", "music", True)
 
@@ -151,7 +317,7 @@ init python:
     if internet_on() and modloader.has_steam():
         modconfig.steam_modlist_preloader.load()
 
-
+    # modmenu search stuff
     import modmenu_search
     import time
 
@@ -161,7 +327,7 @@ init python:
 
             :param modlist: The base modlist to manage
             :param page_size: The page size of each mod page
-            :param filter_map: mapping from name (str) to filter func: the initial filter types which are available. if None (default), the initial filter map is empty
+            :param filter_map: mapping from name (str) to (filter_func, add_args): the initial filter types which are available. if None (default), the initial filter map is empty
             """
             if page_size <= 0:
                 raise ValueError("page_size={} must be positive!".format(page_size))
@@ -248,13 +414,16 @@ init python:
             self._filter_activity[name] = active
             self._apply_filters()
 
-        def register_filter(self, name, func):
+        def register_filter(self, name, func, add_args=tuple()):
             """Register a new filter func with the name name
+            :param name: the name of the new filter
+            :param func: the filter function. must take a mod tuple as its first argument, and the rest of the arguments (if present) must match add_args
+            :param add_args: an iterable of additional arguments for func, which are added to each call to it. default empty tuple, which adds no arguments.
             :raises KeyError if name is already present"""
             if name in self._filter_funcs:
                 raise KeyError("\'{}\' is already registered".format(name))
 
-            self._filter_funcs[name] = func
+            self._filter_funcs[name] = (func, add_args)
             self._filter_activity[name] = None
 
 
@@ -274,22 +443,24 @@ init python:
             for entry in self._reordered_modlist:
                 passed = True
                 for name, status in self._filter_activity.iteritems():
-                    if status is not None and self._filter_funcs[name](entry) != status:
-                        passed = False
-                        break
+                    if status is not None:
+                        fulter_func, add_args = self._filter_funcs[name]
+                        if fulter_func(entry, add_args) != status:
+                            passed = False
+                            break
                 if passed:
                     result_contents.append(entry)
 
             self._filtered_modlist = result_contents
 #             _refresh_modlist(self, self.use_steam)
 
-    def _modmenu_do_then_refresh(func, modlist_manager, use_steam):
+    def _modmenu_do_then_refresh(func, modlist_manager, mod_changes, use_steam):
         """A wrapper which calls func and then refreshes the modlist display. necessary for searchbars, as they don't accept Actions"""
         def inner(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             finally:
-                _refresh_modlist(modlist_manager, use_steam)
+                _refresh_modlist(modlist_manager, mod_changes, use_steam)
 
         return inner
 
@@ -300,6 +471,7 @@ init -1 python:
     import math
     import traceback
     import threading
+    from collections import Counter
 
     import modloader
     from modloader import modconfig, steamhandler_extensions
@@ -308,6 +480,7 @@ init -1 python:
     def is_modlist_loaded():
         return modconfig.steam_modlist_preloader.is_loaded()
 
+    # modlist error stuff
     def _ensure_modlist_okay(strict=False):
         """Wait until the steam modlist is loaded, then check for errors and report any that have been detected.
         :parameter strict: default (False) only reports severe errors. if set to True, all errors are reported"""
@@ -345,244 +518,249 @@ init -1 python:
     if not renpy.exports.has_screen("_modlist_errors"):
         renpy.load_module("modloader/patch_errorhandling_screens")
 
-    class EntranceStates:
-        INTERNET = "internet"
-        INTERNET_FAILED = "internet_failed"
-        MODLIST = "modlist"
-        MODLIST_FAILED = "modlist_failed"
-        DONE = "done"
-
-    class ModmenuEntranceLoadManager:
-        """Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading."""
-
-        def __init__(self, use_steam):
-            self.use_steam = use_steam
-
-            self._state = EntranceStates.INTERNET
-            self._state_lock = threading.Lock()
-
-            self._result = None
-            self._exception = None
-            self._done_signal = threading.Event() # Used to gat access to these two. a lock is not necessary as they are only accessible after being set for the last time.
-
-            self.disabled = threading.Event() # I've had issues with calls coming after a transition was supposed to take effect, so this allows me to disable the screen under those cases.
-
-            self._running_thread = threading.Thread(target=self._load_modlist, args=(self.use_steam,))
-            self._running_thread.daemonic = True
-            self._running_thread.start()
-
-        def set_state(self, state):
-            with self._state_lock:
-                self._state = state
-
-        def get_state(self):
-            with self._state_lock:
-                return self._state
 
 
-        def get_modlist(self):
-            self._done_signal.wait()
-            if self._exception is not None:
-                raise self._exception
-            return self._result
-
-
-        def _load_modlist(self, use_steam):
-            if internet_on():
-                self.set_state(EntranceStates.MODLIST)
-                try:
-                    # (modid, name, author, description, image) (for github)
-                    # (id, name, author, desc, image) (for steam)
-                    if use_steam:
-                        from modloader.modconfig import steam_downloadable_mods as download_mods
-                    else:
-                        from modloader.modconfig import github_downloadable_mods as download_mods
-
-                    self._result = download_mods()
-                    self.set_state(EntranceStates.DONE)
-                except Exception as e:
-                    self._exception = e
-                    self._exception.traceback = sys.exc_info()[2]
-                    self.set_state(EntranceStates.MODLIST_FAILED)
-            else:
-                print "Internet failed"
-                self.set_state(EntranceStates.INTERNET_FAILED)
-
-            self._done_signal.set()
-
-    _dots = 1
-    _MAX_DOTS = 3
-
-    def _cycle_dots():
-        global _dots, _MAX_DOTS
-        _dots = (_dots % _MAX_DOTS) + 1
-        return _dots
-
-
-    def _modmenu_entrance_transition_to(screen, load_manager, **kwargs):
-        """As transitioning out of the modmenu entrance without issues requires setting a few things, this helps ensure it is done correctly"""
-        renpy.show_screen(screen, **kwargs)
-        renpy.hide_screen('modmenu_entrance')
-        load_manager.disabled.set()
-        renpy.restart_interaction()
-
-
-    _modmenu_entrance_cancelled = False
-
-    def _modmenu_entrance_progress(st, at, load_manager, use_steam):
-        state = load_manager.get_state()
-        if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
-            if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
-                return Text("Modlist load done, showing modmenu..."), None
-            return Text(""), None
-
-        print "{:.4}".format(st), state
-
-        if state == EntranceStates.INTERNET:
-            t = Text("Connecting to network{}".format("." * _cycle_dots()))
-            return t, 1.5
-        elif state == EntranceStates.INTERNET_FAILED:
-            _modmenu_entrance_transition_to('modmenu_nointernet', load_manager)
-            return Text("Network connection failed!"), None
-        elif state == EntranceStates.MODLIST:
-            t = Text("Loading modlist{}".format("." * _cycle_dots()))
-            return t, 1.0
-        elif state == EntranceStates.MODLIST_FAILED:
-            if use_steam:
-                _ensure_modlist_okay(strict=True) # This will fail
-            else:
-                try:
-                    load_manager.get_modlist() # This will fail
-                except Exception as exception:
-                    modloader.report_modlist_errors("An error has occurred in trying to load the steam mod list.\n"
-                                        "Error raised:\n"
-                                        + "".join(traceback.format_exception(type(exception), exception, exception.traceback))
-            )
-            return Text("Modlist load failed!"), None
-        else: # state == EntranceStates.DONE
-            contents = load_manager.get_modlist()
-            _modmenu_entrance_transition_to('modmenu_paged', load_manager, contents=contents, use_steam=use_steam)
-            return Text("Modlist load done, showing modmenu..."), None
-
-
-    def _enter_modmenu(use_steam):
-        renpy.show_screen('modmenu_entrance', use_steam=use_steam)
-
-
-
-    def _refresh_modlist(modlist_manager, use_steam):
+    def _refresh_modlist(modlist_manager, mod_changes, use_steam):
         renpy.hide_screen('modmenu_paged_modlist')
-        renpy.show_screen('modmenu_paged_modlist', contents=modlist_manager.get_current_modlist_page(), use_steam=use_steam)
+        renpy.show_screen('modmenu_paged_modlist', contents=modlist_manager.get_current_modlist_page(), mod_changes=mod_changes, use_steam=use_steam)
         renpy.restart_interaction()
 
 
-    # Mod selection methods
-    _modmenu_mods_to_add = {} # Mods are Subscribed to once they are added the first time. they are installed on exit if they have not been removed.
-    _modmenu_mods_to_remove = {} # Mods are Unsubscribed and deleted on exit. this means that a mod that has been added then removed is deleted like any other removed mod.
-
+    # modchange lists methods
     def _modmenu_is_mod_installed(mod_id, mod_name):
         """Is mod actually installed on the computer, regardless of modmenu status."""
         return str(mod_id) in modinfo.get_mod_folders() or str(mod_name) in modinfo.get_mod_folders()
 
-    def _modmenu_is_mod_present(mod_id, mod_name):
-        """Will the mod be installed once the modmenu changes have been applied."""
-        return (_modmenu_is_mod_installed(mod_id, mod_name) or _modmenu_is_mod_added(mod_id)) and not _modmenu_is_mod_removed(mod_id)
 
-    def _modmenu_add_mod(mod_id, mod_name=""):
-        print "adding mod:", mod_id, mod_name
-        if mod_id in _modmenu_mods_to_remove: # Added, then removed this session
-            _modmenu_mods_to_remove.pop(mod_id)
-        elif mod_id not in _modmenu_mods_to_add: # Not added yet, and not an existing mod being reinstated
-            _modmenu_mods_to_add[mod_id] = mod_name
-        # else: nothing to do...
+    def _modmenu_get_recursive_deps(dep_map, reverse_dep_map, strict=True):
+        """Generate a recursive dependency map from the simple forward and reverse dependency maps
 
-    def _modmenu_remove_mod(mod_id, mod_name="", filename=""):
-        print "removing mod:", mod_id, mod_name, filename
-        if mod_id in _modmenu_mods_to_add:
-            _modmenu_mods_to_add.pop(mod_id)
-        elif mod_id not in _modmenu_mods_to_remove:
-            _modmenu_mods_to_remove[mod_id] = (mod_name, filename)
+        :param dep_map: mapping from mod_id to iterable(mod_id), from each mod to it's dependencies
+        :param reverse_dep_map: reverse mapping, from each mod to is users. used for efficiency
+        :param strict: if True (default), raise KeyError on dependencies which do not appear as keys in dep_map. if False, they are treated as mods without dependencies
+        :return mapping from mod_id to set(mod_id), recursive mod mapping
+        :raises KeyError when strict=True and a mod has a dependency not in the mapping
+        :raises ValueError when a circular dependency is detected
+        """
+        result = {}
+        if strict:
+            unfulfilled_deps = {mod_id: set(child_list) for mod_id, child_list in dep_map.iteritems()}
+        else:
+            checked_deps = dep_map.keys()
+            unfulfilled_deps = {mod_id: set(child_list).intersection(checked_deps) for mod_id, child_list in dep_map.iteritems()}
+        all_fulfilled = {mod_id: dep_map[mod_id] for mod_id, unfulfilled_list in unfulfilled_deps.iteritems() if not len(unfulfilled_list)}
+        unfulfilled_deps = {mod_id: child_list for mod_id, child_list in unfulfilled_deps.iteritems() if mod_id not in all_fulfilled} # remove fulfilled mods
+        while len(all_fulfilled):
+            for mod_id, child_list in all_fulfilled.iteritems():
+                # add entry to dependency map
+                if strict:
+                    recursive_deps = reduce(set.union, (dep_map[dep_id] for dep_id in child_list), set())
+                else:
+                    recursive_deps = reduce(set.union, (dep_map.get(dep_id, set()) for dep_id in child_list), set())
+                result[mod_id] = set(child_list).union(recursive_deps)
 
-    def _modmenu_clear_added_mods():
-        _modmenu_mods_to_add.clear()
+                # update that they're fulfilled
+                for use_id in reverse_dep_map[mod_id]:
+                    unfulfilled_deps[use_id].remove(mod_id)
 
-    def _modmenu_clear_removed_mods():
-        _modmenu_mods_to_remove.clear()
-
-    def _modmenu_get_added_mods():
-        return _modmenu_mods_to_add
-
-    def _modmenu_get_removed_mods():
-        return _modmenu_mods_to_remove
-
-    def _modmenu_is_mod_added(mod_id):
-        return mod_id in _modmenu_mods_to_add
-
-    def _modmenu_is_mod_removed(mod_id):
-        return mod_id in _modmenu_mods_to_remove
-
-    def _modmenu_get_mod_actions():
-        """Using the add and remove list, get the list of mods to install, and the list of mods to uninstall.
-        This is distinct from the basic getters as the list of mods to install may not contain any mod that should be removed.
-        :returns 2-tuple containing a dict[int: str], and a set[int].
-            the dict is the dict of mods to install, from mod id to modname.
-            the set is the set of mods to uninstall, by mod id."""
-        mods_to_install = {mod_id: mod_name for mod_id, mod_name in _modmenu_mods_to_add.iteritems() if mod_id not in _modmenu_mods_to_remove}
-        return mods_to_install, _modmenu_get_removed_mods()
+            all_fulfilled = {mod_id: dep_map[mod_id] for mod_id, unfulfilled_list in unfulfilled_deps.iteritems() if not len(unfulfilled_list)}
+            unfulfilled_deps = {mod_id: child_list for mod_id, child_list in unfulfilled_deps.iteritems() if mod_id not in all_fulfilled}
 
 
+        # all missing are circular dependencies. this should really never happen...
+        circular_deps = set(dep_map.iterkeys()) - set(result.iterkeys())
+        if circular_deps:
+            raise ValueError("Circular dependency detected regarding these mods: {}".format(tuple(circular_deps)))
 
-screen modmenu_entrance(use_steam):
-    modal True
+        return result
 
-    default load_manager = ModmenuEntranceLoadManager(use_steam)
 
-    frame id "modmenu_entrance" at alpha_dissolve:
-        add "image/ui/ingame_menu_bg3.png"
+    class Modchanges:
+        def __init__(self, base_modlist):
+            """A class holding the full modlist, along with functionality to request to install or uninstall a mod.
 
-        add "image/ui/ingame_menu_bg_light.png" at ingame_menu_light
+            :param base_modlist: The vendor modlist for this class
+            """
 
-        text "MOD MENU":
-            size 65
-            xpos 0.5
-            ypos 0.05
-            xcenter 0.5
-            yanchor 0.5
-            font "Ardnas.otf"
+            self._modlist = {mod.id: mod for mod in base_modlist}
+            self._add_map = {}
+            self._dependent_add_map = Counter()
+            self._remove_map = {}
+            self._installed_dependent_map = Counter() # equivalent of _dependent_add_map used to keep track when a mod is safe to delete
 
-        #Close Button
-        imagebutton:
-            idle "image/ui/close_idle.png"
-            hover "image/ui/close_hover.png"
-            action [Show("modmenu", transition=dissolve),
-                    Hide("modmenu_entrance", transition=dissolve),
-                    Stop("modmenu_music", fadeout=1.0),
-                    Play("music", "mx/menu.ogg", fadein=1.0),
-                    Play("audio", "se/sounds/close.ogg"),
-                    Function(load_manager.disabled.set),
-                    SetVariable("_modmenu_entrance_cancelled", True)]
+            # setup recursive dependency maps
+            forward_dep_map = {mod_id: set(mod.child_list) for mod_id, mod in self._modlist.iteritems()}
+            reverse_dep_map = {mod_id: set() for mod_id in self._modlist}
+            for mod_id, child_list in forward_dep_map.iteritems():
+                for child_key in child_list:
+                    if child_key not in reverse_dep_map:
+                        reverse_dep_map[child_key] = set()
+                    reverse_dep_map[child_key].add(mod_id)
 
-            xpos 0.94
-            ypos 0.02
+            # Fixup forward_dep_map to include missing keys from reverse_dep_map as _modmenu_get_recursive_deps is annoying about them
+            missing_keys = set(reverse_dep_map.keys()) - set(forward_dep_map.keys())
+            forward_dep_map.update({key: set() for key in missing_keys})
 
-        add DynamicDisplayable(_modmenu_entrance_progress, load_manager, use_steam):
-            xalign 0.5
-            yalign 0.5
+            self._dependency_map = _modmenu_get_recursive_deps(forward_dep_map, reverse_dep_map, strict=False)
+            self._r_dependency_map = _modmenu_get_recursive_deps(reverse_dep_map, forward_dep_map, strict=False)
 
-    on "show" action SetVariable("_modmenu_entrance_cancelled", False)
+            self._reset_installed_dependent_map()
 
+
+        def _reset_installed_dependent_map(self):
+            self._installed_dependent_map.clear()
+
+            for mod_id in self._modlist:
+                if self.is_mod_installed(mod_id):
+                    self._installed_dependent_map += Counter(self._dependency_map[mod_id])
+
+
+        def get_mod(self, mod_id):
+            return self._modlist[mod_id]
+
+        def get_mod_by_name(self, mod_name):
+            result = [mod for mod in self._modlist.itervalues() if mod.name == mod_name]
+            if not result:
+                raise ValueError("mod \"{}\" not present in modlist".format(mod_name))
+            return result[0]
+
+        def get_mod_dependencies(self, mod_id):
+            return self._dependency_map[mod_id]
+
+        def get_mod_parents(self, mod_id):
+            return self._r_dependency_map[mod_id]
+
+
+        def get_added_mods(self, dependency=True):
+            """Get all mods selected for addition, optionally along with their uninstalled dependencies
+            :param dependency: if True (default), result also includes all uninstalled dependencies of the selected mods. if False, only mods specifically added will be included
+            """
+            if not dependency:
+                return self._add_map
+            result = self.get_added_dependencies(missing=True)
+            result.update(self._add_map)
+            return result
+
+        def get_removed_mods(self, dependency=True):
+            """Get all mods selected for removal, optionally depending on dependency coherence
+            :param dependency: if True (default), only returns mods which have no remaining dependency after removal (whether existing or added). if False, all mods requesting removal will be returned
+            """
+            if not dependency:
+                return self._remove_map
+            return {mod_id: item for mod_id, item in self._remove_map.iteritems() if self.is_mod_removable(mod_id)}
+
+        def get_added_dependencies(self, missing=False):
+            """Get all added mod dependencies.
+            :param missing: if True, only include missing (as in, not installed) dependencies. if False (default), include all dependencies
+            """
+            if missing:
+                result = {}
+                for mod_id in self._dependent_add_map.iterkeys():
+                    mod_name = self.get_mod(mod_id).name
+                    if not _modmenu_is_mod_installed(mod_id, mod_name):
+                        result[mod_id] = mod_name
+                return result
+            return {mod_id: self.get_mod(mod_id).name for mod_id in self._dependent_add_map.iterkeys()}
+
+        def get_installed_dependencies(self):
+            return {mod_id for mod_id in self._installed_dependent_map.iterkeys()}
+
+
+        def is_mod_added(self, mod_id, dependency=True):
+            """Is mod_id selected for addition, or optionally will be installed.
+            :param dependency: if True (default), returns True if mod_id is selected or is an uninstalled dependency of a selected mod. if False, only returns True if mod_id is selected for addition
+            """
+            return mod_id in self.get_added_mods(dependency)
+
+        def is_mod_dependency(self, mod_id):
+            return mod_id in self.get_added_dependencies()
+
+        def is_mod_removed(self, mod_id, dependency=True):
+            """Is mod_id selected for removal, or optionally will be removed.
+            :param dependency: if True (default), returns True only if mod_id is selected and can be safely removed by dependency logic. if False, returns True if mod_id is selected for removal
+            """
+            return mod_id in self.get_removed_mods(dependency)
+
+        def is_all_dependencies_available(self, mod_id):
+            """Are all of mod_id's dependencies present in the modlist"""
+            return all((dep_id in self._modlist) for dep_id in self._dependency_map[mod_id])
+
+
+        def is_mod_installed(self, mod_id):
+            """Version of _modmenu_is_mod_installed which matches the rest of the functions here"""
+            mod = self.get_mod(mod_id)
+            return _modmenu_is_mod_installed(mod_id, mod.name)
+
+        def is_mod_present(self, mod_id, dependency=False):
+            """Will the mod be installed once the modmenu changes have been applied
+            :param mod_id: the mod id to check presence
+            :param dependency: if False (default), ignore dependency install for this calculation. if True, then include such case"""
+            return (self.is_mod_installed(mod_id) and not self.is_mod_removed(mod_id, dependency)) or self.is_mod_added(mod_id, dependency)
+
+        def is_mod_removable(self, mod_id):
+            """Can a mod be removed without breaking dependency constraints. this decides if a remove_mod call will produce a visible effect"""
+            return mod_id not in self._installed_dependent_map and mod_id not in self._dependent_add_map
+
+
+        def add_mod(self, mod_id):
+            print "adding mod:", mod_id
+            is_installed = self.is_mod_installed(mod_id)
+
+            if is_installed and mod_id in self._remove_map: # Added, then removed this session
+                self._remove_map.pop(mod_id)
+                self._installed_dependent_map += Counter(self.get_mod_dependencies(mod_id))
+            elif not is_installed and mod_id not in self._add_map: # Not added yet, and not an existing mod being reinstated
+                self._add_map[mod_id] = self.get_mod(mod_id).name
+                # filter add map to only care about mods which actually exist in the modlist
+
+                self._dependent_add_map += Counter(self.get_mod_dependencies(mod_id).intersection(self._modlist.keys()))
+            # else: nothing to do...
+
+        def remove_mod(self, mod_id, filename=""):
+            print "removing mod:", mod_id, filename
+            is_installed = self.is_mod_installed(mod_id)
+
+            if not is_installed and mod_id in self._add_map:
+                self._add_map.pop(mod_id)
+                self._dependent_add_map -= Counter(self.get_mod_dependencies(mod_id))
+            elif is_installed and mod_id not in self._remove_map:
+                self._remove_map[mod_id] = (self.get_mod(mod_id).name, filename)
+                self._installed_dependent_map -= Counter(self.get_mod_dependencies(mod_id))
+
+        def clear_added_mods(self):
+            self._add_map.clear()
+            self._dependent_add_map.clear()
+
+        def clear_removed_mods(self):
+            self._remove_map.clear()
+            self._reset_installed_dependent_map()
+
+        def clear_mods(self):
+            self.clear_added_mods()
+            self.clear_removed_mods()
+
+
+    # Vendor modfolder functions
+    def _steam_get_modfolder(mod_id, mod_name):
+        return str(mod_id)
+
+    def _github_get_modfolder(mod_id, mod_name):
+        return mod_name
 
 
 screen modmenu_paged(contents, use_steam):
     modal True
 
+    default mod_changes = Modchanges(contents)
+
     python:
-        filter_map = {"install": lambda mod: _modmenu_is_mod_installed(mod[0], mod[1]),
-                   "select": lambda mod: _modmenu_is_mod_added(mod[0]) or _modmenu_is_mod_removed(mod[0]),
-                   "present": lambda mod: _modmenu_is_mod_present(mod[0], mod[1]),
+        filter_map = {"install": (lambda mod, mod_changes: mod_changes.is_mod_installed(mod.id), mod_changes),
+                      "select":  (lambda mod, mod_changes: mod_changes.is_mod_added(mod.id, dependency=False) or mod_changes.is_mod_removed(mod.id, dependency=False), mod_changes),
+                      "present": (lambda mod, mod_changes: mod_changes.is_mod_present(mod.id, dependency=True), mod_changes),
                   }
 
     default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
+
 
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -609,8 +787,7 @@ screen modmenu_paged(contents, use_steam):
                     Hide("modmenu_entrance", transition=dissolve),
                     Stop("modmenu_music", fadeout=1.0),
                     Play("music", "mx/menu.ogg", fadein=1.0),
-                    Play("audio", "se/sounds/close.ogg")
-                    ]
+                    Play("audio", "se/sounds/close.ogg")]
 
             xpos 0.94
             ypos 0.02
@@ -632,7 +809,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Tried to bind this to shift+scroll, but it didn't work...
                 action [Function(modlist_manager.move_current_page, -5),
-                        Function(_refresh_modlist, modlist_manager, use_steam)
+                        Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                        ]
                 sensitive (modlist_manager.get_current_page() > 1)
 
@@ -641,7 +818,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_4"
                 action [Function(modlist_manager.move_current_page, -1),
-                        Function(_refresh_modlist, modlist_manager, use_steam)
+                        Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                        ]
                 sensitive (modlist_manager.get_current_page() > 1)
 
@@ -658,7 +835,7 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 keysym "mousedown_5"
                 action [Function(modlist_manager.move_current_page, 1),
-                        Function(_refresh_modlist, modlist_manager, use_steam)
+                        Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                         ]
                 sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
@@ -667,12 +844,13 @@ screen modmenu_paged(contents, use_steam):
                 ycenter 0.5
                 # Also tried to bind this to shift+scroll, but it didn't work...
                 action [Function(modlist_manager.move_current_page, 5),
-                        Function(_refresh_modlist, modlist_manager, use_steam)
+                        Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                         ]
                 sensitive (modlist_manager.get_current_page() < modlist_manager.get_max_page())
 
-        $ n_added_mods = len(_modmenu_get_added_mods())
-        $ n_removed_mods = len(_modmenu_get_removed_mods())
+        # As we wish to include dependencies in both calculations, we use the non-selection methods
+        $ n_added_mods = len(mod_changes.get_added_mods())
+        $ n_removed_mods = len(mod_changes.get_removed_mods())
 
         if n_added_mods:
             if n_removed_mods:
@@ -700,8 +878,8 @@ screen modmenu_paged(contents, use_steam):
 
             xsize 425
             ysize 125
-            action [Function(print, "added:", _modmenu_get_added_mods(), "\nremoved:", _modmenu_get_removed_mods()),
-                    Show("modmenu_apply_confirm", use_steam=use_steam)]
+            action [Function(print, "added:", mod_changes.get_added_mods(), "\nremoved:", mod_changes.get_removed_mods()),
+                    Show("modmenu_apply_confirm", mod_changes=mod_changes, use_steam=use_steam)]
             sensitive bool(n_added_mods) or bool(n_removed_mods)
 
     # Searchbars
@@ -760,7 +938,7 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320 # While the horizontal space is supposed to be 340, The inputs have a tendency to drop down a row...
-                    changed _modmenu_do_then_refresh(modlist_manager.set_author_query, modlist_manager, use_steam)
+                    changed _modmenu_do_then_refresh(modlist_manager.set_author_query, modlist_manager, mod_changes, use_steam)
 
 
             button:
@@ -779,7 +957,7 @@ screen modmenu_paged(contents, use_steam):
                     ycenter 0.5
                     size 24
                     pixel_width 320
-                    changed _modmenu_do_then_refresh(modlist_manager.set_query, modlist_manager, use_steam)
+                    changed _modmenu_do_then_refresh(modlist_manager.set_query, modlist_manager, mod_changes, use_steam)
         key "K_ESCAPE" action [SetScreenVariable("focus_query_input", False), SetScreenVariable("focus_author_query_input", False)]
         key "K_TAB" action [ToggleScreenVariable("focus_author_query_input"),
                             If(focus_author_query_input,
@@ -841,14 +1019,14 @@ screen modmenu_paged(contents, use_steam):
                         idle im.Scale("ui/nsfw_chbox-unchecked.png", _im_size, _im_size)
 
                     action    [Function(modlist_manager.set_filter_active, filter_name, If(_status is True, None, True)),
-                               Function(_refresh_modlist, modlist_manager, use_steam)
+                               Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                               ]
                     alternate [Function(modlist_manager.set_filter_active, filter_name, If(_status is False, None, False)),
-                               Function(_refresh_modlist, modlist_manager, use_steam)
+                               Function(_refresh_modlist, modlist_manager, mod_changes, use_steam)
                               ]
 
 
-    on "show" action [Function(_refresh_modlist, modlist_manager, use_steam),
+    on "show" action [Function(_refresh_modlist, modlist_manager, mod_changes, use_steam),
                       Function(_preload_mod_images, contents, None),
                       Function(im.cache.clear) # I tended to get 'out of memory' errors on this menu, so we use this precaution
                       ]
@@ -856,13 +1034,17 @@ screen modmenu_paged(contents, use_steam):
     on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
                       Function(im.cache.clear),
                       Function(modmenu_search.clear_cache),
-                      Function(_modmenu_clear_added_mods),
-                      Function(_modmenu_clear_removed_mods)
+                      Function(mod_changes.clear_mods),
                      ]
 
 
 
-screen modmenu_paged_modlist(contents, use_steam):
+screen modmenu_paged_modlist(contents, mod_changes, use_steam):
+    if use_steam:
+        $ _get_modfolder = _steam_get_modfolder
+    else:
+        $ _get_modfolder = _github_get_modfolder
+
     frame:
         background None
         yminimum 900
@@ -883,60 +1065,103 @@ screen modmenu_paged_modlist(contents, use_steam):
             cols 1
             spacing 30
 
-            for modid, name, author, description, url in contents:
-                $ modname = modmenu_name_cleaner(name)
+            for mod in contents:
+                $ mod_id = mod.id
+                $ child_list = mod.child_list
+                $ mod_button_text = modmenu_name_cleaner(mod.name)
 
-                if len(modname) > 21:
-                    #if modname is greater than 21 characters, decrease size of font by 5
-                    if len(modname) <= 25:
-                        $ modname = "{size=-5}" + modname + "{/size}"
+                if len(mod_button_text) > 21:
+                    #if mod_button_text is greater than 21 characters, decrease size of font by 5
+                    if len(mod_button_text) <= 25:
+                        $ mod_button_text = "{size=-5}" + mod_button_text + "{/size}"
 
-                    #if modname is greater than 25 characters, decrease size of font by 10
+                    #if mod_button_text is greater than 25 characters, decrease size of font by 10
                     else:
-                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
-#                         if len(modname) > 30:
-                        $ modname = modname[:30]
-                        $ modname = "{size=-10}" + modname + "{/size}"
+                        #if mod_button_text is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
+                        $ mod_button_text = mod_button_text[:30]
+                        $ mod_button_text = "{size=-10}" + mod_button_text + "{/size}"
 
-                if _modmenu_is_mod_installed(modid, name):
-                    $ modname += "\n{size=-5}(Installed"
-                    if _modmenu_is_mod_removed(modid):
-                        $ modname += ", removed"
-                    $ modname += "){/size}"
-                elif _modmenu_is_mod_added(modid):
-                    $ modname += "\n{size=-5}(Added){/size}"
+                $ mod_button_text_extras = []
 
-                textbutton "[modname]":
+                if mod_changes.is_mod_installed(mod_id):
+                    $ mod_button_text_extras.append("Installed")
+                    if mod_changes.is_mod_removed(mod_id, dependency=False):
+                        if mod_changes.is_mod_removable(mod_id):
+                            $ mod_button_text_extras.append("Removed")
+                        else:
+                            $ mod_button_text_extras.append("{s}Removed{/s}")
+                elif mod_changes.is_mod_added(mod_id, dependency=False):
+                    $ mod_button_text_extras.append("Added")
+                    if not mod_changes.is_all_dependencies_available(mod_id):
+                        $ mod_button_text_extras.append("Missing")
+
+                if mod_changes.is_mod_dependency(mod_id):
+                    $ mod_button_text_extras.append("Dependency")
+
+                if mod_button_text_extras:
+                    $ mod_button_status_text = ", ".join(mod_button_text_extras)
+                    if len(mod_button_status_text) >= 25:
+                        $ mod_button_text += "\n{size=-10}("
+                    else:
+                        $ mod_button_text += "\n{size=-5}("
+                    $ mod_button_text += mod_button_status_text  + "){/size}"
+
+                # format: "\n{size=-5}(eff, eff, eff){/size}"
+
+                textbutton "[mod_button_text]":
                     style "modmenu_select_btn"
-                    if _modmenu_is_mod_added(modid):
-                        background "#007f009B"
-                        hover_background "#7fff7f9B"
-                    elif _modmenu_is_mod_removed(modid):
-                        background "#7f00009B"
-                        hover_background "#ff7f7f9B"
+                    # Recolor the button if involved with add/remove/dependency lists
+                    if mod_changes.is_mod_added(mod_id, dependency=False):
+                        if not mod_changes.is_all_dependencies_available(mod_id):
+                            background "#7f7f00CF"
+                            hover_background "#ffff7fCF"
+                        else:
+                            background "#007f009B"
+                            hover_background "#7fff7f9B"
+                    elif mod_changes.is_mod_dependency(mod_id):
+                        background "#007f3f9B"
+                        hover_background "#7fffaf9B"
+                    elif mod_changes.is_mod_removed(mod_id, dependency=False):
+                        if mod_changes.is_mod_removable(mod_id):
+                            background "#7f00009B"
+                            hover_background "#ff7f7f9B"
+                        else:
+                            background "#7f3f009B"
+                            hover_background "#ffbf7f9B"
+                    elif mod_changes.is_mod_installed(mod_id):
+                        background "#001f3f9B"
+                        hover_background "#003f7f9B"
+
 
                     action [Hide("modmenu_mod_content"),
                             Show("modmenu_mod_content",
-                                 modid=modid,
-                                 name=unicode(name, "utf8"),
-                                 author=unicode(author, "utf8"),
-                                 description=unicode(description, "utf8"),
-                                 url=url,
+                                 mod=mod,
+                                 mod_changes=mod_changes,
                                  use_steam=use_steam,
                                  ),
                             Play("audio", "se/sounds/open.ogg")]
 
-                    alternate [If(_modmenu_is_mod_present(modid, name),
-                                   Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
-                                   Function(_modmenu_add_mod, modid, name)),
+                    alternate [If(mod_changes.is_mod_present(mod_id, dependency=False),
+                                   Function(mod_changes.remove_mod, mod_id, _get_modfolder(mod_id, mod.name)),
+                                   Function(mod_changes.add_mod, mod_id)),
                                Play("audio", "se/sounds/open.ogg")]
                               ]
 
 
 
 
+screen modmenu_mod_content(mod, mod_changes, use_steam):
+    $ mod_id = mod.id
+    $ name = unicode(mod.name, "utf8")
+    $ author = unicode(mod.author, "utf8")
+    $ description = unicode(mod.desc, "utf8")
+    $ url = mod.image_url
 
-screen modmenu_mod_content(modid, name, author, description, url, use_steam):
+    if use_steam:
+        $ _get_modfolder = _steam_get_modfolder
+    else:
+        $ _get_modfolder = _github_get_modfolder
+
     frame:
         add "ui/modcontent_frame.png":
             xoffset -10 yoffset 10 xpos 0.275 ypos 0.21
@@ -978,7 +1203,8 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
             font "Ardnas.otf"
 
         #Mods image
-        vbox xpos 0.72 ypos 0.21:
+#         vbox xpos 0.72 ypos 0.21:
+        vbox xpos 0.73 ypos 0.21:
             python:
                 ModmenuContentImageURL(url)
 
@@ -995,10 +1221,10 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
                 null width 350
 
-                if _modmenu_is_mod_present(modid, name):
+                if mod_changes.is_mod_present(mod_id, dependency=False):
                     textbutton "Uninstall":
                         ycenter 0.5
-                        action [Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
+                        action [Function(mod_changes.remove_mod, mod_id, _get_modfolder(str(mod_id), name)),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -1007,8 +1233,7 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                 else:
                     textbutton "Install":
                         ycenter 0.5
-                        action [Function(_modmenu_add_mod, modid, name),
-#                         Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
+                        action [Function(mod_changes.add_mod, mod_id),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -1021,8 +1246,8 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                 #scrollbars "vertical"
                 draggable True
                 mousewheel True
-                xminimum 1100
-                xmaximum 1100
+                xminimum 1050
+                xmaximum 1050
                 yminimum 355
                 ymaximum 355
 
@@ -1035,20 +1260,180 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
         bar value YScrollValue("modcontent_vp"):
             style "modmenu_content_slider"
             ypos 472
-            xpos 1682
+            xpos 1582
             #yalign 0.95
+
+        # dependency area
+        frame xpos 1632 ypos 0.21 xsize 280 ysize 290:
+            background "#0000009B"
+            xpadding 15
+
+            vbox xsize 230 yfill True:
+                text "Dependencies:" size 40
+
+                viewport id "_dep_list" xfill True:
+                    mousewheel "change"
+
+                    vbox:
+                        for dep_id in mod_changes.get_mod_dependencies(mod_id):
+                            python:
+                                dep_present = True
+                                try:
+                                    dep_name = mod_changes.get_mod(dep_id).name
+
+                                    if mod_changes.is_mod_removed(dep_id, dependency=False):
+                                        if mod_changes.is_mod_removable(dep_id):
+                                            dep_color = "#ff1f1fFF"
+                                            dep_hover = "#ff4f4fFF"
+                                        else:
+                                            dep_color = "#9f7f7fFF"
+                                            dep_hover = "#7f5f5fFF"
+                                    elif mod_changes.is_mod_installed(dep_id):
+                                        dep_color = "#00bfffFF"
+                                        dep_hover = "#007fbfFF"
+                                    elif mod_changes.is_mod_added(dep_id, dependency=False):
+                                        dep_color = "#bfff00FF"
+                                        dep_hover = "#7fbf00FF"
+                                    elif mod_changes.is_mod_dependency(dep_id):
+                                        dep_color = "#00ffbfFF"
+                                        dep_hover = "#00bf7fFF"
+                                    else:
+                                        dep_color = "#ffffffFF"
+                                        dep_hover = "#bfbfbfFF"
+
+                                except KeyError:
+                                    dep_present = False
+                                    dep_name = "<Missing>"
+                                    dep_color = "#7f7f7fFF"
+                                    dep_hover = "#afafafFF"
+
+                            textbutton "[dep_name]":
+                                background "#0000" # Clear background, as I don't wish there to be
+                                padding (0, 0)
+                                text_size 20
+                                text_color dep_color
+                                text_hover_color dep_hover
+
+                                if dep_present:
+                                    action [Hide("modmenu_mod_content"),
+                                            Show("modmenu_mod_content",
+                                                 mod=mod_changes.get_mod(dep_id),
+                                                 mod_changes=mod_changes,
+                                                 use_steam=use_steam,
+                                                 ),
+                                            Play("audio", "se/sounds/open.ogg")]
+
+                                    alternate [If(mod_changes.is_mod_present(dep_id, dependency=False),
+                                                   Function(mod_changes.remove_mod, dep_id, _get_modfolder(dep_id, mod_changes.get_mod(dep_id).name)),
+                                                   Function(mod_changes.add_mod, dep_id)),
+                                               Play("audio", "se/sounds/open.ogg")]
+                                              ]
+
+
+
+            bar value YScrollValue("_dep_list"):
+                style "modmenu_content_slider"
+                ysize 250
+                yalign 1.0
+                xalign 1.0
+                unscrollable "hide"
+
+
+        # parents area
+        frame xpos 1632 ypos 0.497 xsize 280 ysize 290:
+            background "#0000009B"
+            xpadding 15
+
+            vbox xsize 230 yfill True:
+                text "Dependents:" size 40
+
+                viewport id "_parent_list" xfill True:
+                    mousewheel "change"
+
+                    vbox:
+                        for parent_id in mod_changes.get_mod_parents(mod_id):
+                            python:
+                                parent_present = True
+                                try:
+                                    parent_name = mod_changes.get_mod(parent_id).name
+
+                                    if mod_changes.is_mod_removed(parent_id, dependency=False):
+                                        if mod_changes.is_mod_removable(parent_id):
+                                            parent_color = "#ff1f1fFF"
+                                            parent_hover = "#ff4f4fFF"
+                                        else:
+                                            parent_color = "#9f7f7fFF"
+                                            parent_hover = "#7f5f5fFF"
+                                    elif mod_changes.is_mod_installed(parent_id):
+                                        parent_color = "#00bfffFF"
+                                        parent_hover = "#007fbfFF"
+                                    elif mod_changes.is_mod_added(parent_id, dependency=False):
+                                        parent_color = "#bfff00FF"
+                                        parent_hover = "#7fbf00FF"
+                                    elif mod_changes.is_mod_dependency(parent_id):
+                                        parent_color = "#00ffbfFF"
+                                        parent_hover = "#00bf7fFF"
+                                    else:
+                                        parent_color = "#ffffffFF"
+                                        parent_hover = "#bfbfbfFF"
+
+                                except KeyError:
+                                    parent_present = False
+                                    parent_name = "<Missing>"
+                                    parent_color = "#7f7f7fFF"
+                                    parent_hover = "#afafafFF"
+
+                            textbutton "[parent_name]":
+                                background "#0000" # Clear background, as I don't wish there to be
+                                padding (0, 0)
+                                text_size 20
+                                text_color parent_color
+                                text_hover_color parent_hover
+
+                                if parent_present:
+                                    action [Hide("modmenu_mod_content"),
+                                            Show("modmenu_mod_content",
+                                                 mod=mod_changes.get_mod(parent_id),
+                                                 mod_changes=mod_changes,
+                                                 use_steam=use_steam,
+                                                 ),
+                                            Play("audio", "se/sounds/open.ogg")]
+
+                                    alternate [If(mod_changes.is_mod_present(parent_id, dependency=False),
+                                                   Function(mod_changes.remove_mod, parent_id, _get_modfolder(parent_id, mod_changes.get_mod(parent_id).name)),
+                                                   Function(mod_changes.add_mod, parent_id)),
+                                               Play("audio", "se/sounds/open.ogg")]
+                                              ]
+
+            bar value YScrollValue("_parent_list"):
+                style "modmenu_content_slider"
+                ysize 250
+                yalign 1.0
+                xalign 1.0
+                unscrollable "hide"
+
+
 
 transform _button_zoom:
     zoom 40.0 / 54.0
 
 
-screen modmenu_apply_confirm(use_steam):
+screen modmenu_apply_confirm(mod_changes, use_steam):
     modal True
     python:
-        from modloader.modconfig import apply_mod_changes as apply_mod_changes
+        from modloader.modconfig import apply_mod_changes
 
-        mods_to_install = _modmenu_get_added_mods()
-        mods_to_uninstall = {mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()}
+        mods_to_install = mod_changes.get_added_mods()
+        mods_added_to_install = dict(mods_to_install)
+        mod_deps_to_install = mod_changes.get_added_dependencies(missing=True)
+        for mod_id in mod_deps_to_install:
+            if mod_id in mods_added_to_install:
+                del mods_added_to_install[mod_id]
+        mods_to_uninstall = mod_changes.get_removed_mods()
+        overridden_mods = dict(mod_changes.get_removed_mods(dependency=False))
+        for mod_id in mods_to_uninstall:
+            if mod_id in overridden_mods:
+                del overridden_mods[mod_id]
         n_mods_to_install = len(mods_to_install)
         n_mods_to_uninstall = len(mods_to_uninstall)
 
@@ -1077,9 +1462,6 @@ screen modmenu_apply_confirm(use_steam):
             xcenter 0.5
             yanchor 0.0
 
-            $ mods_to_add_text = "\n".join(_modmenu_get_added_mods().itervalues())
-            $ mods_to_remove_text = "\n".join(modname for modname, filename in _modmenu_get_removed_mods().itervalues())
-
             fixed: # Added mods list: fixed is used to force list+scrollbar to stay within their region
                 xalign 0.0
                 xsize 850
@@ -1094,28 +1476,48 @@ screen modmenu_apply_confirm(use_steam):
                         ysize 100
                         xfill True
 
-                    vpgrid id "_mod_add_list":
-                        cols 1
+                    viewport id "_mod_add_list":
                         xfill True
                         mousewheel "change"
 
-                        for modid, modname in _modmenu_get_added_mods().iteritems():
-                            hbox:
-                                spacing 20
-                                ysize 60
+                        vbox:
+                            spacing 5
+                            xfill True
 
-                                imagebutton:
-                                    idle "image/ui/close_idle.png" at _button_zoom
-                                    hover "image/ui/close_hover.png"
-                                    yalign 0.5
-
-                                    action Function(_modmenu_remove_mod, modid) # As mod is guaranteed to be in the add list, we only need id to remove.
-
-                                text modname:
-                                    if len(modname) > 30:
-                                        size 30
-                                    xfill True
+                            for mod_id, mod_name in mods_added_to_install.iteritems():
+                                hbox:
+                                    spacing 20
                                     ysize 60
+
+                                    imagebutton:
+                                        idle "image/ui/close_idle.png" at _button_zoom
+                                        hover "image/ui/close_hover.png"
+                                        yalign 0.5
+
+                                        action Function(mod_changes.remove_mod, mod_id) # As mod is guaranteed to be in the add list, we only need id to remove.
+
+                                    text mod_name:
+                                        if len(mod_name) > 30:
+                                            size 30
+                                        xfill True
+                                        ysize 60
+
+                            if mod_deps_to_install:
+                                null height 5
+                                text "Including these dependencies:":
+                                    size 50
+                                null height 10
+
+                                for mod_name in mod_deps_to_install.itervalues():
+                                    hbox:
+                                        spacing 20
+                                        ysize 60
+
+                                        text mod_name:
+                                            if len(mod_name) > 30:
+                                                size 30
+                                            xfill True
+                                            ysize 60
 
                 vbar value YScrollValue("_mod_add_list"):
                     style "modmenu_select_slider"
@@ -1136,28 +1538,57 @@ screen modmenu_apply_confirm(use_steam):
                         ysize 100
                         xfill True
 
-                    vpgrid id "_mod_remove_list":
-                        cols 1
+                    viewport id "_mod_remove_list":
                         xfill True
                         mousewheel "change"
 
-                        for modid, (modname, _) in _modmenu_get_removed_mods().iteritems():
-                            hbox:
-                                spacing 20
-                                ysize 60
-
-                                imagebutton:
-                                    idle "image/ui/close_idle.png" at _button_zoom
-                                    hover "image/ui/close_hover.png"
-                                    yalign 0.5
-
-                                    action Function(_modmenu_add_mod, modid) # As mod is guaranteed to be in the remove list, we only need id to add.
-
-                                text modname:
-                                    if len(modname) > 30:
-                                        size 30
-                                    xfill True
+                        vbox:
+                            spacing 5
+                            xfill True
+                            for mod_id, (mod_name, _) in mods_to_uninstall.iteritems():
+                                hbox:
+                                    spacing 20
                                     ysize 60
+
+                                    imagebutton:
+                                        idle "image/ui/close_idle.png" at _button_zoom
+                                        hover "image/ui/close_hover.png"
+                                        yalign 0.5
+                                        action Function(mod_changes.add_mod, mod_id)
+
+                                    text mod_name:
+                                        if len(mod_name) > 30:
+                                            size 30
+                                        xfill True
+                                        ysize 60
+
+
+                            if overridden_mods:
+                                if not mods_to_uninstall:
+                                    text "---":
+                                        xfill True
+                                        ysize 60
+                                null height 5
+                                text "Removal suppressed:":
+                                    size 50
+                                null height 10
+
+                                for mod_id, (mod_name, _) in overridden_mods.iteritems():
+                                    hbox:
+                                        spacing 20
+                                        ysize 60
+
+                                        imagebutton:
+                                            idle "image/ui/close_idle.png" at _button_zoom
+                                            hover "image/ui/close_hover.png"
+                                            yalign 0.5
+                                            action Function(mod_changes.add_mod, mod_id)
+
+                                        text mod_name:
+                                            if len(mod_name) > 30:
+                                                size 30
+                                            xfill True
+                                            ysize 60
 
                 vbar value YScrollValue("_mod_remove_list"):
                     style "modmenu_select_slider"
@@ -1199,9 +1630,6 @@ screen modmenu_apply_confirm(use_steam):
 
 screen modmenu_nointernet() tag smallscreen2:
     modal True
-    python:
-        #from modloader.modconfig import download_github_mod
-        pass
 
     add "image/ui/nvlscreen.png" at zoom_fade_in:
         xcenter 0.5 ycenter 0.5 size (1921, 1081) xoffset -1 yoffset -1
