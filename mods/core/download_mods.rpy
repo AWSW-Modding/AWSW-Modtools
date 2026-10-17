@@ -118,7 +118,7 @@ init python:
             return
         image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
-            mod_image_preloader.load(url)
+            mod_image_prerenderer.load(url, False)
 
 
     class ImageURL(Image):
@@ -148,6 +148,12 @@ init python:
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (125, 125))
 
+
+    def _dynamic_image_progress(st, at, url, cls, increment=0.1):
+        if not mod_image_prerenderer.is_loaded(url, False):
+            return Text("{:.4}".format(st)), increment
+
+        return cls(url), None
 
     ImageURL = Wrapper(ImageURL)
     ScaledImageURL = Wrapper(ScaledImageURL)
@@ -928,8 +934,10 @@ screen modmenu_paged_modlist(contents, use_steam):
                     $ modname += "\n{size=-5}(Added){/size}"
 
                 hbox:
-                    python:
-                        ModmenuPreviewImageURL(url)
+                    add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL)
+                    # python:
+                    #     ModmenuPreviewImageURL(url)
+
                     textbutton "[modname]":
                         style "modmenu_select_btn"
                         if _modmenu_is_mod_added(modid):
