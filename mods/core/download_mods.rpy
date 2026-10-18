@@ -93,7 +93,7 @@ init python:
 
     mod_image_preloader = Preload(_load_mod_image, 5) # 5 threads is plenty
 
-
+    import time
     def _render_mod_image(url, unscaled=False):
         """
         Renders the image data for a given url. The resulting data is a renpy image surface of the given image
@@ -102,6 +102,7 @@ init python:
         from cStringIO import StringIO
         from renpy.display.im import cache
 
+        time.sleep(5)
         virtual_f = StringIO(mod_image_preloader.get(url))
 
         cache.add_load_log(url)
@@ -148,10 +149,31 @@ init python:
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (125, 125))
 
+    class RotatedDisplayable(renpy.Displayable):
+        def __init__(self, child, angle, crop = True):
+            super(RotatedDisplayable, self).__init__()
+            self._child = renpy.displayable(child)
+            self._angle = angle
+            self._crop = crop
+
+        def render(self, w, h, st, at):
+            d = renpy.displayable(self._child)
+            rotated_size = (w ** 2 + h ** 2) ** 0.5
+
+            transforms = (Transform(rotate = self._angle),)
+            if self._crop:
+                transforms += (Transform(crop = ((rotated_size - w) / 2, (rotated_size - h) / 2, w, h)),)
+
+            t = At(d, *transforms)
+            r = renpy.render(t, w, h, st, at)
+            renpy.redraw(self, 0)
+            return r
+
+    load_image = im.Scale("ui/half_circle_centered_white.png", 125, 125)
 
     def _dynamic_image_progress(st, at, url, cls, increment=0.1):
         if not mod_image_prerenderer.is_loaded(url, False):
-            return Text("{:.4}".format(st)), increment
+            return RotatedDisplayable(load_image, at * 180), increment
 
         return cls(url), None
 
@@ -934,9 +956,10 @@ screen modmenu_paged_modlist(contents, use_steam):
                     $ modname += "\n{size=-5}(Added){/size}"
 
                 hbox:
-                    add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL)
-                    # python:
-                    #     ModmenuPreviewImageURL(url)
+                    frame: # For some reason the DynamicDisplayable really likes to be oversized, so we're not letting it
+                        xsize 125
+                        ysize 125
+                        add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL)
 
                     textbutton "[modname]":
                         style "modmenu_select_btn"
