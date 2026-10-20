@@ -83,13 +83,34 @@ init python:
 
     from modloader.preload import Preload
 
-    def load_mod_image(url):
+    def _load_mod_image(url):
         """
         Loads the image data from given url. The resulting data is a str containing the image data
         """
         return urllib2.urlopen(url).read()
 
-    mod_image_preloader = Preload(load_mod_image, 5) # 5 threads is plenty
+
+
+    mod_image_preloader = Preload(_load_mod_image, 5) # 5 threads is plenty
+
+
+    def _render_mod_image(url, unscaled=False):
+        """
+        Renders the image data for a given url. The resulting data is a renpy image surface of the given image
+        """
+
+        from cStringIO import StringIO
+        from renpy.display.im import cache
+
+        virtual_f = StringIO(mod_image_preloader.get(url))
+
+        cache.add_load_log(url)
+        if unscaled:
+            return renpy.display.pgrender.load_image_unscaled(virtual_f, url)
+        else:
+            return renpy.display.pgrender.load_image(virtual_f, url)
+
+    mod_image_prerenderer = Preload(_render_mod_image, 5)
 
     def _preload_mod_images(modlist, error):
         if error is not None:
@@ -105,16 +126,7 @@ init python:
         This image manipulator loads an image from a url.
         """
         def load(self, unscaled=False):
-            from cStringIO import StringIO
-            from renpy.display.im import cache
-
-            virtual_f = StringIO(mod_image_preloader.get(self.filename))
-
-            cache.add_load_log(self.filename)
-            if unscaled:
-                surf = renpy.display.pgrender.load_image_unscaled(virtual_f, self.filename)
-            else:
-                surf = renpy.display.pgrender.load_image(virtual_f, self.filename)
+            surf = mod_image_prerenderer.get(self.filename, unscaled)
             return self.modify_surf(surf)
 
         def predict_files(self):
