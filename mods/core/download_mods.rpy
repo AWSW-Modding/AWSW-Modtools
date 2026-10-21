@@ -169,8 +169,8 @@ init python:
             return renpy.display.pgrender.transform_scale(surf, (125, 125))
 
     class RotatedDisplayable(renpy.Displayable):
-        def __init__(self, child, angle, crop = True):
-            super(RotatedDisplayable, self).__init__()
+        def __init__(self, child, angle, crop = True, *args, **kwargs):
+            super(RotatedDisplayable, self).__init__(*args, **kwargs)
             self._child = renpy.displayable(child)
             self._angle = angle
             self._crop = crop
@@ -188,11 +188,32 @@ init python:
             renpy.redraw(self, 0)
             return r
 
-    load_image = im.Scale("ui/half_circle_centered_white.png", 125, 125)
+    _load_image = im.Image("ui/half_circle_centered_white.png")
+    _load_image_width, _load_image_height = renpy.image_size(_load_image)
 
-    def _dynamic_image_progress(st, at, url, cls, increment=0.1):
+    li_sizes = {(_load_image_width, _load_image_height): _load_image}
+
+
+    def _dynamic_image_progress(st, at, url, cls, *args, **kwargs):
+        increment = kwargs.pop("increment", 0.1)
         if not mod_image_prerenderer.is_loaded(url, False):
-            return RotatedDisplayable(load_image, at * 180), increment
+            # Figure out appropriate size for throbber
+            width, height = _load_image_width, _load_image_height
+            if "xysize" in kwargs:
+                width, height = kwargs["xysize"]
+            else:
+                if "xsize" in kwargs:
+                    width = kwargs["xsize"]
+                if "ysize" in kwargs:
+                    height = kwargs["xsize"]
+
+            # Check if exists, else create
+            if (width, height) not in li_sizes:
+                li_sizes[(width, height)] = im.Scale(_load_image, width, height)
+
+            load_image = li_sizes[(width, height)]
+
+            return RotatedDisplayable(load_image, at * 180, *args, **kwargs), increment
 
         return cls(url), None
 
@@ -976,10 +997,7 @@ screen modmenu_paged_modlist(contents, use_steam):
                     $ modname += "\n{size=-5}(Added){/size}"
 
                 hbox:
-                    frame: # For some reason the DynamicDisplayable really likes to be oversized, so we're not letting it
-                        xsize 125
-                        ysize 125
-                        add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL)
+                    add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL, xsize = 125, ysize = 125)
 
                     textbutton "[modname]":
                         style "modmenu_select_btn"
@@ -1054,8 +1072,7 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
         #Mods image
         vbox xpos 0.72 ypos 0.21:
-            python:
-                ModmenuContentImageURL(url)
+            add DynamicDisplayable(_dynamic_image_progress, url, ModmenuContentImageURL, xsize = 220, ysize = 220)
 
 
         vbox xpos 0.275 ypos 0.21:
