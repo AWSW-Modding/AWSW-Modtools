@@ -20,14 +20,14 @@ init python:
     #style.modmenu_select_btn.yminimum = 50
 
     #old way
-    style.modmenu_select_btn.xminimum = 425
+    style.modmenu_select_btn.xminimum = 325
     style.modmenu_select_btn.yminimum = 125
     style.modmenu_select_btn.xalign = 0.5
     style.modmenu_select_btn.yalign = 0.5
     #style.modmenu_select_btn.ypadding = 5
     style.modmenu_select_btn_text.xalign = 0.5
     style.modmenu_select_btn_text.yalign = 0.5
-    style.modmenu_select_btn_text.size = 34
+    style.modmenu_select_btn_text.size = 28
     style.modmenu_select_btn_text.color = "#FFFFF0"
     style.modmenu_select_btn_text.selected_color = "#FFFFF0"
     style.modmenu_select_btn_text.antialias = True
@@ -83,13 +83,33 @@ init python:
 
     from modloader.preload import Preload
 
-    def load_mod_image(url):
+    def _load_mod_image(url):
         """
         Loads the image data from given url. The resulting data is a str containing the image data
         """
         return urllib2.urlopen(url).read()
 
-    mod_image_preloader = Preload(load_mod_image, 5) # 5 threads is plenty
+
+
+    mod_image_preloader = Preload(_load_mod_image, 2) # 2 threads here, 2 for the prerenderer works well and shouldn't cause too mush delay
+
+    def _render_mod_image(url, unscaled=False):
+        """
+        Renders the image data for a given url. The resulting data is a renpy image surface of the given image
+        """
+
+        from cStringIO import StringIO
+        from renpy.display.im import cache
+
+        virtual_f = StringIO(mod_image_preloader.get(url))
+
+        cache.add_load_log(url)
+        if unscaled:
+            return renpy.display.pgrender.load_image_unscaled(virtual_f, url)
+        else:
+            return renpy.display.pgrender.load_image(virtual_f, url)
+
+    mod_image_prerenderer = Preload(_render_mod_image, 2)
 
     def _preload_mod_images(modlist, error):
         if error is not None:
@@ -97,45 +117,110 @@ init python:
             return
         image_urls = [entry[4] for entry in modlist]
         for url in image_urls:
-            mod_image_preloader.load(url)
+            mod_image_prerenderer.load(url, False)
 
-
-    class ImageURL(Image):
+    class _ImageURL(renpy.display.core.Displayable):
         """
         This image manipulator loads an image from a url.
         """
-        def load(self, unscaled=False):
-            from cStringIO import StringIO
-            from renpy.display.im import cache
 
-            virtual_f = StringIO(mod_image_preloader.get(self.filename))
+        def __init__(self, url, unscaled=False, *args, **kwargs):
+            super(_ImageURL, self).__init__(*args, **kwargs)
 
-            cache.add_load_log(self.filename)
-            if unscaled:
-                surf = renpy.display.pgrender.load_image_unscaled(virtual_f, self.filename)
-            else:
-                surf = renpy.display.pgrender.load_image(virtual_f, self.filename)
-            return self.modify_surf(surf)
+            self._surf = self.modify_surf(mod_image_prerenderer.get(url, unscaled))
+            self._identity = (type(self).__name__, ) + args
 
-        def predict_files(self):
-                return [self.url]
+        # self._identity (originally named self.identity), __hash__, __eq__ and __repr__ shamelessly ripped from renpy.display.im.ImageBase
+        def __hash__(self):
+            return hash(self._identity)
+
+        def __eq__(self, other):
+
+            if not isinstance(other, _ImageURL):
+                return False
+
+            return self._identity == other._identity
+
+        def __repr__(self):
+            return "<" + " ".join([repr(i) for i in self._identity]) + ">"
 
         def modify_surf(self, surf):
             return surf
 
+        def render(self, width, height, st, at):
+            texture = renpy.display.draw.load_texture(self._surf)
 
-    class ScaledImageURL(ImageURL):
+            w, h = self._surf.get_size()
+            rv = renpy.display.render.Render(w, h)
+            rv.blit(texture, (0, 0))
+            return rv
+
+
+    class _ScaledImageURL(_ImageURL):
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (190, 190))
 
-    class ModmenuContentImageURL(ImageURL):
+    class _ModmenuContentImageURL(_ImageURL):
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (220, 220))
 
+    class _ModmenuPreviewImageURL(_ImageURL):
+        def modify_surf(self, surf):
+            return renpy.display.pgrender.transform_scale(surf, (125, 125))
 
-    ImageURL = Wrapper(ImageURL)
-    ScaledImageURL = Wrapper(ScaledImageURL)
-    ModmenuContentImageURL = Wrapper(ModmenuContentImageURL)
+    class RotatedDisplayable(renpy.Displayable):
+        def __init__(self, child, angle, crop = True, *args, **kwargs):
+            super(RotatedDisplayable, self).__init__(*args, **kwargs)
+            self._child = renpy.displayable(child)
+            self._angle = angle
+            self._crop = crop
+
+        def render(self, w, h, st, at):
+            d = renpy.displayable(self._child)
+            rotated_size = (w ** 2 + h ** 2) ** 0.5
+
+            transforms = (Transform(rotate = self._angle),)
+            if self._crop:
+                transforms += (Transform(crop = ((rotated_size - w) / 2, (rotated_size - h) / 2, w, h)),)
+
+            t = At(d, *transforms)
+            r = renpy.render(t, w, h, st, at)
+            renpy.redraw(self, 0)
+            return r
+
+    _load_image = im.Image("ui/half_circle_centered_white.png")
+    _load_image_width, _load_image_height = renpy.image_size(_load_image)
+
+    li_sizes = {(_load_image_width, _load_image_height): _load_image}
+
+
+    def _dynamic_image_progress(st, at, url, cls, *args, **kwargs):
+        increment = kwargs.pop("increment", 0.1)
+        if not mod_image_prerenderer.is_loaded(url, False):
+            # Figure out appropriate size for throbber
+            width, height = _load_image_width, _load_image_height
+            if "xysize" in kwargs:
+                width, height = kwargs["xysize"]
+            else:
+                if "xsize" in kwargs:
+                    width = kwargs["xsize"]
+                if "ysize" in kwargs:
+                    height = kwargs["xsize"]
+
+            # Check if exists, else create
+            if (width, height) not in li_sizes:
+                li_sizes[(width, height)] = im.Scale(_load_image, width, height)
+
+            load_image = li_sizes[(width, height)]
+
+            return RotatedDisplayable(load_image, at * 180, *args, **kwargs), increment
+
+        return cls(url), None
+
+    ImageURL = Wrapper(_ImageURL)
+    ScaledImageURL = Wrapper(_ScaledImageURL)
+    ModmenuContentImageURL = Wrapper(_ModmenuContentImageURL)
+    ModmenuPreviewImageURL = Wrapper(_ModmenuPreviewImageURL)
 
     style.download_mods = Style(style.default)
 
@@ -429,7 +514,7 @@ init -1 python:
 
     _modmenu_entrance_cancelled = False
 
-    def _modmenu_entrance_progress(st, at, load_manager, use_steam):
+    def _modmenu_entrance_progress(st, at, load_manager, use_steam, internet_check_interval=1.5, modlist_check_interval=1.0):
         state = load_manager.get_state()
         if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
             if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
@@ -440,13 +525,13 @@ init -1 python:
 
         if state == EntranceStates.INTERNET:
             t = Text("Connecting to network{}".format("." * _cycle_dots()))
-            return t, 1.5
+            return t, internet_check_interval
         elif state == EntranceStates.INTERNET_FAILED:
             _modmenu_entrance_transition_to('modmenu_nointernet', load_manager)
             return Text("Network connection failed!"), None
         elif state == EntranceStates.MODLIST:
             t = Text("Loading modlist{}".format("." * _cycle_dots()))
-            return t, 1.0
+            return t, modlist_check_interval
         elif state == EntranceStates.MODLIST_FAILED:
             if use_steam:
                 _ensure_modlist_okay(strict=True) # This will fail
@@ -534,6 +619,9 @@ init -1 python:
 
 screen modmenu_entrance(use_steam):
     modal True
+
+    $ INTERNET_CHECK_INTERVAL = 0.5
+    $ MODLIST_CHECK_INTERVAL = 0.5
 
     default load_manager = ModmenuEntranceLoadManager(use_steam)
 
@@ -854,6 +942,7 @@ screen modmenu_paged(contents, use_steam):
                       ]
 
     on "hide" action [Function(mod_image_preloader.clear), # Cleanup after ourselves
+                      Function(mod_image_prerenderer.clear),
                       Function(im.cache.clear),
                       Function(modmenu_search.clear_cache),
                       Function(_modmenu_clear_added_mods),
@@ -867,9 +956,9 @@ screen modmenu_paged_modlist(contents, use_steam):
         background None
         yminimum 900
         ymaximum 900
-        xmaximum 425
-        xminimum 425
-        xpos 65
+        xmaximum 450
+        xminimum 450
+        xpos 40
         ypos 90
 
         #button hieght 125
@@ -877,12 +966,13 @@ screen modmenu_paged_modlist(contents, use_steam):
 
             yminimum 900
             ymaximum 900
-            xmaximum 425
-            xminimum 425
+            xmaximum 450
+            xminimum 450
 
             cols 1
             spacing 30
 
+            $ remove_last_word_re = re.compile("\s+\S*$")
             for modid, name, author, description, url in contents:
                 $ modname = modmenu_name_cleaner(name)
 
@@ -892,10 +982,13 @@ screen modmenu_paged_modlist(contents, use_steam):
                         $ modname = "{size=-5}" + modname + "{/size}"
 
                     #if modname is greater than 25 characters, decrease size of font by 10
+                    elif len(modname) <= 30:
+                        $ modname = "{size=-10}" + modname + "{/size}"
                     else:
-                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places
-#                         if len(modname) > 30:
+                        #if modname is greater than 30 characters, decrease size of font by 10 and cut all text after 30 places, on word boundary
                         $ modname = modname[:30]
+                        $ modname = remove_last_word_re.split(modname)[0]
+                        $ modname += " ..."
                         $ modname = "{size=-10}" + modname + "{/size}"
 
                 if _modmenu_is_mod_installed(modid, name):
@@ -906,31 +999,34 @@ screen modmenu_paged_modlist(contents, use_steam):
                 elif _modmenu_is_mod_added(modid):
                     $ modname += "\n{size=-5}(Added){/size}"
 
-                textbutton "[modname]":
-                    style "modmenu_select_btn"
-                    if _modmenu_is_mod_added(modid):
-                        background "#007f009B"
-                        hover_background "#7fff7f9B"
-                    elif _modmenu_is_mod_removed(modid):
-                        background "#7f00009B"
-                        hover_background "#ff7f7f9B"
+                hbox:
+                    add DynamicDisplayable(_dynamic_image_progress, url, ModmenuPreviewImageURL, xsize = 125, ysize = 125)
 
-                    action [Hide("modmenu_mod_content"),
-                            Show("modmenu_mod_content",
-                                 modid=modid,
-                                 name=unicode(name, "utf8"),
-                                 author=unicode(author, "utf8"),
-                                 description=unicode(description, "utf8"),
-                                 url=url,
-                                 use_steam=use_steam,
-                                 ),
-                            Play("audio", "se/sounds/open.ogg")]
+                    textbutton "[modname]":
+                        style "modmenu_select_btn"
+                        if _modmenu_is_mod_added(modid):
+                            background "#007f009B"
+                            hover_background "#7fff7f9B"
+                        elif _modmenu_is_mod_removed(modid):
+                            background "#7f00009B"
+                            hover_background "#ff7f7f9B"
 
-                    alternate [If(_modmenu_is_mod_present(modid, name),
-                                   Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
-                                   Function(_modmenu_add_mod, modid, name)),
-                               Play("audio", "se/sounds/open.ogg")]
-                              ]
+                        action [Hide("modmenu_mod_content"),
+                                Show("modmenu_mod_content",
+                                     modid=modid,
+                                     name=unicode(name, "utf8"),
+                                     author=unicode(author, "utf8"),
+                                     description=unicode(description, "utf8"),
+                                     url=url,
+                                     use_steam=use_steam,
+                                     ),
+                                Play("audio", "se/sounds/open.ogg")]
+
+                        alternate [If(_modmenu_is_mod_present(modid, name),
+                                       Function(_modmenu_remove_mod, modid, name, If(use_steam, str(modid), name)),
+                                       Function(_modmenu_add_mod, modid, name)),
+                                   Play("audio", "se/sounds/open.ogg")]
+                                  ]
 
 
 
@@ -979,8 +1075,7 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
 
         #Mods image
         vbox xpos 0.72 ypos 0.21:
-            python:
-                ModmenuContentImageURL(url)
+            add DynamicDisplayable(_dynamic_image_progress, url, ModmenuContentImageURL, xsize = 220, ysize = 220)
 
 
         vbox xpos 0.275 ypos 0.21:
