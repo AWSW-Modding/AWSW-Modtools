@@ -514,7 +514,7 @@ init -1 python:
 
     _modmenu_entrance_cancelled = False
 
-    def _modmenu_entrance_progress(st, at, load_manager, use_steam):
+    def _modmenu_entrance_progress(st, at, load_manager, use_steam, internet_check_interval=1.5, modlist_check_interval=1.0):
         state = load_manager.get_state()
         if load_manager.disabled.is_set(): # Multi-calls made the transitions occur multiple times, causing screens which don't close properly. this prevents that.
             if state == EntranceStates.DONE and not _modmenu_entrance_cancelled:
@@ -525,13 +525,13 @@ init -1 python:
 
         if state == EntranceStates.INTERNET:
             t = Text("Connecting to network{}".format("." * _cycle_dots()))
-            return t, 1.5
+            return t, internet_check_interval
         elif state == EntranceStates.INTERNET_FAILED:
             _modmenu_entrance_transition_to('modmenu_nointernet', load_manager)
             return Text("Network connection failed!"), None
         elif state == EntranceStates.MODLIST:
             t = Text("Loading modlist{}".format("." * _cycle_dots()))
-            return t, 1.0
+            return t, modlist_check_interval
         elif state == EntranceStates.MODLIST_FAILED:
             if use_steam:
                 _ensure_modlist_okay(strict=True) # This will fail
@@ -619,6 +619,9 @@ init -1 python:
 
 screen modmenu_entrance(use_steam):
     modal True
+
+    $ INTERNET_CHECK_INTERVAL = 0.5
+    $ MODLIST_CHECK_INTERVAL = 0.5
 
     default load_manager = ModmenuEntranceLoadManager(use_steam)
 
