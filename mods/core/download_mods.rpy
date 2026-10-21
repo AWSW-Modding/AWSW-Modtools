@@ -91,9 +91,8 @@ init python:
 
 
 
-    mod_image_preloader = Preload(_load_mod_image, 5) # 5 threads is plenty
+    mod_image_preloader = Preload(_load_mod_image, 2) # 2 threads here, 2 for the prerenderer works well and shouldn't cause too mush delay
 
-    import time
     def _render_mod_image(url, unscaled=False):
         """
         Renders the image data for a given url. The resulting data is a renpy image surface of the given image
@@ -102,7 +101,6 @@ init python:
         from cStringIO import StringIO
         from renpy.display.im import cache
 
-        time.sleep(5)
         virtual_f = StringIO(mod_image_preloader.get(url))
 
         cache.add_load_log(url)
@@ -111,7 +109,7 @@ init python:
         else:
             return renpy.display.pgrender.load_image(virtual_f, url)
 
-    mod_image_prerenderer = Preload(_render_mod_image, 5)
+    mod_image_prerenderer = Preload(_render_mod_image, 2)
 
     def _preload_mod_images(modlist, error):
         if error is not None:
@@ -121,31 +119,52 @@ init python:
         for url in image_urls:
             mod_image_prerenderer.load(url, False)
 
-
-    class ImageURL(Image):
+    class _ImageURL(renpy.display.core.Displayable):
         """
         This image manipulator loads an image from a url.
         """
-        def load(self, unscaled=False):
-            surf = mod_image_prerenderer.get(self.filename, unscaled)
-            return self.modify_surf(surf)
 
-        def predict_files(self):
-                return [self.url]
+        def __init__(self, url, unscaled=False, *args, **kwargs):
+            super(_ImageURL, self).__init__(*args, **kwargs)
+
+            self._surf = self.modify_surf(mod_image_prerenderer.get(url, unscaled))
+            self._identity = (type(self).__name__, ) + args
+
+        # self._identity (originally named self.identity), __hash__, __eq__ and __repr__ shamelessly ripped from renpy.display.im.ImageBase
+        def __hash__(self):
+            return hash(self._identity)
+
+        def __eq__(self, other):
+
+            if not isinstance(other, _ImageURL):
+                return False
+
+            return self._identity == other._identity
+
+        def __repr__(self):
+            return "<" + " ".join([repr(i) for i in self._identity]) + ">"
 
         def modify_surf(self, surf):
             return surf
 
+        def render(self, width, height, st, at):
+            texture = renpy.display.draw.load_texture(self._surf)
 
-    class ScaledImageURL(ImageURL):
+            w, h = self._surf.get_size()
+            rv = renpy.display.render.Render(w, h)
+            rv.blit(texture, (0, 0))
+            return rv
+
+
+    class _ScaledImageURL(_ImageURL):
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (190, 190))
 
-    class ModmenuContentImageURL(ImageURL):
+    class _ModmenuContentImageURL(_ImageURL):
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (220, 220))
 
-    class ModmenuPreviewImageURL(ImageURL):
+    class _ModmenuPreviewImageURL(_ImageURL):
         def modify_surf(self, surf):
             return renpy.display.pgrender.transform_scale(surf, (125, 125))
 
@@ -177,10 +196,10 @@ init python:
 
         return cls(url), None
 
-    ImageURL = Wrapper(ImageURL)
-    ScaledImageURL = Wrapper(ScaledImageURL)
-    ModmenuContentImageURL = Wrapper(ModmenuContentImageURL)
-    ModmenuPreviewImageURL = Wrapper(ModmenuPreviewImageURL)
+    ImageURL = Wrapper(_ImageURL)
+    ScaledImageURL = Wrapper(_ScaledImageURL)
+    ModmenuContentImageURL = Wrapper(_ModmenuContentImageURL)
+    ModmenuPreviewImageURL = Wrapper(_ModmenuPreviewImageURL)
 
     style.download_mods = Style(style.default)
 
