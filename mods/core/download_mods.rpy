@@ -156,9 +156,27 @@ init python:
     import time
 
     class ModscreenModlistManager:
-        def __init__(self, modlist, page_size=6, filter_map=None, use_steam=True):
-            """Manages the modscreen's displayed modlist, including paging, searching and filtering.
+        def __init__(self):
+            """ Manages the modscreen's displayed modlist, including paging, searching and filtering.
+            This uses the ScreenValueContainer paradigm with the set and clear methods. as such, the __init__ is empty.
+            """
+            self._base_modlist = []
+            self._reordered_modlist = []
+            self._filtered_modlist = []
 
+            self._current_page = 1
+            self._page_size = 1
+
+            self._query = ""
+            self._author_query = ""
+
+            self._filter_funcs = {}
+            self._filter_activity = {}
+
+            self.use_steam = False
+
+        def set(self, modlist, page_size=6, filter_map=None, use_steam=True):
+            """
             :param modlist: The base modlist to manage
             :param page_size: The page size of each mod page
             :param filter_map: mapping from name (str) to filter func: the initial filter types which are available. if None (default), the initial filter map is empty
@@ -179,10 +197,19 @@ init python:
             self._query = ""
             self._author_query = ""
 
-            self._filter_funcs = filter_map
+            self._filter_funcs = dict(filter_map) # This can be changed within this class (and we don't want to copy it each time), so we must copy it here to avoid unwanted side effects
             self._filter_activity = {name: None for name in filter_map.iterkeys()}
 
             self.use_steam = use_steam
+
+        def clear(self):
+            # The lists may be external, so they should not be cleared in place. the dicts can't be, so they are.
+            self._base_modlist = []
+            self._reordered_modlist = []
+            self._filtered_modlist = []
+
+            self._filter_funcs.clear()
+            self._filter_activity.clear()
 
         def get_current_page(self):
             return self._current_page
@@ -353,23 +380,51 @@ init -1 python:
         DONE = "done"
 
     class ModmenuEntranceLoadManager:
-        """Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading."""
+        """ Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading.
+        This uses the ScreenValueContainer paradigm with the set and clear methods. as such, the __init__ is empty.
+        """
 
-        def __init__(self, use_steam):
-            self.use_steam = use_steam
+        def __init__(self):
+            self.use_steam = False
 
             self._state = EntranceStates.INTERNET
             self._state_lock = threading.Lock()
 
             self._result = None
             self._exception = None
-            self._done_signal = threading.Event() # Used to gat access to these two. a lock is not necessary as they are only accessible after being set for the last time.
+            self._done_signal = threading.Event() # Used to gate access to these two. a lock is not necessary as they are only accessible after being set for the last time.
 
             self.disabled = threading.Event() # I've had issues with calls coming after a transition was supposed to take effect, so this allows me to disable the screen under those cases.
+
+            self._running_thread = None
+
+        def set(self, use_steam):
+            self.use_steam = use_steam
+
+            self._state = EntranceStates.INTERNET
+
+            self._result = None
+            self._exception = None
+            self._done_signal.clear()
+
+            self.disabled.clear()
 
             self._running_thread = threading.Thread(target=self._load_modlist, args=(self.use_steam,))
             self._running_thread.daemonic = True
             self._running_thread.start()
+
+        def clear(self):
+            self.use_steam = False
+
+            self._state = EntranceStates.INTERNET
+
+            self._result = None
+            self._exception = None
+            self._done_signal.clear()
+
+            self.disabled.clear()
+            self._running_thread = None
+
 
         def set_state(self, state):
             with self._state_lock:
@@ -606,10 +661,18 @@ init python:
                 cscr.scope[_SVC_LISTING_SCOPE_KEY].clear()
 
 
+    ModmenuEntranceLoadManagerContainer = ScreenValueContainer(ModmenuEntranceLoadManager, set_method="set")
+    ModscreenModlistManagerContainer = ScreenValueContainer(ModscreenModlistManager, set_method="set")
+
+
+
+
 screen modmenu_entrance(use_steam):
     modal True
 
-    default load_manager = ModmenuEntranceLoadManager(use_steam)
+    add ScreenValueContainerClearer()
+
+    default load_manager = ModmenuEntranceLoadManagerContainer.get("load_manager", use_steam)
 
     frame id "modmenu_entrance" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -650,13 +713,15 @@ screen modmenu_entrance(use_steam):
 screen modmenu_paged(contents, use_steam):
     modal True
 
+    add ScreenValueContainerClearer()
+
     python:
         filter_map = {"install": lambda mod: _modmenu_is_mod_installed(mod[0], mod[1]),
                    "select": lambda mod: _modmenu_is_mod_added(mod[0]) or _modmenu_is_mod_removed(mod[0]),
                    "present": lambda mod: _modmenu_is_mod_present(mod[0], mod[1]),
                   }
 
-    default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
+    default modlist_manager = ModscreenModlistManagerContainer.get("modlist_manager", contents, filter_map=filter_map, use_steam=use_steam)
 
     frame id "modmenu_paged" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
