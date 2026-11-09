@@ -532,6 +532,80 @@ init -1 python:
 
 
 
+init python:
+    # screen variable container code
+    _SVC_LISTING_SCOPE_KEY = "_must_clear"
+    class ScreenValueContainer:
+        """
+        Multiton interface for managing complex types which are values within Renpy screen.
+
+        Renpy (for some reason) keeps a live reference to every value that appears in a variable in one of it's screens (it seems to be related to bindings?),
+          This will cause memory leaks if that value is reference counted and the screen is reopened... which includes... almost everything...
+        For values that are not supposed to survive after a screen is closed, we therefore don't want to create a fresh object on every screen show.
+        This is what this interface is for:
+          it can get the value we need to hold using the get() method, then clear it on screen hide relying on the ScreenValueContainerClearer object.
+          objects are created once, then cleared and reused when the screen is reopened.
+        This way, repeated entrances to these screens cannot leak these values, and they can safely be cleared when the screen is hidden.
+
+        :param var_type: The type of object this manages. that object type must be constructable with no arguments, and have a clear() method with no arguments to clear it's contents.
+        :param set_method (default "set"): The name of the method of var_type which is used to set the instances value
+
+        The clear method is managed by ScreenValueContainerClearer, and must be named "clear".
+        """
+
+        def __init__(self, var_type, set_method="set"):
+            self._var_type = var_type
+            self._instances = {} # Mapping[(screen_name, var_name): instance] for reusable instances
+            self._set_method = set_method
+
+        def get(self, name, *args, **kwargs):
+            """ Set the held value, using parameters defined by the screen.
+            Usually called when showing the screen, though this method can be more flexible.
+
+            :param name: the name of the variable within this multiton. should generally match the variable's name within the screen
+
+            Additional arguments are passed to the variable type's set method, as defined in the __init__ method.
+            """
+            cscr = renpy.current_screen()
+            key = (cscr.screen_name[0], name)
+
+
+            if key not in self._instances:
+                self._instances[key] = self._var_type()
+
+            result = self._instances[key]
+            getattr(result, self._set_method)(*args, **kwargs)
+
+            if name not in cscr.scope[_SVC_LISTING_SCOPE_KEY]:
+                cscr.scope[_SVC_LISTING_SCOPE_KEY][name] = result
+
+            return result
+
+    class ScreenValueContainerClearer(renpy.Displayable):
+        """
+        Ensures ScreenValueContainer's inner values get cleared properly at screen hide.
+        If a screen uses any ScreenValueContainers, an instance of this type must be added (using the `add` command) before any ScreenValueContainer.get calls are made.
+        This then ensures that all ScreenValueContainer inner values used within the screen are cleared on screen hide.
+        """
+
+        def __init__(self):
+            super(renpy.Displayable, self).__init__()
+            cscr = renpy.current_screen()
+            if _SVC_LISTING_SCOPE_KEY not in cscr.scope:
+                cscr.scope[_SVC_LISTING_SCOPE_KEY] = {}
+            return
+
+        def render(self, width, height, st, at):
+            return renpy.display.render.Render(0, 0)
+
+        def set_transform_event(self, event):
+            if event == "hide":
+                cscr = renpy.current_screen()
+                for to_clear in cscr.scope[_SVC_LISTING_SCOPE_KEY].itervalues():
+                    to_clear.clear()
+                cscr.scope[_SVC_LISTING_SCOPE_KEY].clear()
+
+
 screen modmenu_entrance(use_steam):
     modal True
 
