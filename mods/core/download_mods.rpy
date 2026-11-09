@@ -1147,7 +1147,6 @@ screen modmenu_mod_content(modid, name, author, description, url, use_steam):
                     textbutton "Install":
                         ycenter 0.5
                         action [Function(_modmenu_add_mod, modid, name),
-#                         Show("modmenu_install_confirm", modid=modid, modname=name, use_steam=use_steam),
                                 Play("audio", "se/sounds/open.ogg")]
                         style "modmenu_content_btn"
                         text_style "modmenu_select_btn_text"
@@ -1186,11 +1185,6 @@ screen modmenu_apply_confirm(use_steam):
     python:
         from modloader.modconfig import apply_mod_changes as apply_mod_changes
 
-        mods_to_install = _modmenu_get_added_mods()
-        mods_to_uninstall = {mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()}
-        n_mods_to_install = len(mods_to_install)
-        n_mods_to_uninstall = len(mods_to_uninstall)
-
     window id "modmenu_apply_confirm" at alpha_dissolve:
         add "#22589a"
         xfill True
@@ -1215,9 +1209,6 @@ screen modmenu_apply_confirm(use_steam):
             ypos 100
             xcenter 0.5
             yanchor 0.0
-
-            $ mods_to_add_text = "\n".join(_modmenu_get_added_mods().itervalues())
-            $ mods_to_remove_text = "\n".join(modname for modname, filename in _modmenu_get_removed_mods().itervalues())
 
             fixed: # Added mods list: fixed is used to force list+scrollbar to stay within their region
                 xalign 0.0
@@ -1332,8 +1323,13 @@ screen modmenu_apply_confirm(use_steam):
                 ycenter 0.5
                 xsize 425
                 ysize 125
-                action [Function(apply_mod_changes, add_modmap=mods_to_install, remove_modmap=mods_to_uninstall, show_status_screen=True, reload_script=True, use_steam=use_steam),]
-                sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
+                action [Function(apply_mod_changes,
+                                 add_modmap=_modmenu_get_added_mods(),
+                                 remove_modmap={mod_name: filename for mod_name, filename in _modmenu_get_removed_mods().itervalues()},
+                                 show_status_screen=True,
+                                 reload_script=True,
+                                 use_steam=use_steam),]
+                sensitive bool(_modmenu_get_added_mods()) or bool(_modmenu_get_removed_mods())
 
 
 screen modmenu_nointernet() tag smallscreen2:
