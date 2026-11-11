@@ -8,23 +8,51 @@ init -1 python:
         DONE = "done"
 
     class ModmenuEntranceLoadManager:
-        """Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading."""
+        """ Keeps the DynamicDisplayable at the heart of the modmenu_entrance aligned with the actual modlist loading.
+        This uses the ScreenValueContainer paradigm with the set and clear methods. as such, the __init__ is empty.
+        """
 
-        def __init__(self, use_steam):
-            self.use_steam = use_steam
+        def __init__(self):
+            self.use_steam = False
 
             self._state = EntranceStates.INTERNET
             self._state_lock = threading.Lock()
 
             self._result = None
             self._exception = None
-            self._done_signal = threading.Event() # Used to gat access to these two. a lock is not necessary as they are only accessible after being set for the last time.
+            self._done_signal = threading.Event() # Used to gate access to these two. a lock is not necessary as they are only accessible after being set for the last time.
 
             self.disabled = threading.Event() # I've had issues with calls coming after a transition was supposed to take effect, so this allows me to disable the screen under those cases.
+
+            self._running_thread = None
+
+        def set(self, use_steam):
+            self.use_steam = use_steam
+
+            self._state = EntranceStates.INTERNET
+
+            self._result = None
+            self._exception = None
+            self._done_signal.clear()
+
+            self.disabled.clear()
 
             self._running_thread = threading.Thread(target=self._load_modlist, args=(self.use_steam,))
             self._running_thread.daemonic = True
             self._running_thread.start()
+
+        def clear(self):
+            self.use_steam = False
+
+            self._state = EntranceStates.INTERNET
+
+            self._result = None
+            self._exception = None
+            self._done_signal.clear()
+
+            self.disabled.clear()
+            self._running_thread = None
+
 
         def set_state(self, state):
             with self._state_lock:
@@ -46,7 +74,7 @@ init -1 python:
             if internet_on():
                 self.set_state(EntranceStates.MODLIST)
                 try:
-                    # (mod_url, name, author, description, image) (for github)
+                    # (modid, name, author, description, image) (for github)
                     # (id, name, author, desc, image) (for steam)
                     if use_steam:
                         from modloader.modconfig import steam_downloadable_mods as download_mods
@@ -126,7 +154,9 @@ init -1 python:
 screen modmenu_entrance(use_steam):
     modal True
 
-    default load_manager = ModmenuEntranceLoadManager(use_steam)
+    add ScreenValueContainerClearer()
+
+    default load_manager = ModmenuEntranceLoadManagerContainer.get("load_manager", use_steam)
 
     frame id "modmenu_entrance" at alpha_dissolve:
         add "image/ui/ingame_menu_bg3.png"
@@ -322,9 +352,27 @@ init python:
     import time
 
     class ModscreenModlistManager:
-        def __init__(self, modlist, page_size=6, filter_map=None, use_steam=True):
-            """Manages the modscreen's displayed modlist, including paging, searching and filtering.
+        def __init__(self):
+            """ Manages the modscreen's displayed modlist, including paging, searching and filtering.
+            This uses the ScreenValueContainer paradigm with the set and clear methods. as such, the __init__ is empty.
+            """
+            self._base_modlist = []
+            self._reordered_modlist = []
+            self._filtered_modlist = []
 
+            self._current_page = 1
+            self._page_size = 1
+
+            self._query = ""
+            self._author_query = ""
+
+            self._filter_funcs = {}
+            self._filter_activity = {}
+
+            self.use_steam = False
+
+        def set(self, modlist, page_size=6, filter_map=None, use_steam=True):
+            """
             :param modlist: The base modlist to manage
             :param page_size: The page size of each mod page
             :param filter_map: mapping from name (str) to (filter_func, add_args): the initial filter types which are available. if None (default), the initial filter map is empty
@@ -345,10 +393,19 @@ init python:
             self._query = ""
             self._author_query = ""
 
-            self._filter_funcs = filter_map
+            self._filter_funcs = dict(filter_map) # This can be changed within this class (and we don't want to copy it each time), so we must copy it here to avoid unwanted side effects
             self._filter_activity = {name: None for name in filter_map.iterkeys()}
 
             self.use_steam = use_steam
+
+        def clear(self):
+            # The lists may be external, so they should not be cleared in place. the dicts can't be, so they are.
+            self._base_modlist = []
+            self._reordered_modlist = []
+            self._filtered_modlist = []
+
+            self._filter_funcs.clear()
+            self._filter_activity.clear()
 
         def get_current_page(self):
             return self._current_page
@@ -605,28 +662,49 @@ init -1 python:
         return mod_name
 
     class Modchanges:
-        def __init__(self, base_modlist, vendor_filename_func=_default_vendor_filename_func):
+        def __init__(self):
             """A class holding the full modlist, along with functionality to request to install or uninstall a mod.
+            This uses the ScreenValueContainer paradigm with the set and clear methods. as such, the __init__ is empty.
+            """
 
+            self._modlist = {}
+            self._add_map = {}
+            self._remove_map = {}
+            self._requested_add_dependency_counts = Counter() # Used to forbid removals of dependencies of present mods by keeping count of them
+            self._installed_dependency_counts = Counter()
+            self._vendor_filename_func = _default_vendor_filename_func
+
+            self._dependency_map = {}
+            self._r_dependency_map = {}
+
+
+        def set(self, base_modlist, vendor_filename_func=_default_vendor_filename_func):
+            """
             :param base_modlist: list[ModlistEntry], The vendor modlist for this class.
             :param vendor_filename_func: func from (mod_id, mod_name) to str, used for removal of mods in accordance with modconfig.remove_mod rules. creates filename for that method.
             """
 
             self._modlist = {mod.id: mod for mod in base_modlist}
-            self._add_map = {}
-            self._remove_map = {}
-            self._requested_add_dependency_counts = Counter() # Used to forbid removals of dependencies of present mods by keeping count of them
-            self._installed_dependency_counts = Counter()
             self._vendor_filename_func = vendor_filename_func
 
             self._dependency_map = {mod_id: set(mod.child_list) for mod_id, mod in self._modlist.iteritems()}
             self._dependency_map = _modmenu_get_recursive_deps(self._dependency_map, strict=False)
 
-            # Set all valid keys
+            # Make all valid keys available, then set the ones that have parents
             self._r_dependency_map = {k: set() for k in self._dependency_map.iterkeys()}
             self._r_dependency_map.update(_reverse_mapping(self._dependency_map))
 
             self._reset_installed_dependency_counts()
+
+        def clear(self):
+            self._modlist.clear()
+            self._add_map.clear()
+            self._remove_map.clear()
+            self._requested_add_dependency_counts.clear()
+            self._installed_dependency_counts.clear()
+            self._vendor_filename_func = _default_vendor_filename_func
+            self._dependency_map.clear()
+            self._r_dependency_map.clear()
 
 
         def _reset_installed_dependency_counts(self):
@@ -792,15 +870,119 @@ init -1 python:
         return mod_name
 
 
+init python:
+    # screen variable container code
+    _SVC_LISTING_SCOPE_KEY = "_must_clear"
+    class ScreenValueContainer:
+        """
+        Multiton interface for managing complex types which are values within Renpy screen.
+
+        Renpy (for some reason) keeps a live reference to every value that appears in a variable in one of it's screens (it seems to be related to bindings?),
+          This will cause memory leaks if that value is reference counted and the screen is reopened... which includes... almost everything...
+        For values that are not supposed to survive after a screen is closed, we therefore don't want to create a fresh object on every screen show.
+        This is what this interface is for:
+          it can get the value we need to hold using the get() method, then clear it on screen hide relying on the ScreenValueContainerClearer object.
+          objects are created once, then cleared and reused when the screen is reopened.
+        This way, repeated entrances to these screens cannot leak these values, and they can safely be cleared when the screen is hidden.
+
+        :param var_type: The type of object this manages. that object type must be constructable with no arguments, and have a clear() method with no arguments to clear it's contents.
+        :param set_method (default "set"): The name of the method of var_type which is used to set the instances value
+
+        The clear method is managed by ScreenValueContainerClearer, and must be named "clear".
+        """
+
+        def __init__(self, var_type, set_method="set"):
+            self._var_type = var_type
+            self._instances = {} # Mapping[(screen_name, var_name): instance] for reusable instances
+            self._set_method = set_method
+
+        def get(self, name, *args, **kwargs):
+            """ Set the held value, using parameters defined by the screen.
+            Usually called when showing the screen, though this method can be more flexible.
+
+            :param name: the name of the variable within this multiton. should generally match the variable's name within the screen
+
+            Additional arguments are passed to the variable type's set method, as defined in the __init__ method.
+            """
+            cscr = renpy.current_screen()
+            key = (cscr.screen_name[0], name)
+
+
+            if key not in self._instances:
+                self._instances[key] = self._var_type()
+
+            result = self._instances[key]
+            getattr(result, self._set_method)(*args, **kwargs)
+
+            if name not in cscr.scope[_SVC_LISTING_SCOPE_KEY]:
+                cscr.scope[_SVC_LISTING_SCOPE_KEY][name] = result
+
+            return result
+
+    class ScreenValueContainerClearer(renpy.Displayable):
+        """
+        Ensures ScreenValueContainer's inner values get cleared properly at screen hide.
+        If a screen uses any ScreenValueContainers, an instance of this type must be added (using the `add` command) before any ScreenValueContainer.get calls are made.
+        This then ensures that all ScreenValueContainer inner values used within the screen are cleared on screen hide.
+        """
+
+        def __init__(self):
+            super(renpy.Displayable, self).__init__()
+            cscr = renpy.current_screen()
+            if _SVC_LISTING_SCOPE_KEY not in cscr.scope:
+                cscr.scope[_SVC_LISTING_SCOPE_KEY] = {}
+            return
+
+        def render(self, width, height, st, at):
+            return renpy.display.render.Render(0, 0)
+
+        def set_transform_event(self, event):
+            if event == "hide":
+                cscr = renpy.current_screen()
+                for to_clear in cscr.scope[_SVC_LISTING_SCOPE_KEY].itervalues():
+                    to_clear.clear()
+                cscr.scope[_SVC_LISTING_SCOPE_KEY].clear()
+
+    class SettableSet(set):
+        """set subclass compatible with ScreenValueContainer.
+        set_to method required as dicts dont have a valid one
+        """
+        def set_to(self, other):
+            # Come on... set.set would be ridiculous
+            self.clear()
+            return self.update(other)
+
+    class SettableClearableList(list):
+        """dict subclass compatible with ScreenValueContainer.
+        set and clear methods required as lists dont have valid ones
+        """
+        def set(self, other):
+            self[:] = other
+
+        def clear(self):
+            self[:] = []
+
+
+    ModmenuEntranceLoadManagerContainer = ScreenValueContainer(ModmenuEntranceLoadManager, set_method="set")
+    ModscreenModlistManagerContainer = ScreenValueContainer(ModscreenModlistManager, set_method="set")
+    ModchangesContainer = ScreenValueContainer(Modchanges, set_method="set")
+    SetContainer = ScreenValueContainer(SettableSet, set_method="set_to")
+    ListContainer = ScreenValueContainer(SettableClearableList, set_method="set")
+
+
+
+
 screen modmenu_paged(contents, use_steam):
     modal True
+
+    add ScreenValueContainerClearer()
 
     if use_steam:
         $ _get_modfolder = _steam_get_modfolder
     else:
         $ _get_modfolder = _github_get_modfolder
 
-    default mod_changes = Modchanges(contents, vendor_filename_func=_get_modfolder)
+    default mod_changes = ModchangesContainer.get("mod_changes", contents, vendor_filename_func=_get_modfolder)
 
     python:
         filter_map = {"install": (lambda mod, mod_changes: mod_changes.is_mod_installed(mod.id), mod_changes),
@@ -809,7 +991,7 @@ screen modmenu_paged(contents, use_steam):
                   }
 
 
-    default modlist_manager = ModscreenModlistManager(contents, filter_map=filter_map, use_steam=use_steam)
+    default modlist_manager = ModscreenModlistManagerContainer.get("modlist_manager", contents, filter_map=filter_map, use_steam=use_steam)
 
 
     frame id "modmenu_paged" at alpha_dissolve:
@@ -1090,6 +1272,9 @@ screen modmenu_paged(contents, use_steam):
 
 
 screen modmenu_paged_modlist(contents, mod_changes, use_steam):
+
+    add ScreenValueContainerClearer()
+
     frame:
         background None
         yminimum 900
@@ -1110,6 +1295,7 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
             cols 1
             spacing 30
 
+            $ mod_button_text_extras = ListContainer.get("mod_button_text_extras", [])
             for mod in contents:
                 $ mod_id = mod.id
                 $ child_list = mod.child_list
@@ -1126,7 +1312,7 @@ screen modmenu_paged_modlist(contents, mod_changes, use_steam):
                         $ mod_button_text = mod_button_text[:30]
                         $ mod_button_text = "{size=-10}" + mod_button_text + "{/size}"
 
-                $ mod_button_text_extras = []
+                $ mod_button_text_extras.clear()
 
                 if mod_changes.is_mod_installed(mod_id):
                     $ mod_button_text_extras.append("Installed")
@@ -1461,22 +1647,17 @@ transform _button_zoom:
 
 screen modmenu_apply_confirm(mod_changes, use_steam):
     modal True
+
+    add ScreenValueContainerClearer()
+
     python:
         from modloader.modconfig import apply_mod_changes
 
-        full_mods_to_add = mod_changes.get_added_mods(dependency=True)
-        selected_mods_to_remove = mod_changes.get_removed_mods(dependency=False)
+        full_mods_to_add = SetContainer.get("full_mods_to_add", mod_changes.get_added_mods(dependency=True))
+        selected_mods_to_remove = SetContainer.get("selected_mods_to_remove", mod_changes.get_removed_mods(dependency=False))
 
-        selected_mods_to_add = mod_changes.get_added_mods(dependency=False)
-        selected_mod_deps = full_mods_to_add - selected_mods_to_add
-        removable_mods_to_remove = mod_changes.get_removed_mods(dependency=True)
-        overridden_mods = selected_mods_to_remove - removable_mods_to_remove
-
-        modmap_to_install = mod_changes.get_add_modmap()
-        modmap_to_uninstall = mod_changes.get_remove_modmap()
-
-        n_mods_to_install = len(modmap_to_install)
-        n_mods_to_uninstall = len(modmap_to_uninstall)
+        selected_mods_to_add = SetContainer.get("selected_mods_to_add", mod_changes.get_added_mods(dependency=False))
+        removable_mods_to_remove = SetContainer.get("removable_mods_to_remove", mod_changes.get_removed_mods(dependency=True))
 
     window id "modmenu_apply_confirm" at alpha_dissolve:
         add "#22589a"
@@ -1544,13 +1725,13 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                         xfill True
                                         ysize 60
 
-                            if selected_mod_deps:
+                            if len(full_mods_to_add) > len(selected_mods_to_add):
                                 null height 5
                                 text "Including these dependencies:":
                                     size 50
                                 null height 10
 
-                                for mod_id in selected_mod_deps:
+                                for mod_id in (full_mods_to_add - selected_mods_to_add):
                                     $ mod_name = mod_changes.get_mod_name(mod_id)
                                     hbox:
                                         spacing 20
@@ -1607,8 +1788,8 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                         ysize 60
 
 
-                            if overridden_mods:
-                                if not n_mods_to_uninstall:
+                            if len(selected_mods_to_remove) > len(removable_mods_to_remove):
+                                if not removable_mods_to_remove:
                                     text "---":
                                         xfill True
                                         ysize 60
@@ -1617,7 +1798,7 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                                     size 50
                                 null height 10
 
-                                for mod_id in overridden_mods:
+                                for mod_id in (selected_mods_to_remove - removable_mods_to_remove):
                                     $ mod_name = mod_changes.get_mod_name(mod_id)
                                     hbox:
                                         spacing 20
@@ -1669,8 +1850,13 @@ screen modmenu_apply_confirm(mod_changes, use_steam):
                 ycenter 0.5
                 xsize 425
                 ysize 125
-                action [Function(apply_mod_changes, add_modmap=modmap_to_install, remove_modmap=modmap_to_uninstall, show_status_screen=True, reload_script=True, use_steam=use_steam),]
-                sensitive bool(n_mods_to_install) or bool(n_mods_to_uninstall)
+                action [Function(apply_mod_changes,
+                                 add_modmap=mod_changes.get_add_modmap(),
+                                 remove_modmap=mod_changes.get_remove_modmap(),
+                                 show_status_screen=True,
+                                 reload_script=True,
+                                 use_steam=use_steam),]
+                sensitive bool(selected_mods_to_add) or bool(selected_mods_to_remove)
 
 
 screen modmenu_nointernet() tag smallscreen2:
